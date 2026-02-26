@@ -1,0 +1,474 @@
+<div class="row g-3">
+  <div class="col-12 col-xxl-6">
+    <section class="admin-card">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="section-title mb-0">{{ editingTemplateId === null ? 'Crear plantilla de rutina' : 'Modificar plantilla de rutina' }}</h2>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleTemplateForm()">
+          {{ showTemplateForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
+        </button>
+      </div>
+
+      <form class="row g-2" (ngSubmit)="saveTemplate()" *ngIf="showTemplateForm">
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Nombre de rutina</label>
+          <input class="form-control form-control-sm" type="text" name="templateName" [(ngModel)]="templateDraft.name" required />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Fecha de alta</label>
+          <input class="form-control form-control-sm" type="date" name="templateCreatedAt" [(ngModel)]="templateDraft.createdAt" required />
+        </div>
+
+        <div class="col-12">
+          <div class="sub-card">
+            <h3 class="record-title mb-2">Ejercicios de la plantilla</h3>
+            <div class="row g-2">
+              <div class="col-12 col-lg-9">
+                <label class="form-label form-label-sm">Ejercicio</label>
+                <select class="form-select form-select-sm" name="templateExerciseId" [(ngModel)]="templateExerciseDraft.exerciseId">
+                  <option [ngValue]="null">Seleccionar ejercicio</option>
+                  <option *ngFor="let exercise of exercises" [ngValue]="exercise.id">{{ exercise.name }}</option>
+                </select>
+              </div>
+              <div class="col-12 col-lg-3 d-grid align-items-end">
+                <button class="btn btn-sm btn-outline-light mt-lg-4" type="button" (click)="addExerciseToTemplate()">Agregar</button>
+              </div>
+            </div>
+
+            <div class="mt-3 d-grid gap-2" *ngIf="templateDraft.exercises.length > 0; else noTemplateDraftExercises">
+              <div
+                class="record-card d-flex justify-content-between align-items-center gap-2 p-2"
+                *ngFor="let item of templateDraft.exercises; let i = index"
+              >
+                <div>{{ item.exerciseName }}</div>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeTemplateExercise(i)">Quitar</button>
+              </div>
+            </div>
+
+            <ng-template #noTemplateDraftExercises>
+              <p class="empty-state mb-0">Todavia no agregaste ejercicios.</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          <button type="submit" class="btn btn-sm btn-brand" [disabled]="templateDraft.exercises.length === 0">
+            {{ editingTemplateId === null ? 'Guardar plantilla' : 'Actualizar plantilla' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-light" *ngIf="editingTemplateId !== null" (click)="cancelTemplateEdit()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="col-12 col-xxl-6">
+    <section class="admin-card">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="section-title mb-0">{{ editingAssignmentId === null ? 'Asignar rutina a alumno' : 'Modificar asignacion' }}</h2>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleAssignmentForm()">
+          {{ showAssignmentForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
+        </button>
+      </div>
+
+      <form class="row g-2" (ngSubmit)="saveAssignment()" *ngIf="showAssignmentForm">
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Alumno</label>
+          <app-searchable-select
+            [items]="studentSelectItems"
+            valueField="id"
+            labelField="fullName"
+            [filterFields]="studentFilterFields"
+            [value]="assignmentStudentValue()"
+            searchPlaceholder="Buscar por nombre, apellido o DNI"
+            selectPlaceholder="Seleccionar alumno"
+            (valueChange)="onAssignmentStudentChange($event)"
+          ></app-searchable-select>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Rutina existente</label>
+          <select
+            class="form-select form-select-sm"
+            name="assignmentRoutineTemplateId"
+            [(ngModel)]="assignmentDraft.routineTemplateId"
+            (ngModelChange)="onAssignmentTemplateChange()"
+            required
+          >
+            <option [ngValue]="0">Seleccionar rutina</option>
+            <option *ngFor="let routine of routineTemplates" [ngValue]="routine.id">{{ routine.name }}</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label form-label-sm">Dias de ejecucion para el alumno</label>
+          <div class="d-flex flex-wrap gap-2">
+            <div class="form-check" *ngFor="let day of dayOptions">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [id]="'assignment_day_' + day.value"
+                [checked]="isAssignmentDaySelected(day.value)"
+                (change)="onAssignmentDayToggle(day.value, $any($event.target).checked)"
+              />
+              <label class="form-check-label small text-secondary" [for]="'assignment_day_' + day.value">{{ day.label }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12" *ngIf="assignmentPlanWarningMessage as warningMessage">
+          <div class="alert alert-warning py-2 px-3 mb-0 small" role="alert">
+            {{ warningMessage }}
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Fecha de inicio</label>
+          <input class="form-control form-control-sm" type="date" name="assignmentStartDate" [(ngModel)]="assignmentDraft.startDate" required />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label form-label-sm">Fecha de fin</label>
+          <input class="form-control form-control-sm" type="date" name="assignmentEndDate" [(ngModel)]="assignmentDraft.endDate" required />
+        </div>
+
+        <div class="col-12">
+          <div class="sub-card">
+            <h3 class="record-title mb-2">Carga por alumno (series/reps/peso)</h3>
+            <div class="d-grid gap-2" *ngIf="assignmentDraft.exercisePlans.length > 0; else noAssignmentExercises">
+              <div class="record-card p-2" *ngFor="let plan of assignmentDraft.exercisePlans; let i = index">
+                <div class="row g-2">
+                  <div class="col-12 col-lg-3">
+                    <label class="form-label form-label-sm">Ejercicio</label>
+                    <input class="form-control form-control-sm" type="text" [value]="plan.exerciseName" readonly />
+                  </div>
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label form-label-sm">Series</label>
+                    <input class="form-control form-control-sm" type="number" min="1" [name]="'planSets' + i" [(ngModel)]="plan.sets" />
+                  </div>
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label form-label-sm">Modo</label>
+                    <select class="form-select form-select-sm" [name]="'planMode' + i" [(ngModel)]="plan.prescriptionMode">
+                      <option value="fijo">Fijo</option>
+                      <option value="dinamico">Dinamico</option>
+                    </select>
+                  </div>
+
+                  <ng-container *ngIf="plan.prescriptionMode === 'fijo'; else dynamicPlanFields">
+                    <div class="col-6 col-lg-2">
+                      <label class="form-label form-label-sm">Reps</label>
+                      <input class="form-control form-control-sm" type="number" min="1" [name]="'planReps' + i" [(ngModel)]="plan.reps" />
+                    </div>
+                    <div class="col-6 col-lg-3">
+                      <label class="form-label form-label-sm">Peso</label>
+                      <input class="form-control form-control-sm" type="number" min="0" [name]="'planWeight' + i" [(ngModel)]="plan.weight" />
+                    </div>
+                  </ng-container>
+
+                  <ng-template #dynamicPlanFields>
+                    <div class="col-6 col-lg-2">
+                      <label class="form-label form-label-sm">Reps min</label>
+                      <input class="form-control form-control-sm" type="number" min="1" [name]="'planMinReps' + i" [(ngModel)]="plan.minReps" />
+                    </div>
+                    <div class="col-6 col-lg-2">
+                      <label class="form-label form-label-sm">Reps max</label>
+                      <input class="form-control form-control-sm" type="number" min="1" [name]="'planMaxReps' + i" [(ngModel)]="plan.maxReps" />
+                    </div>
+                    <div class="col-12 col-lg-3">
+                      <label class="form-label form-label-sm">Rango de peso</label>
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <input
+                            class="form-control form-control-sm"
+                            type="number"
+                            min="0"
+                            placeholder="Kg min"
+                            [name]="'planMinWeight' + i"
+                            [(ngModel)]="plan.minWeight"
+                          />
+                        </div>
+                        <div class="col-6">
+                          <input
+                            class="form-control form-control-sm"
+                            type="number"
+                            min="0"
+                            placeholder="Kg max"
+                            [name]="'planMaxWeight' + i"
+                            [(ngModel)]="plan.maxWeight"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noAssignmentExercises>
+              <p class="empty-state mb-0">Selecciona una rutina para cargar series/reps/peso por alumno.</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          <button
+            type="submit"
+            class="btn btn-sm btn-brand"
+            [disabled]="assignmentDraft.userId <= 0 || assignmentDraft.routineTemplateId <= 0 || assignmentDraft.days.length === 0 || assignmentDraft.exercisePlans.length === 0"
+          >
+            {{ editingAssignmentId === null ? 'Guardar asignacion' : 'Actualizar asignacion' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-light" *ngIf="editingAssignmentId !== null" (click)="cancelAssignmentEdit()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="section-title mb-0">Tabla de rutinas (plantillas)</h2>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-secondary">Filas por pagina</label>
+          <select class="form-select form-select-sm page-size-select" [(ngModel)]="templatePageSize" (ngModelChange)="onTemplatePageSizeChange()">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label form-label-sm">Nombre de rutina</label>
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Filtrar por nombre"
+            [(ngModel)]="templateFilters.name"
+            (ngModelChange)="onTemplateFilterChange()"
+          />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label form-label-sm">Minimo ejercicios</label>
+          <input
+            class="form-control form-control-sm"
+            type="number"
+            min="0"
+            placeholder="Min ejercicios"
+            [(ngModel)]="templateFilters.minExercises"
+            (ngModelChange)="onTemplateFilterChange()"
+          />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label form-label-sm">Minimo alumnos</label>
+          <input
+            class="form-control form-control-sm"
+            type="number"
+            min="0"
+            placeholder="Min alumnos"
+            [(ngModel)]="templateFilters.minStudents"
+            (ngModelChange)="onTemplateFilterChange()"
+          />
+        </div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="clearTemplateFilters()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="table-responsive" *ngIf="filteredTemplates.length > 0; else noTemplates">
+        <table class="table table-dark table-striped table-hover align-middle entity-table">
+          <thead>
+            <tr>
+              <th>Rutina</th>
+              <th>Ejercicios</th>
+              <th>Fecha alta</th>
+              <th>Alumnos que la usan</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let routine of paginatedTemplates">
+              <td>{{ routine.name }}</td>
+              <td>{{ routine.exercises.length }}</td>
+              <td>{{ routine.createdAt }}</td>
+              <td>{{ templateUsageCount(routine.id) }}</td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                  <button class="btn btn-sm btn-outline-light" type="button" (click)="editTemplate(routine)">Modificar</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="askDeleteTemplate(routine)">Baja</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noTemplates>
+        <p class="empty-state mb-0">No hay rutinas para los filtros aplicados.</p>
+      </ng-template>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredTemplates.length > 0">
+        <small class="text-secondary">Mostrando {{ paginatedTemplates.length }} de {{ filteredTemplates.length }} rutinas</small>
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          <button
+            class="btn btn-sm btn-outline-light"
+            type="button"
+            (click)="goToTemplatePage(templateCurrentPage - 1)"
+            [disabled]="templateCurrentPage === 1"
+          >
+            Anterior
+          </button>
+          <button
+            class="btn btn-sm"
+            *ngFor="let page of templatePageNumbers"
+            [class.btn-brand]="page === templateCurrentPage"
+            [class.btn-outline-light]="page !== templateCurrentPage"
+            type="button"
+            (click)="goToTemplatePage(page)"
+          >
+            {{ page }}
+          </button>
+          <button
+            class="btn btn-sm btn-outline-light"
+            type="button"
+            (click)="goToTemplatePage(templateCurrentPage + 1)"
+            [disabled]="templateCurrentPage === templateTotalPages"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="section-title mb-0">Tabla de asignaciones de rutinas</h2>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-secondary">Filas por pagina</label>
+          <select class="form-select form-select-sm page-size-select" [(ngModel)]="assignmentPageSize" (ngModelChange)="onAssignmentPageSizeChange()">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label form-label-sm">Alumno</label>
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Filtrar por alumno"
+            [(ngModel)]="assignmentFilters.student"
+            (ngModelChange)="onAssignmentFilterChange()"
+          />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label form-label-sm">Rutina</label>
+          <select class="form-select form-select-sm" [(ngModel)]="assignmentFilters.templateId" (ngModelChange)="onAssignmentFilterChange()">
+            <option [ngValue]="0">Todas las rutinas</option>
+            <option *ngFor="let template of routineTemplates" [ngValue]="template.id">{{ template.name }}</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="clearAssignmentFilters()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="table-responsive" *ngIf="filteredAssignments.length > 0; else noAssignments">
+        <table class="table table-dark table-striped table-hover align-middle entity-table">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Rutina</th>
+              <th>Dias</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Carga por alumno</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let assignment of paginatedAssignments">
+              <td>{{ studentName(assignment.userId) }}</td>
+              <td>{{ templateName(assignment.routineTemplateId) }}</td>
+              <td>{{ assignmentDaysLabel(assignment) }}</td>
+              <td>{{ assignment.startDate }}</td>
+              <td>{{ assignment.endDate }}</td>
+              <td class="details-cell">
+                <span *ngFor="let item of assignment.exercisePlans; let last = last">
+                  {{ item.exerciseName }} ({{ assignmentSummary(item) }})<span *ngIf="!last"> | </span>
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                  <button class="btn btn-sm btn-outline-light" type="button" (click)="editAssignment(assignment)">Modificar</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="askDeleteAssignment(assignment)">Quitar</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noAssignments>
+        <p class="empty-state mb-0">No hay asignaciones para los filtros aplicados.</p>
+      </ng-template>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredAssignments.length > 0">
+        <small class="text-secondary">Mostrando {{ paginatedAssignments.length }} de {{ filteredAssignments.length }} asignaciones</small>
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          <button
+            class="btn btn-sm btn-outline-light"
+            type="button"
+            (click)="goToAssignmentPage(assignmentCurrentPage - 1)"
+            [disabled]="assignmentCurrentPage === 1"
+          >
+            Anterior
+          </button>
+          <button
+            class="btn btn-sm"
+            *ngFor="let page of assignmentPageNumbers"
+            [class.btn-brand]="page === assignmentCurrentPage"
+            [class.btn-outline-light]="page !== assignmentCurrentPage"
+            type="button"
+            (click)="goToAssignmentPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button
+            class="btn btn-sm btn-outline-light"
+            type="button"
+            (click)="goToAssignmentPage(assignmentCurrentPage + 1)"
+            [disabled]="assignmentCurrentPage === assignmentTotalPages"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<app-confirm-popup
+  [visible]="deleteTemplateCandidate !== null"
+  title="Eliminar plantilla"
+  [message]="'Se eliminara la plantilla ' + (deleteTemplateCandidate?.name ?? '') + ' y sus asignaciones.'"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  (confirmed)="confirmDeleteTemplate()"
+  (cancelled)="cancelDeleteTemplate()"
+></app-confirm-popup>
+
+<app-confirm-popup
+  [visible]="deleteAssignmentCandidate !== null"
+  title="Quitar asignacion"
+  [message]="'Se quitara la asignacion de ' + (deleteAssignmentCandidate ? studentName(deleteAssignmentCandidate.userId) : '') + '.'"
+  confirmText="Quitar"
+  cancelText="Cancelar"
+  (confirmed)="confirmDeleteAssignment()"
+  (cancelled)="cancelDeleteAssignment()"
+></app-confirm-popup>

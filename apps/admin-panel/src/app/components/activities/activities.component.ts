@@ -1,0 +1,166 @@
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Activity, ActivityDraft, createEmptyActivityDraft } from '../../class/activity.model';
+import { GymClass } from '../../class/gym-class.model';
+import { Exercise } from '../../class/exercise.model';
+import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
+import { ActivitiesService } from '../../services/activities.service';
+import { ClassesService } from '../../services/classes.service';
+import { ExercisesService } from '../../services/exercises.service';
+
+type ActivityFilters = {
+  name: string;
+  description: string;
+};
+
+@Component({
+  selector: 'app-activities',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ConfirmPopupComponent],
+  templateUrl: './activities.component.html',
+  styleUrl: './activities.component.css'
+})
+export class ActivitiesComponent implements OnInit {
+  activities: Activity[] = [];
+  classRefs: GymClass[] = [];
+  exerciseRefs: Exercise[] = [];
+
+  activityDraft: ActivityDraft = createEmptyActivityDraft();
+  editingActivityId: number | null = null;
+  deleteCandidate: Activity | null = null;
+  showForm = false;
+
+  filters: ActivityFilters = {
+    name: '',
+    description: ''
+  };
+
+  currentPage = 1;
+  pageSize = 8;
+  readonly pageSizeOptions = [5, 8, 10, 15];
+
+  constructor(
+    private readonly activitiesService: ActivitiesService,
+    private readonly classesService: ClassesService,
+    private readonly exercisesService: ExercisesService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  get filteredActivities(): Activity[] {
+    return this.activities.filter((activity) => {
+      const matchesName =
+        this.filters.name.trim() === '' || activity.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
+      const matchesDescription =
+        this.filters.description.trim() === '' ||
+        activity.description.toLowerCase().includes(this.filters.description.trim().toLowerCase());
+
+      return matchesName && matchesDescription;
+    });
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredActivities.length / this.pageSize));
+  }
+
+  get paginatedActivities(): Activity[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredActivities.slice(start, start + this.pageSize);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, idx) => idx + 1);
+  }
+
+  toggleForm(): void {
+    this.showForm = !this.showForm;
+  }
+
+  saveActivity(): void {
+    if (!this.activityDraft.name || !this.activityDraft.description) {
+      return;
+    }
+
+    this.activitiesService.upsert(this.activityDraft, this.editingActivityId);
+    this.cancelEdit();
+    this.loadData();
+    this.onFilterChange();
+  }
+
+  editActivity(activity: Activity): void {
+    this.showForm = true;
+    this.editingActivityId = activity.id;
+    this.activityDraft = { ...activity };
+  }
+
+  cancelEdit(): void {
+    this.editingActivityId = null;
+    this.activityDraft = createEmptyActivityDraft();
+  }
+
+  askDelete(activity: Activity): void {
+    this.deleteCandidate = activity;
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteCandidate) {
+      return;
+    }
+
+    const activityId = this.deleteCandidate.id;
+    this.activitiesService.remove(activityId);
+    this.classesService.clearActivityReferences(activityId);
+    this.exercisesService.clearActivityReferences(activityId);
+    this.deleteCandidate = null;
+
+    if (this.editingActivityId === activityId) {
+      this.cancelEdit();
+    }
+
+    this.loadData();
+    this.onFilterChange();
+  }
+
+  cancelDelete(): void {
+    this.deleteCandidate = null;
+  }
+
+  classCount(activityId: number): number {
+    return this.classRefs.filter((item) => item.activityId === activityId).length;
+  }
+
+  exerciseCount(activityId: number): number {
+    return this.exerciseRefs.filter((item) => item.activityId === activityId).length;
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  clearFilters(): void {
+    this.filters = { name: '', description: '' };
+    this.currentPage = 1;
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+  }
+
+  private loadData(): void {
+    this.activities = this.activitiesService.getAll();
+    this.classRefs = this.classesService.getAll();
+    this.exerciseRefs = this.exercisesService.getAll();
+  }
+}

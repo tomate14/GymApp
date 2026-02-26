@@ -1,0 +1,295 @@
+<div class="row g-3">
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="section-title mb-0">{{ editingUserId === null ? 'Alta de usuario' : 'Modificar usuario' }}</h2>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleForm()">
+          {{ showForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
+        </button>
+      </div>
+
+      <form class="row g-2" (ngSubmit)="saveUser()" *ngIf="showForm">
+        <div class="col-12 col-md-6 col-xl-3">
+          <label class="form-label form-label-sm">Nombre</label>
+          <input class="form-control form-control-sm" type="text" name="userFirstName" [(ngModel)]="userDraft.firstName" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <label class="form-label form-label-sm">Apellido</label>
+          <input class="form-control form-control-sm" type="text" name="userLastName" [(ngModel)]="userDraft.lastName" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label form-label-sm">DNI</label>
+          <input class="form-control form-control-sm" type="text" name="userDni" [(ngModel)]="userDraft.dni" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label form-label-sm">Telefono</label>
+          <input class="form-control form-control-sm" type="tel" name="userPhone" [(ngModel)]="userDraft.phone" required />
+        </div>
+
+        <div class="col-12 col-xl-2">
+          <label class="form-label form-label-sm">Tipo de usuario</label>
+          <select class="form-select form-select-sm" name="userType" [(ngModel)]="userDraft.userType" (ngModelChange)="onUserTypeChange()">
+            <option value="alumno">Alumno</option>
+            <option value="profesor">Profesor</option>
+          </select>
+        </div>
+
+        <ng-container *ngIf="userDraft.userType === 'alumno'">
+          <div class="col-12 col-xl-3">
+            <label class="form-label form-label-sm">Plan del alumno</label>
+            <select class="form-select form-select-sm" name="userPlanId" [(ngModel)]="userDraft.planId">
+              <option [ngValue]="null">Seleccionar plan</option>
+              <option *ngFor="let plan of plans" [ngValue]="plan.id">{{ plan.name }} ({{ plan.maxDaysPerWeek }} dias/sem)</option>
+            </select>
+          </div>
+
+          <div class="col-12 col-xl-3">
+            <label class="form-label form-label-sm">Valor del plan</label>
+            <input class="form-control form-control-sm" type="text" [value]="userDraft.planId === null ? '-' : '$' + planAmount(userDraft.planId)" readonly />
+          </div>
+        </ng-container>
+
+        <div class="col-12 col-xl-3">
+          <label class="form-label form-label-sm">Direccion</label>
+          <input class="form-control form-control-sm" type="text" name="userAddress" [(ngModel)]="userDraft.address" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <label class="form-label form-label-sm">Email</label>
+          <input class="form-control form-control-sm" type="email" name="userEmail" [(ngModel)]="userDraft.email" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label form-label-sm">Fecha de nacimiento</label>
+          <input class="form-control form-control-sm" type="date" name="userBirthDate" [(ngModel)]="userDraft.birthDate" required />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-1">
+          <label class="form-label form-label-sm">Alta</label>
+          <input
+            class="form-control form-control-sm"
+            type="date"
+            name="userRegistrationDate"
+            [(ngModel)]="userDraft.registrationDate"
+            required
+          />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label form-label-sm">Estado de pagos</label>
+          <select class="form-select form-select-sm" name="userPaymentStatus" [(ngModel)]="userDraft.paymentStatus">
+            <option value="al-dia">Al dia</option>
+            <option value="adeuda">Adeuda</option>
+          </select>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          <button type="submit" class="btn btn-sm btn-brand">
+            {{ editingUserId === null ? 'Guardar usuario' : 'Actualizar usuario' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-light" *ngIf="editingUserId !== null" (click)="cancelEdit()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="section-title mb-0">Tabla de usuarios</h2>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-secondary">Filas por pagina</label>
+          <select class="form-select form-select-sm page-size-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-12 col-md-4 col-xl-3">
+          <label class="form-label form-label-sm">Nombre o apellido</label>
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Filtrar por nombre/apellido"
+            [(ngModel)]="filters.name"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-12 col-md-4 col-xl-2">
+          <label class="form-label form-label-sm">DNI</label>
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Filtrar por DNI"
+            [(ngModel)]="filters.dni"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-12 col-md-4 col-xl-2">
+          <label class="form-label form-label-sm">Tipo de usuario</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filters.userType" (ngModelChange)="onFilterChange()">
+            <option value="all">Todos los tipos</option>
+            <option value="alumno">Alumno</option>
+            <option value="profesor">Profesor</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4 col-xl-2">
+          <label class="form-label form-label-sm">Estado de pago</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filters.paymentStatus" (ngModelChange)="onFilterChange()">
+            <option value="all">Todos los pagos</option>
+            <option value="al-dia">Al dia</option>
+            <option value="adeuda">Adeuda</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-1">
+          <label class="form-label form-label-sm">Alta desde</label>
+          <input
+            class="form-control form-control-sm"
+            type="date"
+            title="Alta desde"
+            [(ngModel)]="filters.registrationFrom"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-1">
+          <label class="form-label form-label-sm">Alta hasta</label>
+          <input
+            class="form-control form-control-sm"
+            type="date"
+            title="Alta hasta"
+            [(ngModel)]="filters.registrationTo"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-1">
+          <label class="form-label form-label-sm">Renovacion desde</label>
+          <input
+            class="form-control form-control-sm"
+            type="date"
+            title="Renovacion desde"
+            [(ngModel)]="filters.renewalFrom"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-1">
+          <label class="form-label form-label-sm">Renovacion hasta</label>
+          <input
+            class="form-control form-control-sm"
+            type="date"
+            title="Renovacion hasta"
+            [(ngModel)]="filters.renewalTo"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-12 col-md-4 col-xl-1 d-flex align-items-end">
+          <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="clearFilters()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="table-responsive" *ngIf="filteredUsers.length > 0; else noUsers">
+        <table class="table table-dark table-striped table-hover align-middle user-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Plan</th>
+              <th>DNI</th>
+              <th>Fecha alta</th>
+              <th>Renovacion cuota</th>
+              <th>Pago</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of paginatedUsers">
+              <td>{{ user.firstName }} {{ user.lastName }}</td>
+              <td class="text-capitalize">{{ user.userType }}</td>
+              <td>{{ user.userType === 'alumno' ? planName(user.planId) : '-' }}</td>
+              <td>{{ user.dni }}</td>
+              <td>{{ user.registrationDate }}</td>
+              <td>{{ user.renewalDate }}</td>
+              <td>
+                <span
+                  class="badge rounded-pill"
+                  [class.text-bg-success]="user.paymentStatus === 'al-dia'"
+                  [class.text-bg-danger]="user.paymentStatus === 'adeuda'"
+                >
+                  {{ paymentStatusLabel(user.paymentStatus) }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                  <button class="btn btn-sm btn-outline-warning" type="button" (click)="renewQuota(user)" [disabled]="user.userType !== 'alumno' || user.planId === null">
+                    Renovar cuota
+                  </button>
+                  <button class="btn btn-sm btn-outline-light" type="button" (click)="editUser(user)">Modificar</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="askDelete(user)">Baja</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noUsers>
+        <p class="empty-state mb-0">No hay usuarios para los filtros aplicados.</p>
+      </ng-template>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredUsers.length > 0">
+        <small class="text-secondary">
+          Mostrando {{ paginatedUsers.length }} de {{ filteredUsers.length }} usuarios filtrados
+        </small>
+
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+            Anterior
+          </button>
+
+          <button
+            class="btn btn-sm"
+            *ngFor="let page of pageNumbers"
+            [class.btn-brand]="page === currentPage"
+            [class.btn-outline-light]="page !== currentPage"
+            type="button"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            class="btn btn-sm btn-outline-light"
+            type="button"
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<app-confirm-popup
+  [visible]="deleteCandidate !== null"
+  title="Eliminar usuario"
+  [message]="'Se eliminara a ' + (deleteCandidate?.firstName ?? '') + ' ' + (deleteCandidate?.lastName ?? '') + '.'"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+></app-confirm-popup>

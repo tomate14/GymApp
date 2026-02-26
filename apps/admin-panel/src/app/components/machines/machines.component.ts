@@ -1,0 +1,156 @@
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Exercise } from '../../class/exercise.model';
+import { createEmptyMachineDraft, Machine, MachineDraft } from '../../class/machine.model';
+import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
+import { ExercisesService } from '../../services/exercises.service';
+import { MachinesService } from '../../services/machines.service';
+
+type MachineFilters = {
+  name: string;
+  onlyInUse: boolean;
+};
+
+@Component({
+  selector: 'app-machines',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ConfirmPopupComponent],
+  templateUrl: './machines.component.html',
+  styleUrl: './machines.component.css'
+})
+export class MachinesComponent implements OnInit {
+  machines: Machine[] = [];
+  exercises: Exercise[] = [];
+  machineDraft: MachineDraft = createEmptyMachineDraft();
+  editingMachineId: number | null = null;
+  deleteCandidate: Machine | null = null;
+  showForm = false;
+
+  filters: MachineFilters = {
+    name: '',
+    onlyInUse: false
+  };
+
+  currentPage = 1;
+  pageSize = 8;
+  readonly pageSizeOptions = [5, 8, 10, 15];
+
+  constructor(
+    private readonly machinesService: MachinesService,
+    private readonly exercisesService: ExercisesService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  get filteredMachines(): Machine[] {
+    return this.machines.filter((machine) => {
+      const matchesName =
+        this.filters.name.trim() === '' || machine.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
+      const usage = this.exerciseUsageCount(machine.id);
+      const matchesInUse = !this.filters.onlyInUse || usage > 0;
+      return matchesName && matchesInUse;
+    });
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredMachines.length / this.pageSize));
+  }
+
+  get paginatedMachines(): Machine[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredMachines.slice(start, start + this.pageSize);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, idx) => idx + 1);
+  }
+
+  toggleForm(): void {
+    this.showForm = !this.showForm;
+  }
+
+  saveMachine(): void {
+    if (!this.machineDraft.name || !this.machineDraft.photoUrl) {
+      return;
+    }
+
+    this.machinesService.upsert(this.machineDraft, this.editingMachineId);
+    this.cancelEdit();
+    this.loadData();
+    this.onFilterChange();
+  }
+
+  editMachine(machine: Machine): void {
+    this.showForm = true;
+    this.editingMachineId = machine.id;
+    this.machineDraft = { ...machine };
+  }
+
+  cancelEdit(): void {
+    this.editingMachineId = null;
+    this.machineDraft = createEmptyMachineDraft();
+  }
+
+  askDelete(machine: Machine): void {
+    this.deleteCandidate = machine;
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteCandidate) {
+      return;
+    }
+
+    const machineId = this.deleteCandidate.id;
+    this.machinesService.remove(machineId);
+    this.exercisesService.clearMachineReferences(machineId);
+    this.deleteCandidate = null;
+
+    if (this.editingMachineId === machineId) {
+      this.cancelEdit();
+    }
+
+    this.loadData();
+    this.onFilterChange();
+  }
+
+  cancelDelete(): void {
+    this.deleteCandidate = null;
+  }
+
+  exerciseUsageCount(machineId: number): number {
+    return this.exercises.filter((exercise) => exercise.machineId === machineId).length;
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  clearFilters(): void {
+    this.filters = {
+      name: '',
+      onlyInUse: false
+    };
+    this.currentPage = 1;
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+
+    this.currentPage = page;
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+  }
+
+  private loadData(): void {
+    this.machines = this.machinesService.getAll();
+    this.exercises = this.exercisesService.getAll();
+  }
+}

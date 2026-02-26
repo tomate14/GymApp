@@ -1,0 +1,24 @@
+<div class="d-grid gap-2">
+  <input
+    class="form-control form-control-sm"
+    type="text"
+    [placeholder]="searchPlaceholder"
+    [(ngModel)]="searchTerm"
+    [ngModelOptions]="{ standalone: true }"
+    (ngModelChange)="onSearchTermChange()"
+  />
+
+  <select
+    class="form-select form-select-sm"
+    [ngModel]="selectedValueAsString()"
+    [ngModelOptions]="{ standalone: true }"
+    (ngModelChange)="onSelectValueChange($event)"
+  >
+    <option value="">{{ selectPlaceholder }}</option>
+    <option *ngFor="let item of filteredItems; trackBy: trackByValue" [value]="optionValue(item)">
+      {{ optionLabel(item) }}
+    </option>
+  </select>
+
+  <small class="text-secondary" *ngIf="filteredItems.length === 0">Sin coincidencias para la busqueda.</small>
+</div>

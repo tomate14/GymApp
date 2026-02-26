@@ -1,0 +1,92 @@
+﻿ion-toolbar {
+  --background: rgba(8, 8, 10, 0.75);
+  --border-color: rgba(255, 255, 255, 0.06);
+  --color: var(--text);
+  backdrop-filter: blur(8px);
+}
+
+.home-content {
+  --background: transparent;
+}
+
+.hero {
+  padding: 1.2rem 1rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+
+.hero h1 {
+  margin: 0.35rem 0;
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-soft);
+  max-width: 36ch;
+}
+
+.chips {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+ion-chip {
+  --background: rgba(255, 255, 255, 0.06);
+  --color: var(--text);
+}
+
+.cta {
+  margin-top: 1rem;
+  --background: linear-gradient(120deg, #ff5f1f, #ff8a00);
+  --color: #111;
+  font-weight: 700;
+}
+
+.stats-card,
+.routine-card {
+  margin: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, var(--surface), var(--surface-soft));
+  color: var(--text);
+}
+
+ion-progress-bar {
+  --background: rgba(255, 255, 255, 0.08);
+  --progress-background: var(--accent);
+  height: 10px;
+  border-radius: 999px;
+}
+
+.routine-row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.routine-row:last-child {
+  border-bottom: 0;
+}
+
+.routine-row p,
+.routine-row strong,
+.routine-row small {
+  margin: 0;
+}
+
+.routine-row p,
+.routine-row small {
+  color: var(--text-soft);
+}

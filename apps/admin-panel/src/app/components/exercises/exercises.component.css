@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.page-size-select {
+  width: 92px;
+}
+
+.entity-table {
+  --bs-table-bg: rgba(255, 255, 255, 0.02);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-bg: rgba(255, 95, 31, 0.12);
+  margin-bottom: 0;
+}
+
+.entity-table th,
+.entity-table td {
+  white-space: nowrap;
+}
+
+a {
+  color: #ffb08a;
+}

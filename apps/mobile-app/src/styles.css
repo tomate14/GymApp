@@ -1,0 +1,22 @@
+﻿:root {
+  --bg: #040405;
+  --surface: #121216;
+  --surface-soft: #1a1a20;
+  --text: #f5f6f8;
+  --text-soft: #8f90a3;
+  --accent: #ff5f1f;
+  --accent-2: #00d6a2;
+}
+
+html,
+body,
+ion-app,
+ion-content {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 95, 31, 0.22), transparent 35%),
+    radial-gradient(circle at 84% 0%, rgba(0, 214, 162, 0.15), transparent 30%),
+    var(--bg);
+  color: var(--text);
+}

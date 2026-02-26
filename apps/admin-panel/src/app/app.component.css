@@ -1,0 +1,146 @@
+:host {
+  display: block;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.admin-shell.sidebar-collapsed {
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.admin-sidebar {
+  background: linear-gradient(180deg, rgba(13, 13, 17, 0.98), rgba(6, 6, 8, 0.98));
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 0.75rem;
+  z-index: 30;
+}
+
+.brand-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brand-overline {
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brand-title {
+  font-size: 1.25rem;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.8rem;
+  padding: 0.62rem 0.7rem;
+  text-decoration: none;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.menu-link.active {
+  border-color: rgba(255, 95, 31, 0.72);
+  background: rgba(255, 95, 31, 0.14);
+}
+
+.menu-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #ff5f1f, #ff8a00);
+}
+
+.menu-short {
+  display: none;
+}
+
+.admin-workspace {
+  width: min(1600px, 100%);
+  padding: 0.9rem;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(1.3rem, 3vw, 2rem);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.admin-shell.sidebar-collapsed .brand-title,
+.admin-shell.sidebar-collapsed .brand-overline,
+.admin-shell.sidebar-collapsed .menu-text {
+  display: none;
+}
+
+.admin-shell.sidebar-collapsed .menu-short {
+  display: inline;
+  font-weight: 700;
+}
+
+.admin-shell.sidebar-collapsed .menu-link {
+  justify-content: center;
+}
+
+@media (max-width: 992px) {
+  .admin-shell,
+  .admin-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 88vw);
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    height: 100vh;
+  }
+
+  .admin-shell.sidebar-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.54);
+    z-index: 20;
+  }
+
+  .admin-workspace {
+    padding: 0.8rem;
+  }
+}
+

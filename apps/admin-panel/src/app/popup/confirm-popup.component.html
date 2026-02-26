@@ -1,0 +1,13 @@
+<div class="popup-overlay" *ngIf="visible" (click)="cancelled.emit()"></div>
+
+<section class="popup-window card border-light-subtle bg-black text-light" *ngIf="visible" role="dialog" aria-modal="true">
+  <div class="card-body">
+    <h5 class="card-title mb-2">{{ title }}</h5>
+    <p class="card-text text-secondary mb-3">{{ message }}</p>
+    <div class="d-flex gap-2 justify-content-end flex-wrap">
+      <button type="button" class="btn btn-outline-light btn-sm" (click)="cancelled.emit()">{{ cancelText }}</button>
+      <button type="button" class="btn btn-danger btn-sm" (click)="confirmed.emit()">{{ confirmText }}</button>
+    </div>
+  </div>
+</section>
+
