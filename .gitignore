@@ -12,6 +12,10 @@ out-tsc/
 coverage/
 .angular/
 
+# Maven / Spring Boot build output
+apps/fitexa/target/
+**/target/
+
 # Environment and logs
 .env
 *.log

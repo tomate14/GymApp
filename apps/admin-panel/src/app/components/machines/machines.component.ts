@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Exercise } from '../../class/exercise.model';
 import { createEmptyMachineDraft, Machine, MachineDraft } from '../../class/machine.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
@@ -26,6 +27,8 @@ export class MachinesComponent implements OnInit {
   editingMachineId: number | null = null;
   deleteCandidate: Machine | null = null;
   showForm = false;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: MachineFilters = {
     name: '',
@@ -78,10 +81,16 @@ export class MachinesComponent implements OnInit {
       return;
     }
 
-    this.machinesService.upsert(this.machineDraft, this.editingMachineId);
-    this.cancelEdit();
-    this.loadData();
-    this.onFilterChange();
+    this.machinesService.upsert(this.machineDraft, this.editingMachineId).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar la maquina en el backend.';
+      }
+    });
   }
 
   editMachine(machine: Machine): void {
@@ -105,16 +114,21 @@ export class MachinesComponent implements OnInit {
     }
 
     const machineId = this.deleteCandidate.id;
-    this.machinesService.remove(machineId);
-    this.exercisesService.clearMachineReferences(machineId);
-    this.deleteCandidate = null;
+    this.machinesService.remove(machineId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingMachineId === machineId) {
-      this.cancelEdit();
-    }
+        if (this.editingMachineId === machineId) {
+          this.cancelEdit();
+        }
 
-    this.loadData();
-    this.onFilterChange();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar la maquina en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -150,7 +164,24 @@ export class MachinesComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.machines = this.machinesService.getAll();
-    this.exercises = this.exercisesService.getAll();
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      machines: this.machinesService.findAll(),
+      exercises: this.exercisesService.findAll()
+    }).subscribe({
+      next: (result) => {
+        this.machines = result.machines;
+        this.exercises = result.exercises;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener maquinas del backend.';
+        this.machines = this.machinesService.getAll();
+        this.exercises = this.exercisesService.getAll();
+        this.isLoading = false;
+      }
+    });
   }
 }

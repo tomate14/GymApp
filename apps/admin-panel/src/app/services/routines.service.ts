@@ -1,239 +1,127 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import {
+  DayOfWeek,
   RoutineAssignment,
   RoutineAssignmentDraft,
+  RoutineAssignmentExercise,
   RoutineTemplate,
   RoutineTemplateDraft
 } from '../class/routine.model';
-import { nextNumericId } from '../utils/id.util';
+import { API_BASE_URL } from '../utils/api.util';
+
+type RoutineTemplateExerciseApiDto = {
+  exerciseId: number;
+  exerciseName: string;
+};
+
+type RoutineTemplateApiDto = {
+  id: number;
+  name: string;
+  createdAt: string;
+  exercises: RoutineTemplateExerciseApiDto[];
+};
+
+type RoutineTemplateApiRequest = {
+  name: string;
+  createdAt: string;
+  exerciseIds: number[];
+};
+
+type RoutineAssignmentExerciseApiDto = {
+  exerciseId: number;
+  exerciseName: string;
+  sets: number;
+  prescriptionMode: RoutineAssignmentExercise['prescriptionMode'];
+  reps: number | null;
+  weight: number | null;
+  minReps: number | null;
+  maxReps: number | null;
+  minWeight: number | null;
+  maxWeight: number | null;
+};
+
+type RoutineAssignmentApiDto = {
+  id: number;
+  userId: number;
+  routineTemplateId: number;
+  days: DayOfWeek[];
+  startDate: string;
+  endDate: string;
+  exercisePlans: RoutineAssignmentExerciseApiDto[];
+};
+
+type RoutineAssignmentApiRequest = {
+  userId: number;
+  routineTemplateId: number;
+  days: DayOfWeek[];
+  startDate: string;
+  endDate: string;
+  exercisePlans: Array<{
+    exerciseId: number;
+    sets: number;
+    prescriptionMode: RoutineAssignmentExercise['prescriptionMode'];
+    reps: number | null;
+    weight: number | null;
+    minReps: number | null;
+    maxReps: number | null;
+    minWeight: number | null;
+    maxWeight: number | null;
+  }>;
+};
+
+type RoutineAssignmentSaveResultApiDto = {
+  assignment: RoutineAssignmentApiDto;
+  warning: string | null;
+};
+
+export interface RoutineAssignmentSaveResult {
+  assignment: RoutineAssignment;
+  warning: string | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class RoutinesService {
-  private routineTemplates: RoutineTemplate[] = [
-    {
-      id: 1,
-      name: 'Hipertrofia inicial',
-      createdAt: '2026-01-12',
-      exercises: [
-        { exerciseId: 1, exerciseName: 'Sentadilla en Smith' },
-        { exerciseId: 2, exerciseName: 'Burpee con salto' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Resistencia metabolica',
-      createdAt: '2026-01-20',
-      exercises: [
-        { exerciseId: 2, exerciseName: 'Burpee con salto' },
-        { exerciseId: 5, exerciseName: 'Plancha frontal' },
-        { exerciseId: 6, exerciseName: 'Sprint en bicicleta' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Fuerza tren inferior',
-      createdAt: '2026-01-27',
-      exercises: [
-        { exerciseId: 1, exerciseName: 'Sentadilla en Smith' },
-        { exerciseId: 4, exerciseName: 'Prensa de piernas' },
-        { exerciseId: 3, exerciseName: 'Remo en polea baja' }
-      ]
-    },
-    {
-      id: 4,
-      name: 'Movilidad y core',
-      createdAt: '2026-02-03',
-      exercises: [
-        { exerciseId: 5, exerciseName: 'Plancha frontal' },
-        { exerciseId: 7, exerciseName: 'Bird-dog controlado' },
-        { exerciseId: 2, exerciseName: 'Burpee con salto' }
-      ]
-    }
-  ];
+  private readonly templateEndpoint = `${API_BASE_URL}/routine-templates`;
+  private readonly assignmentEndpoint = `${API_BASE_URL}/routine-assignments`;
 
-  private routineAssignments: RoutineAssignment[] = [
-    {
-      id: 1,
-      userId: 2,
-      routineTemplateId: 1,
-      days: ['lunes', 'miercoles', 'viernes'],
-      startDate: '2026-03-01',
-      endDate: '2026-05-01',
-      exercisePlans: [
-        {
-          exerciseId: 1,
-          exerciseName: 'Sentadilla en Smith',
-          sets: 4,
-          prescriptionMode: 'fijo',
-          reps: 10,
-          weight: 45,
-          minReps: null,
-          maxReps: null,
-          minWeight: null,
-          maxWeight: null
-        },
-        {
-          exerciseId: 2,
-          exerciseName: 'Burpee con salto',
-          sets: 3,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 10,
-          maxReps: 14,
-          minWeight: 0,
-          maxWeight: 0
-        }
-      ]
-    },
-    {
-      id: 2,
-      userId: 4,
-      routineTemplateId: 2,
-      days: ['martes', 'jueves', 'sabado'],
-      startDate: '2026-03-03',
-      endDate: '2026-05-03',
-      exercisePlans: [
-        {
-          exerciseId: 2,
-          exerciseName: 'Burpee con salto',
-          sets: 4,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 10,
-          maxReps: 16,
-          minWeight: 0,
-          maxWeight: 0
-        },
-        {
-          exerciseId: 5,
-          exerciseName: 'Plancha frontal',
-          sets: 4,
-          prescriptionMode: 'fijo',
-          reps: 45,
-          weight: 0,
-          minReps: null,
-          maxReps: null,
-          minWeight: null,
-          maxWeight: null
-        },
-        {
-          exerciseId: 6,
-          exerciseName: 'Sprint en bicicleta',
-          sets: 6,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 20,
-          maxReps: 30,
-          minWeight: 0,
-          maxWeight: 0
-        }
-      ]
-    },
-    {
-      id: 3,
-      userId: 6,
-      routineTemplateId: 3,
-      days: ['lunes', 'jueves'],
-      startDate: '2026-03-01',
-      endDate: '2026-04-30',
-      exercisePlans: [
-        {
-          exerciseId: 1,
-          exerciseName: 'Sentadilla en Smith',
-          sets: 5,
-          prescriptionMode: 'fijo',
-          reps: 8,
-          weight: 60,
-          minReps: null,
-          maxReps: null,
-          minWeight: null,
-          maxWeight: null
-        },
-        {
-          exerciseId: 4,
-          exerciseName: 'Prensa de piernas',
-          sets: 4,
-          prescriptionMode: 'fijo',
-          reps: 10,
-          weight: 120,
-          minReps: null,
-          maxReps: null,
-          minWeight: null,
-          maxWeight: null
-        },
-        {
-          exerciseId: 3,
-          exerciseName: 'Remo en polea baja',
-          sets: 4,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 8,
-          maxReps: 12,
-          minWeight: 35,
-          maxWeight: 50
-        }
-      ]
-    },
-    {
-      id: 4,
-      userId: 7,
-      routineTemplateId: 4,
-      days: ['miercoles', 'viernes'],
-      startDate: '2026-03-05',
-      endDate: '2026-05-10',
-      exercisePlans: [
-        {
-          exerciseId: 5,
-          exerciseName: 'Plancha frontal',
-          sets: 4,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 30,
-          maxReps: 60,
-          minWeight: 0,
-          maxWeight: 0
-        },
-        {
-          exerciseId: 7,
-          exerciseName: 'Bird-dog controlado',
-          sets: 3,
-          prescriptionMode: 'fijo',
-          reps: 12,
-          weight: 0,
-          minReps: null,
-          maxReps: null,
-          minWeight: null,
-          maxWeight: null
-        },
-        {
-          exerciseId: 2,
-          exerciseName: 'Burpee con salto',
-          sets: 3,
-          prescriptionMode: 'dinamico',
-          reps: null,
-          weight: null,
-          minReps: 8,
-          maxReps: 12,
-          minWeight: 0,
-          maxWeight: 0
-        }
-      ]
-    }
-  ];
+  private routineTemplates: RoutineTemplate[] = [];
+  private routineAssignments: RoutineAssignment[] = [];
+
+  constructor(private readonly http: HttpClient) {}
+
+  findTemplates(): Observable<RoutineTemplate[]> {
+    return this.http.get<RoutineTemplateApiDto[]>(this.templateEndpoint).pipe(
+      map((items) => items.map((item) => this.mapTemplateFromApi(item))),
+      tap((items) => this.setTemplates(items))
+    );
+  }
+
+  findAssignments(): Observable<RoutineAssignment[]> {
+    return this.http.get<RoutineAssignmentApiDto[]>(this.assignmentEndpoint).pipe(
+      map((items) => items.map((item) => this.mapAssignmentFromApi(item))),
+      tap((items) => this.setAssignments(items))
+    );
+  }
 
   getTemplates(): RoutineTemplate[] {
     return this.routineTemplates.map((template) => this.cloneTemplate(template));
   }
 
+  setTemplates(templates: RoutineTemplate[]): void {
+    this.routineTemplates = templates.map((item) => this.cloneTemplate(item));
+  }
+
   getAssignments(): RoutineAssignment[] {
     return this.routineAssignments.map((assignment) => this.cloneAssignment(assignment));
+  }
+
+  setAssignments(assignments: RoutineAssignment[]): void {
+    this.routineAssignments = assignments.map((item) => this.cloneAssignment(item));
   }
 
   getTemplateById(templateId: number): RoutineTemplate | null {
@@ -241,53 +129,73 @@ export class RoutinesService {
     return template ? this.cloneTemplate(template) : null;
   }
 
-  upsertTemplate(draft: RoutineTemplateDraft, editingId: number | null): RoutineTemplate {
-    const existing = editingId === null ? null : this.routineTemplates.find((template) => template.id === editingId) ?? null;
-    const payload: RoutineTemplate = {
-      id: editingId ?? nextNumericId(this.routineTemplates),
+  upsertTemplate(draft: RoutineTemplateDraft, editingId: number | null): Observable<RoutineTemplate> {
+    const payload: RoutineTemplateApiRequest = {
       name: draft.name,
-      createdAt: existing?.createdAt ?? draft.createdAt ?? new Date().toISOString().slice(0, 10),
-      exercises: draft.exercises.map((item) => ({ ...item }))
+      createdAt: draft.createdAt,
+      exerciseIds: draft.exercises.map((item) => item.exerciseId)
     };
 
-    if (editingId === null) {
-      this.routineTemplates = [payload, ...this.routineTemplates];
-      return this.cloneTemplate(payload);
-    }
+    const request$ =
+      editingId === null
+        ? this.http.post<RoutineTemplateApiDto>(this.templateEndpoint, payload)
+        : this.http.put<RoutineTemplateApiDto>(`${this.templateEndpoint}/${editingId}`, payload);
 
-    this.routineTemplates = this.routineTemplates.map((template) => (template.id === editingId ? payload : template));
-    return this.cloneTemplate(payload);
+    return request$.pipe(
+      map((item) => this.mapTemplateFromApi(item)),
+      tap((saved) => this.upsertTemplateInCache(saved))
+    );
   }
 
-  upsertAssignment(draft: RoutineAssignmentDraft, editingId: number | null): RoutineAssignment {
-    const payload: RoutineAssignment = {
-      id: editingId ?? nextNumericId(this.routineAssignments),
+  upsertAssignment(draft: RoutineAssignmentDraft, editingId: number | null): Observable<RoutineAssignmentSaveResult> {
+    const payload: RoutineAssignmentApiRequest = {
       userId: draft.userId,
       routineTemplateId: draft.routineTemplateId,
       days: [...draft.days],
       startDate: draft.startDate,
       endDate: draft.endDate,
-      exercisePlans: draft.exercisePlans.map((item) => ({ ...item }))
+      exercisePlans: draft.exercisePlans.map((item) => ({
+        exerciseId: item.exerciseId,
+        sets: item.sets,
+        prescriptionMode: item.prescriptionMode,
+        reps: item.reps,
+        weight: item.weight,
+        minReps: item.minReps,
+        maxReps: item.maxReps,
+        minWeight: item.minWeight,
+        maxWeight: item.maxWeight
+      }))
     };
 
-    if (editingId === null) {
-      this.routineAssignments = [payload, ...this.routineAssignments];
-      return this.cloneAssignment(payload);
-    }
+    const request$ =
+      editingId === null
+        ? this.http.post<RoutineAssignmentSaveResultApiDto>(this.assignmentEndpoint, payload)
+        : this.http.put<RoutineAssignmentSaveResultApiDto>(`${this.assignmentEndpoint}/${editingId}`, payload);
 
-    this.routineAssignments = this.routineAssignments.map((assignment) =>
-      assignment.id === editingId ? payload : assignment
+    return request$.pipe(
+      map((result) => ({
+        assignment: this.mapAssignmentFromApi(result.assignment),
+        warning: result.warning
+      })),
+      tap((result) => this.upsertAssignmentInCache(result.assignment))
     );
-    return this.cloneAssignment(payload);
   }
 
-  removeTemplate(templateId: number): void {
-    this.routineTemplates = this.routineTemplates.filter((template) => template.id !== templateId);
-    this.routineAssignments = this.routineAssignments.filter((assignment) => assignment.routineTemplateId !== templateId);
+  removeTemplate(templateId: number): Observable<void> {
+    return this.http.delete<void>(`${this.templateEndpoint}/${templateId}`).pipe(
+      tap(() => {
+        this.routineTemplates = this.routineTemplates.filter((template) => template.id !== templateId);
+        this.routineAssignments = this.routineAssignments.filter((assignment) => assignment.routineTemplateId !== templateId);
+      })
+    );
   }
 
-  removeAssignment(assignmentId: number): void {
-    this.routineAssignments = this.routineAssignments.filter((assignment) => assignment.id !== assignmentId);
+  removeAssignment(assignmentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.assignmentEndpoint}/${assignmentId}`).pipe(
+      tap(() => {
+        this.routineAssignments = this.routineAssignments.filter((assignment) => assignment.id !== assignmentId);
+      })
+    );
   }
 
   clearUserReferences(userId: number): void {
@@ -322,6 +230,65 @@ export class RoutinesService {
 
   templateNameById(templateId: number): string {
     return this.routineTemplates.find((template) => template.id === templateId)?.name ?? 'Sin rutina';
+  }
+
+  private upsertTemplateInCache(payload: RoutineTemplate): void {
+    const exists = this.routineTemplates.some((item) => item.id === payload.id);
+    if (!exists) {
+      this.routineTemplates = [this.cloneTemplate(payload), ...this.routineTemplates];
+      return;
+    }
+
+    this.routineTemplates = this.routineTemplates.map((item) =>
+      item.id === payload.id ? this.cloneTemplate(payload) : item
+    );
+  }
+
+  private upsertAssignmentInCache(payload: RoutineAssignment): void {
+    const exists = this.routineAssignments.some((item) => item.id === payload.id);
+    if (!exists) {
+      this.routineAssignments = [this.cloneAssignment(payload), ...this.routineAssignments];
+      return;
+    }
+
+    this.routineAssignments = this.routineAssignments.map((item) =>
+      item.id === payload.id ? this.cloneAssignment(payload) : item
+    );
+  }
+
+  private mapTemplateFromApi(dto: RoutineTemplateApiDto): RoutineTemplate {
+    return {
+      id: Number(dto.id),
+      name: dto.name,
+      createdAt: dto.createdAt,
+      exercises: dto.exercises.map((item) => ({
+        exerciseId: Number(item.exerciseId),
+        exerciseName: item.exerciseName
+      }))
+    };
+  }
+
+  private mapAssignmentFromApi(dto: RoutineAssignmentApiDto): RoutineAssignment {
+    return {
+      id: Number(dto.id),
+      userId: Number(dto.userId),
+      routineTemplateId: Number(dto.routineTemplateId),
+      days: dto.days.map((day) => day),
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      exercisePlans: dto.exercisePlans.map((item) => ({
+        exerciseId: Number(item.exerciseId),
+        exerciseName: item.exerciseName,
+        sets: Number(item.sets),
+        prescriptionMode: item.prescriptionMode,
+        reps: item.reps === null ? null : Number(item.reps),
+        weight: item.weight === null ? null : Number(item.weight),
+        minReps: item.minReps === null ? null : Number(item.minReps),
+        maxReps: item.maxReps === null ? null : Number(item.maxReps),
+        minWeight: item.minWeight === null ? null : Number(item.minWeight),
+        maxWeight: item.maxWeight === null ? null : Number(item.maxWeight)
+      }))
+    };
   }
 
   private cloneTemplate(template: RoutineTemplate): RoutineTemplate {

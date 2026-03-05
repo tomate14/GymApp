@@ -1,166 +1,101 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { User, UserDraft, UserType } from '../class/user.model';
-import { nextNumericId } from '../utils/id.util';
+import { API_BASE_URL } from '../utils/api.util';
+
+type UserApiDto = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dni: string;
+  address: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  userType: User['userType'];
+  planId: number | null;
+  registrationDate: string;
+  renewalDate: string;
+  paymentStatus: User['paymentStatus'];
+};
+
+type UserApiRequest = {
+  firstName: string;
+  lastName: string;
+  dni: string;
+  address: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  userType: User['userType'];
+  planId: number | null;
+  registrationDate: string;
+  paymentStatus: User['paymentStatus'];
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsersService {
-  private users: User[] = [
-    {
-      id: 1,
-      firstName: 'Lucia',
-      lastName: 'Gimenez',
-      dni: '32450987',
-      address: 'Belgrano 145',
-      phone: '3415011002',
-      email: 'lucia.gimenez@gymapp.com',
-      birthDate: '1992-09-05',
-      userType: 'profesor',
-      planId: null,
-      registrationDate: '2025-11-02',
-      renewalDate: '2026-03-10',
-      paymentStatus: 'al-dia'
-    },
-    {
-      id: 2,
-      firstName: 'Matias',
-      lastName: 'Lopez',
-      dni: '38221009',
-      address: 'Brown 210',
-      phone: '3415667733',
-      email: 'matias.lopez@email.com',
-      birthDate: '1998-01-20',
-      userType: 'alumno',
-      planId: 2,
-      registrationDate: '2025-10-18',
-      renewalDate: '2026-02-20',
-      paymentStatus: 'adeuda'
-    },
-    {
-      id: 3,
-      firstName: 'Diego',
-      lastName: 'Ferrero',
-      dni: '29877441',
-      address: 'San Luis 932',
-      phone: '3416120044',
-      email: 'diego.ferrero@gymapp.com',
-      birthDate: '1987-04-14',
-      userType: 'profesor',
-      planId: null,
-      registrationDate: '2025-09-10',
-      renewalDate: '2026-03-05',
-      paymentStatus: 'al-dia'
-    },
-    {
-      id: 4,
-      firstName: 'Maria',
-      lastName: 'Torres',
-      dni: '40155672',
-      address: 'Italia 455',
-      phone: '3415233344',
-      email: 'maria.torres@email.com',
-      birthDate: '2000-11-02',
-      userType: 'alumno',
-      planId: 1,
-      registrationDate: '2025-12-03',
-      renewalDate: '2026-03-03',
-      paymentStatus: 'al-dia'
-    },
-    {
-      id: 5,
-      firstName: 'Agustina',
-      lastName: 'Ruiz',
-      dni: '31244876',
-      address: 'Mitre 1880',
-      phone: '3415772200',
-      email: 'agustina.ruiz@gymapp.com',
-      birthDate: '1990-06-25',
-      userType: 'profesor',
-      planId: null,
-      registrationDate: '2025-08-15',
-      renewalDate: '2026-02-28',
-      paymentStatus: 'al-dia'
-    },
-    {
-      id: 6,
-      firstName: 'Juan',
-      lastName: 'Perez',
-      dni: '38992011',
-      address: 'Mendoza 640',
-      phone: '3415448877',
-      email: 'juan.perez@email.com',
-      birthDate: '1997-02-18',
-      userType: 'alumno',
-      planId: 1,
-      registrationDate: '2025-11-21',
-      renewalDate: '2026-03-12',
-      paymentStatus: 'adeuda'
-    },
-    {
-      id: 7,
-      firstName: 'Camila',
-      lastName: 'Navarro',
-      dni: '41588231',
-      address: 'Roca 310',
-      phone: '3415099877',
-      email: 'camila.navarro@email.com',
-      birthDate: '2001-07-09',
-      userType: 'alumno',
-      planId: 3,
-      registrationDate: '2026-01-07',
-      renewalDate: '2026-03-20',
-      paymentStatus: 'al-dia'
-    }
-  ];
+  private readonly endpoint = `${API_BASE_URL}/users`;
+  private users: User[] = [];
+
+  constructor(private readonly http: HttpClient) {}
+
+  findAll(type: UserType | null = null): Observable<User[]> {
+    const url = type === null ? this.endpoint : `${this.endpoint}?type=${type}`;
+    return this.http.get<UserApiDto[]>(url).pipe(
+      map((items) => items.map((item) => this.mapFromApi(item))),
+      tap((items) => {
+        if (type === null) {
+          this.setAll(items);
+          return;
+        }
+        this.mergeByType(items, type);
+      })
+    );
+  }
 
   getAll(): User[] {
     return [...this.users];
+  }
+
+  setAll(users: User[]): void {
+    this.users = users.map((user) => ({ ...user }));
   }
 
   getByType(userType: UserType): User[] {
     return this.users.filter((user) => user.userType === userType);
   }
 
-  upsert(draft: UserDraft, editingId: number | null): User {
-    const existing = editingId === null ? null : this.users.find((user) => user.id === editingId) ?? null;
-    const registrationDate = draft.registrationDate || existing?.registrationDate || this.todayIsoDate();
-    const renewalDate = existing?.renewalDate ?? this.addOneMonth(registrationDate);
+  upsert(draft: UserDraft, editingId: number | null): Observable<User> {
+    const payload = this.toApiRequest(draft);
+    const request$ =
+      editingId === null
+        ? this.http.post<UserApiDto>(this.endpoint, payload)
+        : this.http.put<UserApiDto>(`${this.endpoint}/${editingId}`, payload);
 
-    const payload: User = {
-      id: editingId ?? nextNumericId(this.users),
-      ...draft,
-      registrationDate,
-      renewalDate
-    };
-
-    if (editingId === null) {
-      this.users = [payload, ...this.users];
-      return payload;
-    }
-
-    this.users = this.users.map((user) => (user.id === editingId ? payload : user));
-    return payload;
+    return request$.pipe(
+      map((item) => this.mapFromApi(item)),
+      tap((saved) => this.upsertInCache(saved))
+    );
   }
 
-  renewSubscription(userId: number): User | null {
-    const user = this.users.find((item) => item.id === userId);
-    if (!user || user.userType !== 'alumno') {
-      return null;
-    }
-
-    const renewed: User = {
-      ...user,
-      renewalDate: this.addOneMonth(this.todayIsoDate()),
-      paymentStatus: 'al-dia'
-    };
-
-    this.users = this.users.map((item) => (item.id === userId ? renewed : item));
-    return renewed;
+  renewSubscription(userId: number): Observable<User> {
+    return this.http.post<UserApiDto>(`${this.endpoint}/${userId}/renew`, {}).pipe(
+      map((item) => this.mapFromApi(item)),
+      tap((saved) => this.upsertInCache(saved))
+    );
   }
 
-  remove(userId: number): void {
-    this.users = this.users.filter((user) => user.id !== userId);
+  remove(userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/${userId}`).pipe(
+      tap(() => {
+        this.users = this.users.filter((user) => user.id !== userId);
+      })
+    );
   }
 
   clearPlanReferences(planId: number): void {
@@ -188,13 +123,52 @@ export class UsersService {
     return user ? `${user.firstName} ${user.lastName}` : 'Sin usuario';
   }
 
-  private todayIsoDate(): string {
-    return new Date().toISOString().slice(0, 10);
+  private mergeByType(items: User[], userType: UserType): void {
+    const others = this.users.filter((user) => user.userType !== userType);
+    this.users = [...others, ...items];
   }
 
-  private addOneMonth(baseDateIso: string): string {
-    const baseDate = new Date(`${baseDateIso}T00:00:00`);
-    baseDate.setMonth(baseDate.getMonth() + 1);
-    return baseDate.toISOString().slice(0, 10);
+  private upsertInCache(payload: User): void {
+    const exists = this.users.some((item) => item.id === payload.id);
+    if (!exists) {
+      this.users = [payload, ...this.users];
+      return;
+    }
+
+    this.users = this.users.map((item) => (item.id === payload.id ? payload : item));
+  }
+
+  private toApiRequest(draft: UserDraft): UserApiRequest {
+    return {
+      firstName: draft.firstName,
+      lastName: draft.lastName,
+      dni: draft.dni,
+      address: draft.address,
+      phone: draft.phone,
+      email: draft.email,
+      birthDate: draft.birthDate,
+      userType: draft.userType,
+      planId: draft.planId,
+      registrationDate: draft.registrationDate,
+      paymentStatus: draft.paymentStatus
+    };
+  }
+
+  private mapFromApi(dto: UserApiDto): User {
+    return {
+      id: Number(dto.id),
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      dni: dto.dni,
+      address: dto.address,
+      phone: dto.phone,
+      email: dto.email,
+      birthDate: dto.birthDate,
+      userType: dto.userType,
+      planId: dto.planId === null ? null : Number(dto.planId),
+      registrationDate: dto.registrationDate,
+      renewalDate: dto.renewalDate,
+      paymentStatus: dto.paymentStatus
+    };
   }
 }

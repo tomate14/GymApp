@@ -1,0 +1,61 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: fitexa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fitexa
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - fitexa_mysql_data:/var/lib/mysql
+      - ./apps/fitexa/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./apps/fitexa/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  fitexa:
+    build:
+      context: ./apps/fitexa
+      dockerfile: Dockerfile
+    container_name: fitexa-api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_URL: jdbc:mysql://mysql:3306/fitexa?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+    ports:
+      - "8080:8080"
+
+  admin-panel:
+    build:
+      context: ./apps/admin-panel
+      dockerfile: Dockerfile
+    container_name: gym-admin-panel
+    restart: unless-stopped
+    depends_on:
+      - fitexa
+    ports:
+      - "4200:80"
+
+  mobile-app:
+    build:
+      context: ./apps/mobile-app
+      dockerfile: Dockerfile
+    container_name: gym-mobile-app
+    restart: unless-stopped
+    depends_on:
+      - fitexa
+    ports:
+      - "8100:80"
+
+volumes:
+  fitexa_mysql_data:

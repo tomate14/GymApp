@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Plan } from '../../class/plan.model';
 import { createEmptyUserDraft, PaymentStatus, User, UserDraft, UserType } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
-import { ClassesService } from '../../services/classes.service';
 import { PlansService } from '../../services/plans.service';
-import { RoutinesService } from '../../services/routines.service';
 import { UsersService } from '../../services/users.service';
 
 type UserTableFilters = {
@@ -34,6 +33,8 @@ export class UsersComponent implements OnInit {
   userDraft: UserDraft = createEmptyUserDraft();
   editingUserId: number | null = null;
   deleteCandidate: User | null = null;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: UserTableFilters = {
     name: '',
@@ -52,9 +53,7 @@ export class UsersComponent implements OnInit {
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly classesService: ClassesService,
-    private readonly plansService: PlansService,
-    private readonly routinesService: RoutinesService
+    private readonly plansService: PlansService
   ) {}
 
   ngOnInit(): void {
@@ -119,10 +118,18 @@ export class UsersComponent implements OnInit {
       this.userDraft.registrationDate = today;
     }
 
-    this.usersService.upsert(this.userDraft, this.editingUserId);
-    this.cancelEdit();
-    this.loadData();
-    this.onFilterChange();
+    const request$ = this.usersService.upsert(this.userDraft, this.editingUserId);
+
+    request$.subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadUsersFromApi();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar el usuario en el backend.';
+      }
+    });
   }
 
   editUser(user: User): void {
@@ -151,17 +158,21 @@ export class UsersComponent implements OnInit {
     }
 
     const userId = this.deleteCandidate.id;
-    this.usersService.remove(userId);
-    this.classesService.clearTeacherReferences(userId);
-    this.routinesService.clearUserReferences(userId);
-    this.deleteCandidate = null;
+    this.usersService.remove(userId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingUserId === userId) {
-      this.cancelEdit();
-    }
+        if (this.editingUserId === userId) {
+          this.cancelEdit();
+        }
 
-    this.loadData();
-    this.onFilterChange();
+        this.loadUsersFromApi();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar el usuario en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -223,9 +234,15 @@ export class UsersComponent implements OnInit {
       return;
     }
 
-    this.usersService.renewSubscription(user.id);
-    this.loadData();
-    this.onFilterChange();
+    this.usersService.renewSubscription(user.id).subscribe({
+      next: () => {
+        this.loadUsersFromApi();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo renovar la cuota en el backend.';
+      }
+    });
   }
 
   onUserTypeChange(): void {
@@ -240,8 +257,30 @@ export class UsersComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.users = this.usersService.getAll();
-    this.plans = this.plansService.getAll();
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      plans: this.plansService.findAll(),
+      users: this.usersService.findAll()
+    }).subscribe({
+      next: (result) => {
+        this.plans = result.plans;
+        this.users = result.users;
+        this.usersService.setAll(result.users);
+        this.isLoading = false;
+
+        if (this.userDraft.userType === 'alumno' && this.userDraft.planId === null) {
+          this.userDraft.planId = this.defaultPlanId();
+        }
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener datos iniciales del backend.';
+        this.plans = this.plansService.getAll();
+        this.users = this.usersService.getAll();
+        this.isLoading = false;
+      }
+    });
   }
 
   private resetDraftDefaults(): void {
@@ -251,6 +290,24 @@ export class UsersComponent implements OnInit {
 
   private defaultPlanId(): number | null {
     return this.plansService.getActive()[0]?.id ?? this.plans[0]?.id ?? null;
+  }
+
+  private loadUsersFromApi(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.usersService.findAll().subscribe({
+      next: (users) => {
+        this.users = users;
+        this.usersService.setAll(users);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudo obtener usuarios del backend. Mostrando datos locales.';
+        this.users = this.usersService.getAll();
+        this.isLoading = false;
+      }
+    });
   }
 
   private todayIsoDate(): string {

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Exercise } from '../../class/exercise.model';
 import { SearchableFieldConfig, SearchableSelectValue } from '../../class/searchable-select.model';
 import {
@@ -71,6 +72,8 @@ export class RoutinesComponent implements OnInit {
 
   deleteTemplateCandidate: RoutineTemplate | null = null;
   deleteAssignmentCandidate: RoutineAssignment | null = null;
+  isLoading = false;
+  apiError: string | null = null;
 
   readonly studentFilterFields: SearchableFieldConfig[] = [
     { field: 'firstName', type: 'text' },
@@ -222,10 +225,16 @@ export class RoutinesComponent implements OnInit {
       this.templateDraft.createdAt = this.todayIsoDate();
     }
 
-    this.routinesService.upsertTemplate(this.templateDraft, this.editingTemplateId);
-    this.cancelTemplateEdit();
-    this.loadData();
-    this.onTemplateFilterChange();
+    this.routinesService.upsertTemplate(this.templateDraft, this.editingTemplateId).subscribe({
+      next: () => {
+        this.cancelTemplateEdit();
+        this.loadData();
+        this.onTemplateFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar la rutina en el backend.';
+      }
+    });
   }
 
   editTemplate(template: RoutineTemplate): void {
@@ -286,10 +295,16 @@ export class RoutinesComponent implements OnInit {
     const normalizedPlans = this.assignmentDraft.exercisePlans.map((plan) => this.normalizeAssignmentPlan(plan));
     const payload: RoutineAssignmentDraft = { ...this.assignmentDraft, exercisePlans: normalizedPlans };
 
-    this.routinesService.upsertAssignment(payload, this.editingAssignmentId);
-    this.cancelAssignmentEdit();
-    this.loadData();
-    this.onAssignmentFilterChange();
+    this.routinesService.upsertAssignment(payload, this.editingAssignmentId).subscribe({
+      next: () => {
+        this.cancelAssignmentEdit();
+        this.loadData();
+        this.onAssignmentFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar la asignacion en el backend.';
+      }
+    });
   }
 
   editAssignment(assignment: RoutineAssignment): void {
@@ -321,22 +336,28 @@ export class RoutinesComponent implements OnInit {
     }
 
     const templateId = this.deleteTemplateCandidate.id;
-    this.routinesService.removeTemplate(templateId);
-    this.deleteTemplateCandidate = null;
+    this.routinesService.removeTemplate(templateId).subscribe({
+      next: () => {
+        this.deleteTemplateCandidate = null;
 
-    if (this.editingTemplateId === templateId) {
-      this.cancelTemplateEdit();
-    }
+        if (this.editingTemplateId === templateId) {
+          this.cancelTemplateEdit();
+        }
 
-    if (this.assignmentDraft.routineTemplateId === templateId) {
-      this.assignmentDraft.routineTemplateId = 0;
-      this.assignmentDraft.days = [];
-      this.assignmentDraft.exercisePlans = [];
-    }
+        if (this.assignmentDraft.routineTemplateId === templateId) {
+          this.assignmentDraft.routineTemplateId = 0;
+          this.assignmentDraft.days = [];
+          this.assignmentDraft.exercisePlans = [];
+        }
 
-    this.loadData();
-    this.onTemplateFilterChange();
-    this.onAssignmentFilterChange();
+        this.loadData();
+        this.onTemplateFilterChange();
+        this.onAssignmentFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar la rutina en el backend.';
+      }
+    });
   }
 
   cancelDeleteTemplate(): void {
@@ -353,15 +374,21 @@ export class RoutinesComponent implements OnInit {
     }
 
     const assignmentId = this.deleteAssignmentCandidate.id;
-    this.routinesService.removeAssignment(assignmentId);
-    this.deleteAssignmentCandidate = null;
+    this.routinesService.removeAssignment(assignmentId).subscribe({
+      next: () => {
+        this.deleteAssignmentCandidate = null;
 
-    if (this.editingAssignmentId === assignmentId) {
-      this.cancelAssignmentEdit();
-    }
+        if (this.editingAssignmentId === assignmentId) {
+          this.cancelAssignmentEdit();
+        }
 
-    this.loadData();
-    this.onAssignmentFilterChange();
+        this.loadData();
+        this.onAssignmentFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar la asignacion en el backend.';
+      }
+    });
   }
 
   cancelDeleteAssignment(): void {
@@ -582,22 +609,52 @@ export class RoutinesComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.students = this.usersService.getByType('alumno');
-    this.studentSelectItems = this.students.map((student) => ({
-      id: student.id,
-      firstName: student.firstName,
-      lastName: student.lastName,
-      dni: student.dni,
-      fullName: `${student.firstName} ${student.lastName}`
-    }));
+    this.isLoading = true;
+    this.apiError = null;
 
-    this.exercises = this.exercisesService.getAll();
-    this.routineTemplates = this.routinesService.getTemplates();
-    this.routineAssignments = this.routinesService.getAssignments();
+    forkJoin({
+      students: this.usersService.findAll('alumno'),
+      plans: this.plansService.findAll(),
+      exercises: this.exercisesService.findAll(),
+      routineTemplates: this.routinesService.findTemplates(),
+      routineAssignments: this.routinesService.findAssignments()
+    }).subscribe({
+      next: (result) => {
+        this.students = result.students;
+        this.exercises = result.exercises;
+        this.routineTemplates = result.routineTemplates;
+        this.routineAssignments = result.routineAssignments;
 
-    if (this.assignmentDraft.routineTemplateId > 0) {
-      this.syncAssignmentPlansWithTemplate();
-    }
+        this.studentSelectItems = this.students.map((student) => ({
+          id: student.id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          dni: student.dni,
+          fullName: `${student.firstName} ${student.lastName}`
+        }));
+
+        if (this.assignmentDraft.routineTemplateId > 0) {
+          this.syncAssignmentPlansWithTemplate();
+        }
+
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener rutinas del backend.';
+        this.students = this.usersService.getByType('alumno');
+        this.exercises = this.exercisesService.getAll();
+        this.routineTemplates = this.routinesService.getTemplates();
+        this.routineAssignments = this.routinesService.getAssignments();
+        this.studentSelectItems = this.students.map((student) => ({
+          id: student.id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          dni: student.dni,
+          fullName: `${student.firstName} ${student.lastName}`
+        }));
+        this.isLoading = false;
+      }
+    });
   }
 
   private todayIsoDate(): string {

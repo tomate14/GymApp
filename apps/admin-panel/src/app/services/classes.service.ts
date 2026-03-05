@@ -1,95 +1,74 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { GymClass, GymClassDraft } from '../class/gym-class.model';
-import { nextNumericId } from '../utils/id.util';
+import { API_BASE_URL } from '../utils/api.util';
+
+type GymClassApiDto = {
+  id: number;
+  className: string;
+  activityId: number | null;
+  maxCapacity: number | null;
+  enrolled: number;
+  teacherId: number | null;
+  date: string;
+  time: string;
+};
+
+type GymClassApiRequest = {
+  className: string;
+  activityId: number | null;
+  maxCapacity: number | null;
+  enrolled: number;
+  teacherId: number | null;
+  date: string;
+  time: string;
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClassesService {
-  private classes: GymClass[] = [
-    {
-      id: 1,
-      className: 'WOD Morning',
-      activityId: 2,
-      maxCapacity: 16,
-      enrolled: 12,
-      teacherId: 1,
-      date: '2026-03-02',
-      time: '08:00'
-    },
-    {
-      id: 2,
-      className: 'Sala Musculacion Turno Tarde',
-      activityId: 1,
-      maxCapacity: null,
-      enrolled: 34,
-      teacherId: null,
-      date: '2026-03-02',
-      time: '18:00'
-    },
-    {
-      id: 3,
-      className: 'Pilates suelo intermedio',
-      activityId: 3,
-      maxCapacity: 20,
-      enrolled: 14,
-      teacherId: 3,
-      date: '2026-03-03',
-      time: '09:30'
-    },
-    {
-      id: 4,
-      className: 'Spinning HIIT',
-      activityId: 4,
-      maxCapacity: 18,
-      enrolled: 17,
-      teacherId: 5,
-      date: '2026-03-03',
-      time: '19:00'
-    },
-    {
-      id: 5,
-      className: 'Funcional express',
-      activityId: 5,
-      maxCapacity: 22,
-      enrolled: 19,
-      teacherId: 3,
-      date: '2026-03-04',
-      time: '07:15'
-    },
-    {
-      id: 6,
-      className: 'Yoga movilidad',
-      activityId: 6,
-      maxCapacity: 25,
-      enrolled: 11,
-      teacherId: 5,
-      date: '2026-03-04',
-      time: '20:00'
-    }
-  ];
+  private readonly endpoint = `${API_BASE_URL}/classes`;
+  private classes: GymClass[] = [];
+
+  constructor(private readonly http: HttpClient) {}
+
+  findAll(): Observable<GymClass[]> {
+    return this.http.get<GymClassApiDto[]>(this.endpoint).pipe(
+      map((items) => items.map((item) => this.mapFromApi(item))),
+      tap((items) => this.setAll(items))
+    );
+  }
 
   getAll(): GymClass[] {
     return [...this.classes];
   }
 
-  upsert(draft: GymClassDraft, editingId: number | null): GymClass {
-    const payload: GymClass = {
-      id: editingId ?? nextNumericId(this.classes),
-      ...draft
-    };
-
-    if (editingId === null) {
-      this.classes = [payload, ...this.classes];
-      return payload;
-    }
-
-    this.classes = this.classes.map((item) => (item.id === editingId ? payload : item));
-    return payload;
+  setAll(classes: GymClass[]): void {
+    this.classes = classes.map((item) => ({ ...item }));
   }
 
-  remove(classId: number): void {
-    this.classes = this.classes.filter((item) => item.id !== classId);
+  upsert(draft: GymClassDraft, editingId: number | null): Observable<GymClass> {
+    const payload = this.toApiRequest(draft);
+    const request$ =
+      editingId === null
+        ? this.http.post<GymClassApiDto>(this.endpoint, payload)
+        : this.http.put<GymClassApiDto>(`${this.endpoint}/${editingId}`, payload);
+
+    return request$.pipe(
+      map((item) => this.mapFromApi(item)),
+      tap((saved) => this.upsertInCache(saved))
+    );
+  }
+
+  remove(classId: number): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/${classId}`).pipe(
+      tap(() => {
+        this.classes = this.classes.filter((item) => item.id !== classId);
+      })
+    );
   }
 
   clearTeacherReferences(userId: number): void {
@@ -98,5 +77,40 @@ export class ClassesService {
 
   clearActivityReferences(activityId: number): void {
     this.classes = this.classes.map((item) => (item.activityId === activityId ? { ...item, activityId: null } : item));
+  }
+
+  private toApiRequest(draft: GymClassDraft): GymClassApiRequest {
+    return {
+      className: draft.className,
+      activityId: draft.activityId,
+      maxCapacity: draft.maxCapacity,
+      enrolled: draft.enrolled,
+      teacherId: draft.teacherId,
+      date: draft.date,
+      time: draft.time.length === 5 ? `${draft.time}:00` : draft.time
+    };
+  }
+
+  private upsertInCache(payload: GymClass): void {
+    const exists = this.classes.some((item) => item.id === payload.id);
+    if (!exists) {
+      this.classes = [payload, ...this.classes];
+      return;
+    }
+
+    this.classes = this.classes.map((item) => (item.id === payload.id ? payload : item));
+  }
+
+  private mapFromApi(dto: GymClassApiDto): GymClass {
+    return {
+      id: Number(dto.id),
+      className: dto.className,
+      activityId: dto.activityId === null ? null : Number(dto.activityId),
+      maxCapacity: dto.maxCapacity === null ? null : Number(dto.maxCapacity),
+      enrolled: Number(dto.enrolled),
+      teacherId: dto.teacherId === null ? null : Number(dto.teacherId),
+      date: dto.date,
+      time: dto.time.slice(0, 5)
+    };
   }
 }

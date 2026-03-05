@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Activity } from '../../class/activity.model';
 import { createEmptyExerciseDraft, Exercise, ExerciseDraft } from '../../class/exercise.model';
 import { Machine } from '../../class/machine.model';
@@ -34,6 +35,8 @@ export class ExercisesComponent implements OnInit {
   editingExerciseId: number | null = null;
   deleteCandidate: Exercise | null = null;
   showForm = false;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: ExerciseFilters = {
     name: '',
@@ -89,11 +92,16 @@ export class ExercisesComponent implements OnInit {
       return;
     }
 
-    const saved = this.exercisesService.upsert(this.exerciseDraft, this.editingExerciseId);
-    this.routinesService.renameExerciseReference(saved.id, saved.name);
-    this.cancelEdit();
-    this.loadData();
-    this.onFilterChange();
+    this.exercisesService.upsert(this.exerciseDraft, this.editingExerciseId).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar el ejercicio en el backend.';
+      }
+    });
   }
 
   editExercise(exercise: Exercise): void {
@@ -117,16 +125,21 @@ export class ExercisesComponent implements OnInit {
     }
 
     const exerciseId = this.deleteCandidate.id;
-    this.exercisesService.remove(exerciseId);
-    this.routinesService.removeExerciseFromRoutines(exerciseId);
-    this.deleteCandidate = null;
+    this.exercisesService.remove(exerciseId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingExerciseId === exerciseId) {
-      this.cancelEdit();
-    }
+        if (this.editingExerciseId === exerciseId) {
+          this.cancelEdit();
+        }
 
-    this.loadData();
-    this.onFilterChange();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar el ejercicio en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -173,9 +186,30 @@ export class ExercisesComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.exercises = this.exercisesService.getAll();
-    this.activities = this.activitiesService.getAll();
-    this.machines = this.machinesService.getAll();
-    this.routineTemplates = this.routinesService.getTemplates();
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      exercises: this.exercisesService.findAll(),
+      activities: this.activitiesService.findAll(),
+      machines: this.machinesService.findAll(),
+      routineTemplates: this.routinesService.findTemplates()
+    }).subscribe({
+      next: (result) => {
+        this.exercises = result.exercises;
+        this.activities = result.activities;
+        this.machines = result.machines;
+        this.routineTemplates = result.routineTemplates;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener ejercicios del backend.';
+        this.exercises = this.exercisesService.getAll();
+        this.activities = this.activitiesService.getAll();
+        this.machines = this.machinesService.getAll();
+        this.routineTemplates = this.routinesService.getTemplates();
+        this.isLoading = false;
+      }
+    });
   }
 }

@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: fitexa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fitexa
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - fitexa_mysql_data:/var/lib/mysql
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+
+volumes:
+  fitexa_mysql_data:

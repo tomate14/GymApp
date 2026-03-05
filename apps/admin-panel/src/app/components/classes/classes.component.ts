@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Activity } from '../../class/activity.model';
 import { createEmptyClassDraft, GymClass, GymClassDraft } from '../../class/gym-class.model';
 import { User } from '../../class/user.model';
@@ -35,6 +36,8 @@ export class ClassesComponent implements OnInit {
   classNoLimit = false;
   deleteCandidate: GymClass | null = null;
   showForm = false;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: ClassFilters = {
     className: '',
@@ -114,10 +117,16 @@ export class ClassesComponent implements OnInit {
       enrolled: safeEnrolled
     };
 
-    this.classesService.upsert(payload, this.editingClassId);
-    this.cancelEdit();
-    this.loadData();
-    this.onFilterChange();
+    this.classesService.upsert(payload, this.editingClassId).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar la clase en el backend.';
+      }
+    });
   }
 
   editClass(item: GymClass): void {
@@ -143,15 +152,21 @@ export class ClassesComponent implements OnInit {
     }
 
     const classId = this.deleteCandidate.id;
-    this.classesService.remove(classId);
-    this.deleteCandidate = null;
+    this.classesService.remove(classId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingClassId === classId) {
-      this.cancelEdit();
-    }
+        if (this.editingClassId === classId) {
+          this.cancelEdit();
+        }
 
-    this.loadData();
-    this.onFilterChange();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar la clase en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -202,8 +217,27 @@ export class ClassesComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.classes = this.classesService.getAll();
-    this.activities = this.activitiesService.getAll();
-    this.teachers = this.usersService.getByType('profesor');
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      classes: this.classesService.findAll(),
+      activities: this.activitiesService.findAll(),
+      teachers: this.usersService.findAll('profesor')
+    }).subscribe({
+      next: (result) => {
+        this.classes = result.classes;
+        this.activities = result.activities;
+        this.teachers = result.teachers;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener clases del backend.';
+        this.classes = this.classesService.getAll();
+        this.activities = this.activitiesService.getAll();
+        this.teachers = this.usersService.getByType('profesor');
+        this.isLoading = false;
+      }
+    });
   }
 }

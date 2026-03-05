@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Activity, ActivityDraft, createEmptyActivityDraft } from '../../class/activity.model';
 import { GymClass } from '../../class/gym-class.model';
 import { Exercise } from '../../class/exercise.model';
@@ -30,6 +31,8 @@ export class ActivitiesComponent implements OnInit {
   editingActivityId: number | null = null;
   deleteCandidate: Activity | null = null;
   showForm = false;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: ActivityFilters = {
     name: '',
@@ -85,10 +88,16 @@ export class ActivitiesComponent implements OnInit {
       return;
     }
 
-    this.activitiesService.upsert(this.activityDraft, this.editingActivityId);
-    this.cancelEdit();
-    this.loadData();
-    this.onFilterChange();
+    this.activitiesService.upsert(this.activityDraft, this.editingActivityId).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar la actividad en el backend.';
+      }
+    });
   }
 
   editActivity(activity: Activity): void {
@@ -112,17 +121,21 @@ export class ActivitiesComponent implements OnInit {
     }
 
     const activityId = this.deleteCandidate.id;
-    this.activitiesService.remove(activityId);
-    this.classesService.clearActivityReferences(activityId);
-    this.exercisesService.clearActivityReferences(activityId);
-    this.deleteCandidate = null;
+    this.activitiesService.remove(activityId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingActivityId === activityId) {
-      this.cancelEdit();
-    }
+        if (this.editingActivityId === activityId) {
+          this.cancelEdit();
+        }
 
-    this.loadData();
-    this.onFilterChange();
+        this.loadData();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar la actividad en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -159,8 +172,27 @@ export class ActivitiesComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.activities = this.activitiesService.getAll();
-    this.classRefs = this.classesService.getAll();
-    this.exerciseRefs = this.exercisesService.getAll();
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      activities: this.activitiesService.findAll(),
+      classRefs: this.classesService.findAll(),
+      exerciseRefs: this.exercisesService.findAll()
+    }).subscribe({
+      next: (result) => {
+        this.activities = result.activities;
+        this.classRefs = result.classRefs;
+        this.exerciseRefs = result.exerciseRefs;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener actividades del backend.';
+        this.activities = this.activitiesService.getAll();
+        this.classRefs = this.classesService.getAll();
+        this.exerciseRefs = this.exercisesService.getAll();
+        this.isLoading = false;
+      }
+    });
   }
 }

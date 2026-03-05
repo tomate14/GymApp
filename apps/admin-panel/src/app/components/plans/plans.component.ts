@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { createEmptyPlanDraft, Plan, PlanDraft } from '../../class/plan.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { PlansService } from '../../services/plans.service';
@@ -24,6 +25,8 @@ export class PlansComponent implements OnInit {
   editingPlanId: number | null = null;
   deleteCandidate: Plan | null = null;
   showForm = false;
+  isLoading = false;
+  apiError: string | null = null;
 
   filters: PlanFilters = {
     name: '',
@@ -78,10 +81,16 @@ export class PlansComponent implements OnInit {
       return;
     }
 
-    this.plansService.upsert(this.planDraft, this.editingPlanId);
-    this.cancelEdit();
-    this.loadPlans();
-    this.onFilterChange();
+    this.plansService.upsert(this.planDraft, this.editingPlanId).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadPlans();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo guardar el plan en el backend.';
+      }
+    });
   }
 
   editPlan(plan: Plan): void {
@@ -105,16 +114,21 @@ export class PlansComponent implements OnInit {
     }
 
     const planId = this.deleteCandidate.id;
-    this.plansService.remove(planId);
-    this.usersService.clearPlanReferences(planId);
-    this.deleteCandidate = null;
+    this.plansService.remove(planId).subscribe({
+      next: () => {
+        this.deleteCandidate = null;
 
-    if (this.editingPlanId === planId) {
-      this.cancelEdit();
-    }
+        if (this.editingPlanId === planId) {
+          this.cancelEdit();
+        }
 
-    this.loadPlans();
-    this.onFilterChange();
+        this.loadPlans();
+        this.onFilterChange();
+      },
+      error: () => {
+        this.apiError = 'No se pudo eliminar el plan en el backend.';
+      }
+    });
   }
 
   cancelDelete(): void {
@@ -154,6 +168,23 @@ export class PlansComponent implements OnInit {
   }
 
   private loadPlans(): void {
-    this.plans = this.plansService.getAll();
+    this.isLoading = true;
+    this.apiError = null;
+
+    forkJoin({
+      plans: this.plansService.findAll(),
+      users: this.usersService.findAll()
+    }).subscribe({
+      next: (result) => {
+        this.plans = result.plans;
+        this.usersService.setAll(result.users);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener planes del backend.';
+        this.plans = this.plansService.getAll();
+        this.isLoading = false;
+      }
+    });
   }
 }

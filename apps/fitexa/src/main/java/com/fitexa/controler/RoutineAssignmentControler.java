@@ -1,0 +1,50 @@
+package com.fitexa.controler;
+
+import com.fitexa.dtos.RoutineAssignmentRequestDto;
+import com.fitexa.dtos.RoutineAssignmentResponseDto;
+import com.fitexa.dtos.RoutineAssignmentSaveResultDto;
+import com.fitexa.services.RoutineAssignmentService;
+import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/routine-assignments")
+@RequiredArgsConstructor
+public class RoutineAssignmentControler {
+
+    private final RoutineAssignmentService routineAssignmentService;
+
+    @GetMapping
+    public List<RoutineAssignmentResponseDto> findAll() {
+        return routineAssignmentService.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public RoutineAssignmentResponseDto findById(@PathVariable Long id) {
+        return routineAssignmentService.findById(id);
+    }
+
+    @PostMapping
+    public RoutineAssignmentSaveResultDto create(@Valid @RequestBody RoutineAssignmentRequestDto request) {
+        return routineAssignmentService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    public RoutineAssignmentSaveResultDto update(@PathVariable Long id, @Valid @RequestBody RoutineAssignmentRequestDto request) {
+        return routineAssignmentService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        routineAssignmentService.delete(id);
+    }
+}
