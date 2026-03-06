@@ -20,7 +20,6 @@ type GymClassApiRequest = {
   className: string;
   activityId: number | null;
   maxCapacity: number | null;
-  enrolled: number;
   teacherId: number | null;
   date: string;
   time: string;
@@ -84,7 +83,6 @@ export class ClassesService {
       className: draft.className,
       activityId: draft.activityId,
       maxCapacity: draft.maxCapacity,
-      enrolled: draft.enrolled,
       teacherId: draft.teacherId,
       date: draft.date,
       time: draft.time.length === 5 ? `${draft.time}:00` : draft.time

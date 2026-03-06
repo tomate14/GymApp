@@ -6,6 +6,7 @@ import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
 import com.fitexa.entities.WeekDay;
 import com.fitexa.services.RoutinePlanValidationStrategy;
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -26,9 +27,14 @@ public class RoutinePlanValidationStrategyImpl implements RoutinePlanValidationS
             return Optional.of("Warning: el alumno no tiene plan asignado.");
         }
 
+        LocalDate today = LocalDate.now();
         Set<WeekDay> uniqueDays = new LinkedHashSet<>();
-        overlaps.forEach(item -> uniqueDays.addAll(item.getDays()));
-        uniqueDays.addAll(candidate.getDays());
+        overlaps.stream()
+            .filter(item -> isNotExpired(item, today))
+            .forEach(item -> uniqueDays.addAll(item.getDays()));
+        if (isNotExpired(candidate, today)) {
+            uniqueDays.addAll(candidate.getDays());
+        }
 
         if (uniqueDays.size() > plan.getMaxDaysPerWeek()) {
             return Optional.of(
@@ -38,5 +44,9 @@ public class RoutinePlanValidationStrategyImpl implements RoutinePlanValidationS
         }
 
         return Optional.empty();
+    }
+
+    private boolean isNotExpired(RoutineAssignmentEntity assignment, LocalDate referenceDate) {
+        return !assignment.getEndDate().isBefore(referenceDate);
     }
 }

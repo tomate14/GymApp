@@ -18,9 +18,9 @@
   white-space: nowrap;
 }
 
-.details-cell {
-  min-width: 360px;
-  white-space: normal;
+.history-table th,
+.history-table td {
+  white-space: nowrap;
 }
 
 .sub-card {

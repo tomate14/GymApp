@@ -94,7 +94,10 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
         entity.setDays(request.getDays());
         entity.setStartDate(request.getStartDate());
         entity.setEndDate(request.getEndDate());
-        entity.setExercisePlans(mapExercisePlans(entity, routineTemplate, request.getExercisePlans()));
+        List<RoutineAssignmentExerciseEntity> mappedExercisePlans =
+            mapExercisePlans(entity, routineTemplate, request.getExercisePlans());
+        entity.getExercisePlans().clear();
+        entity.getExercisePlans().addAll(mappedExercisePlans);
 
         RoutineAssignmentEntity saved = routineAssignmentRepository.save(entity);
         List<RoutineAssignmentEntity> overlaps = routineAssignmentRepository.findOverlappingAssignments(

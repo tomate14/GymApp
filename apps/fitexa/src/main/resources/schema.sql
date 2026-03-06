@@ -58,6 +58,16 @@ CREATE TABLE IF NOT EXISTS gym_classes (
     CONSTRAINT fk_classes_teacher FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS gym_class_subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    gym_class_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    subscribed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_class_subscriptions_class FOREIGN KEY (gym_class_id) REFERENCES gym_classes(id) ON DELETE CASCADE,
+    CONSTRAINT fk_class_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_gym_class_subscriptions_class_user UNIQUE (gym_class_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS routine_templates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(180) NOT NULL,

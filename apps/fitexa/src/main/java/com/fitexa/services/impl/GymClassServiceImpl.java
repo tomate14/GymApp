@@ -10,6 +10,7 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.GymClassRepository;
+import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.GymClassService;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GymClassServiceImpl implements GymClassService {
 
     private final GymClassRepository gymClassRepository;
+    private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
 
@@ -44,7 +46,7 @@ public class GymClassServiceImpl implements GymClassService {
             .className(request.getClassName())
             .activity(findActivity(request.getActivityId()))
             .maxCapacity(request.getMaxCapacity())
-            .enrolled(request.getEnrolled())
+            .enrolled(0)
             .teacher(findTeacher(request.getTeacherId()))
             .date(request.getDate())
             .time(request.getTime())
@@ -59,10 +61,10 @@ public class GymClassServiceImpl implements GymClassService {
         entity.setClassName(request.getClassName());
         entity.setActivity(findActivity(request.getActivityId()));
         entity.setMaxCapacity(request.getMaxCapacity());
-        entity.setEnrolled(request.getEnrolled());
         entity.setTeacher(findTeacher(request.getTeacherId()));
         entity.setDate(request.getDate());
         entity.setTime(request.getTime());
+        entity.setEnrolled(resolveEnrolledCount(entity));
         return toDto(gymClassRepository.save(entity));
     }
 
@@ -98,17 +100,32 @@ public class GymClassServiceImpl implements GymClassService {
     }
 
     private GymClassResponseDto toDto(GymClassEntity entity) {
+        int enrolled = resolveEnrolledCount(entity);
+
         return GymClassResponseDto.builder()
             .id(entity.getId())
             .className(entity.getClassName())
             .activityId(entity.getActivity() == null ? null : entity.getActivity().getId())
             .activityName(entity.getActivity() == null ? null : entity.getActivity().getName())
             .maxCapacity(entity.getMaxCapacity())
-            .enrolled(entity.getEnrolled())
+            .enrolled(enrolled)
             .teacherId(entity.getTeacher() == null ? null : entity.getTeacher().getId())
             .teacherName(entity.getTeacher() == null ? null : entity.getTeacher().getFirstName() + " " + entity.getTeacher().getLastName())
             .date(entity.getDate())
             .time(entity.getTime())
             .build();
+    }
+
+    private int resolveEnrolledCount(GymClassEntity entity) {
+        if (entity.getId() == null) {
+            return 0;
+        }
+
+        long subscribedCount = gymClassSubscriptionRepository.countByGymClassId(entity.getId());
+        if (subscribedCount == 0L) {
+            return entity.getEnrolled() == null ? 0 : entity.getEnrolled();
+        }
+
+        return Math.toIntExact(subscribedCount);
     }
 }

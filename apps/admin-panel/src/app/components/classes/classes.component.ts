@@ -108,13 +108,10 @@ export class ClassesComponent implements OnInit {
     }
 
     const maxCapacity = this.classNoLimit ? null : ensureMinNumber(this.classDraft.maxCapacity, 1);
-    const enrolled = ensureMinNumber(this.classDraft.enrolled, 0);
-    const safeEnrolled = maxCapacity !== null ? Math.min(enrolled, maxCapacity) : enrolled;
 
     const payload: GymClassDraft = {
       ...this.classDraft,
-      maxCapacity,
-      enrolled: safeEnrolled
+      maxCapacity
     };
 
     this.classesService.upsert(payload, this.editingClassId).subscribe({

@@ -58,6 +58,7 @@ export class RoutinesComponent implements OnInit {
   studentSelectItems: Record<string, unknown>[] = [];
   exercises: Exercise[] = [];
   routineTemplates: RoutineTemplate[] = [];
+  allRoutineAssignments: RoutineAssignment[] = [];
   routineAssignments: RoutineAssignment[] = [];
 
   templateDraft: RoutineTemplateDraft = createEmptyRoutineTemplateDraft();
@@ -69,6 +70,7 @@ export class RoutinesComponent implements OnInit {
 
   showTemplateForm = false;
   showAssignmentForm = false;
+  historyStudentId: number | null = null;
 
   deleteTemplateCandidate: RoutineTemplate | null = null;
   deleteAssignmentCandidate: RoutineAssignment | null = null;
@@ -163,6 +165,16 @@ export class RoutinesComponent implements OnInit {
 
   get assignmentPlanWarningMessage(): string | null {
     return this.calculateAssignmentPlanWarning();
+  }
+
+  get selectedStudentHistory(): RoutineAssignment[] {
+    if (this.historyStudentId === null) {
+      return [];
+    }
+
+    return this.allRoutineAssignments
+      .filter((assignment) => assignment.userId === this.historyStudentId)
+      .sort((current, next) => next.startDate.localeCompare(current.startDate));
   }
 
   toggleTemplateForm(): void {
@@ -261,19 +273,31 @@ export class RoutinesComponent implements OnInit {
   onAssignmentStudentChange(value: SearchableSelectValue): void {
     if (typeof value === 'number' && value > 0) {
       this.assignmentDraft.userId = value;
-      return;
-    }
-
-    if (typeof value === 'string' && /^\d+$/.test(value)) {
+    } else if (typeof value === 'string' && /^\d+$/.test(value)) {
       this.assignmentDraft.userId = Number(value);
-      return;
+    } else {
+      this.assignmentDraft.userId = 0;
     }
 
-    this.assignmentDraft.userId = 0;
+    if (this.historyStudentId !== null) {
+      this.historyStudentId = this.assignmentDraft.userId > 0 ? this.assignmentDraft.userId : null;
+    }
   }
 
   assignmentStudentValue(): SearchableSelectValue {
     return this.assignmentDraft.userId > 0 ? this.assignmentDraft.userId : null;
+  }
+
+  openSelectedStudentHistory(): void {
+    if (this.assignmentDraft.userId <= 0) {
+      return;
+    }
+
+    this.historyStudentId = this.assignmentDraft.userId;
+  }
+
+  closeSelectedStudentHistory(): void {
+    this.historyStudentId = null;
   }
 
   saveAssignment(): void {
@@ -324,6 +348,7 @@ export class RoutinesComponent implements OnInit {
   cancelAssignmentEdit(): void {
     this.editingAssignmentId = null;
     this.assignmentDraft = createEmptyRoutineAssignmentDraft();
+    this.historyStudentId = null;
   }
 
   askDeleteTemplate(template: RoutineTemplate): void {
@@ -418,7 +443,23 @@ export class RoutinesComponent implements OnInit {
     return `${item.sets}x${item.minReps ?? 0}-${item.maxReps ?? 0} - ${item.minWeight ?? 0}-${item.maxWeight ?? 0} kg`;
   }
 
-  studentName(userId: number): string {
+  downloadAssignmentPdf(assignment: RoutineAssignment): void {
+    this.routinesService.downloadAssignmentPdf(assignment.id).subscribe({
+      next: (pdfBlob) => {
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = `rutina-asignacion-${assignment.id}.pdf`;
+        anchor.click();
+        URL.revokeObjectURL(objectUrl);
+      },
+      error: () => {
+        this.apiError = 'No se pudo generar el PDF de la rutina.';
+      }
+    });
+  }
+
+  studentName(userId: number | null): string {
     return this.usersService.fullName(userId);
   }
 
@@ -498,12 +539,17 @@ export class RoutinesComponent implements OnInit {
       return 'Warning: el alumno tiene un plan inexistente.';
     }
 
-    const activeAssignments = this.routineAssignments.filter((assignment) => {
+    const today = this.todayIsoDate();
+    const activeAssignments = this.allRoutineAssignments.filter((assignment) => {
       if (assignment.userId !== student.id) {
         return false;
       }
 
       if (this.editingAssignmentId !== null && assignment.id === this.editingAssignmentId) {
+        return false;
+      }
+
+      if (assignment.endDate < today) {
         return false;
       }
 
@@ -523,7 +569,9 @@ export class RoutinesComponent implements OnInit {
     activeAssignments.forEach((assignment) => {
       assignment.days.forEach((day) => uniqueDays.add(day));
     });
-    this.assignmentDraft.days.forEach((day) => uniqueDays.add(day));
+    if (this.assignmentDraft.endDate === '' || this.assignmentDraft.endDate >= today) {
+      this.assignmentDraft.days.forEach((day) => uniqueDays.add(day));
+    }
 
     if (uniqueDays.size > plan.maxDaysPerWeek) {
       return `Warning: el alumno tiene el plan ${plan.name} con maximo de ${plan.maxDaysPerWeek} dias semanales.`;
@@ -623,7 +671,8 @@ export class RoutinesComponent implements OnInit {
         this.students = result.students;
         this.exercises = result.exercises;
         this.routineTemplates = result.routineTemplates;
-        this.routineAssignments = result.routineAssignments;
+        this.allRoutineAssignments = result.routineAssignments;
+        this.routineAssignments = this.routinesService.filterCurrentAssignments(result.routineAssignments);
 
         this.studentSelectItems = this.students.map((student) => ({
           id: student.id,
@@ -637,6 +686,10 @@ export class RoutinesComponent implements OnInit {
           this.syncAssignmentPlansWithTemplate();
         }
 
+        if (this.historyStudentId !== null && !this.students.some((student) => student.id === this.historyStudentId)) {
+          this.historyStudentId = null;
+        }
+
         this.isLoading = false;
       },
       error: () => {
@@ -644,7 +697,8 @@ export class RoutinesComponent implements OnInit {
         this.students = this.usersService.getByType('alumno');
         this.exercises = this.exercisesService.getAll();
         this.routineTemplates = this.routinesService.getTemplates();
-        this.routineAssignments = this.routinesService.getAssignments();
+        this.allRoutineAssignments = this.routinesService.getAssignments();
+        this.routineAssignments = this.routinesService.filterCurrentAssignments(this.allRoutineAssignments);
         this.studentSelectItems = this.students.map((student) => ({
           id: student.id,
           firstName: student.firstName,
@@ -652,6 +706,9 @@ export class RoutinesComponent implements OnInit {
           dni: student.dni,
           fullName: `${student.firstName} ${student.lastName}`
         }));
+        if (this.historyStudentId !== null && !this.students.some((student) => student.id === this.historyStudentId)) {
+          this.historyStudentId = null;
+        }
         this.isLoading = false;
       }
     });

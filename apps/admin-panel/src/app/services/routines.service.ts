@@ -108,6 +108,10 @@ export class RoutinesService {
     );
   }
 
+  filterCurrentAssignments(assignments: RoutineAssignment[], referenceDate: string = this.todayIsoDate()): RoutineAssignment[] {
+    return assignments.filter((assignment) => this.isCurrentAssignment(assignment, referenceDate));
+  }
+
   getTemplates(): RoutineTemplate[] {
     return this.routineTemplates.map((template) => this.cloneTemplate(template));
   }
@@ -196,6 +200,10 @@ export class RoutinesService {
         this.routineAssignments = this.routineAssignments.filter((assignment) => assignment.id !== assignmentId);
       })
     );
+  }
+
+  downloadAssignmentPdf(assignmentId: number): Observable<Blob> {
+    return this.http.get(`${this.assignmentEndpoint}/${assignmentId}/pdf`, { responseType: 'blob' });
   }
 
   clearUserReferences(userId: number): void {
@@ -304,5 +312,13 @@ export class RoutinesService {
       days: [...assignment.days],
       exercisePlans: assignment.exercisePlans.map((item) => ({ ...item }))
     };
+  }
+
+  private isCurrentAssignment(assignment: RoutineAssignment, referenceDate: string): boolean {
+    return assignment.startDate <= referenceDate && assignment.endDate >= referenceDate;
+  }
+
+  private todayIsoDate(): string {
+    return new Date().toISOString().slice(0, 10);
   }
 }

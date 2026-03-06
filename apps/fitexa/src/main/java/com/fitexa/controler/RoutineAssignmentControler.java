@@ -3,10 +3,14 @@ package com.fitexa.controler;
 import com.fitexa.dtos.RoutineAssignmentRequestDto;
 import com.fitexa.dtos.RoutineAssignmentResponseDto;
 import com.fitexa.dtos.RoutineAssignmentSaveResultDto;
+import com.fitexa.services.RoutineAssignmentPdfService;
 import com.fitexa.services.RoutineAssignmentService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoutineAssignmentControler {
 
     private final RoutineAssignmentService routineAssignmentService;
+    private final RoutineAssignmentPdfService routineAssignmentPdfService;
 
     @GetMapping
     public List<RoutineAssignmentResponseDto> findAll() {
@@ -46,5 +51,14 @@ public class RoutineAssignmentControler {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         routineAssignmentService.delete(id);
+    }
+
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        byte[] pdfBytes = routineAssignmentPdfService.generatePdf(id);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"rutina-asignacion-" + id + ".pdf\"")
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(pdfBytes);
     }
 }

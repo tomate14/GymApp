@@ -14,9 +14,6 @@ public class GymClassRequestDto {
     private Long activityId;
     private Integer maxCapacity;
 
-    @NotNull
-    private Integer enrolled;
-
     private Long teacherId;
 
     @NotNull
