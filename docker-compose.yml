@@ -3,6 +3,7 @@ services:
     image: mysql:8.4
     container_name: fitexa-mysql
     restart: unless-stopped
+    command: ["mysqld", "--init-file=/docker-entrypoint-initdb.d/00-reset-and-seed.sql"]
     environment:
       MYSQL_DATABASE: fitexa
       MYSQL_ROOT_PASSWORD: root
@@ -10,8 +11,10 @@ services:
       - "3306:3306"
     volumes:
       - fitexa_mysql_data:/var/lib/mysql
-      - ./apps/fitexa/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./apps/fitexa/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+      - ./apps/fitexa/docker/mysql/reset-and-seed.sql:/docker-entrypoint-initdb.d/00-reset-and-seed.sql:ro
+      - ./apps/fitexa/docker/mysql/01-drop-tables.sql:/docker-entrypoint-initdb.d/01-drop-tables.sql:ro
+      - ./apps/fitexa/docker/mysql/02-create-tables.sql:/docker-entrypoint-initdb.d/02-create-tables.sql:ro
+      - ./apps/fitexa/docker/mysql/03-insert-mock-data.sql:/docker-entrypoint-initdb.d/03-insert-mock-data.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
       interval: 10s

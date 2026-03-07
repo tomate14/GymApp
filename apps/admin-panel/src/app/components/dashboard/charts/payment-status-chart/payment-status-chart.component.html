@@ -1,0 +1,5 @@
+<section class="admin-card h-100">
+  <h2 class="section-title mb-2">{{ chart?.title || 'Estado de cuotas' }}</h2>
+  <p class="empty-state mb-0" *ngIf="!hasData">Sin datos para el periodo seleccionado.</p>
+  <div echarts [options]="options" class="chart-host" *ngIf="hasData"></div>
+</section>

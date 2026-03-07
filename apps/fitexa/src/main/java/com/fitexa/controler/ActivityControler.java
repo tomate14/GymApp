@@ -2,6 +2,7 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.ActivityRequestDto;
 import com.fitexa.dtos.ActivityResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.ActivityService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,6 +27,16 @@ public class ActivityControler {
     @GetMapping
     public List<ActivityResponseDto> findAll() {
         return activityService.findAll();
+    }
+
+    @GetMapping("/page")
+    public DashboardPageResponseDto<ActivityResponseDto> findPage(
+        @RequestParam(name = "name", required = false) String name,
+        @RequestParam(name = "description", required = false) String description,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "8") int size
+    ) {
+        return activityService.findPage(name, description, page, size);
     }
 
     @GetMapping("/{id}")

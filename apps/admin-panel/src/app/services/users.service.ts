@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import { User, UserDraft, UserType } from '../class/user.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -35,6 +36,25 @@ type UserApiRequest = {
   paymentStatus: User['paymentStatus'];
 };
 
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type UserPageFilters = {
+  name?: string;
+  dni?: string;
+  userType?: UserType | 'all';
+  paymentStatus?: User['paymentStatus'] | 'all';
+  registrationFrom?: string;
+  registrationTo?: string;
+  renewalFrom?: string;
+  renewalTo?: string;
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -55,6 +75,41 @@ export class UsersService {
         }
         this.mergeByType(items, type);
       })
+    );
+  }
+
+  findPage(filters: UserPageFilters, page: number, size: number): Observable<PageResponse<User>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.userType && filters.userType !== 'all') {
+      params = params.set('type', filters.userType);
+    }
+    if (filters.name && filters.name.trim() !== '') {
+      params = params.set('name', filters.name.trim());
+    }
+    if (filters.dni && filters.dni.trim() !== '') {
+      params = params.set('dni', filters.dni.trim());
+    }
+    if (filters.paymentStatus && filters.paymentStatus !== 'all') {
+      params = params.set('paymentStatus', filters.paymentStatus);
+    }
+    if (filters.registrationFrom && filters.registrationFrom !== '') {
+      params = params.set('registrationFrom', filters.registrationFrom);
+    }
+    if (filters.registrationTo && filters.registrationTo !== '') {
+      params = params.set('registrationTo', filters.registrationTo);
+    }
+    if (filters.renewalFrom && filters.renewalFrom !== '') {
+      params = params.set('renewalFrom', filters.renewalFrom);
+    }
+    if (filters.renewalTo && filters.renewalTo !== '') {
+      params = params.set('renewalTo', filters.renewalTo);
+    }
+
+    return this.http.get<PageApiDto<UserApiDto>>(`${this.endpoint}/page`, { params }).pipe(
+      map((response) => this.mapPageFromApi(response))
     );
   }
 
@@ -169,6 +224,16 @@ export class UsersService {
       registrationDate: dto.registrationDate,
       renewalDate: dto.renewalDate,
       paymentStatus: dto.paymentStatus
+    };
+  }
+
+  private mapPageFromApi(dto: PageApiDto<UserApiDto>): PageResponse<User> {
+    return {
+      content: dto.content.map((item) => this.mapFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 }

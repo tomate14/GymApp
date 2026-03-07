@@ -136,7 +136,7 @@
         </div>
       </div>
 
-      <div class="table-responsive" *ngIf="filteredClasses.length > 0; else noClasses">
+      <div class="table-responsive" *ngIf="paginatedClasses.length > 0; else noClasses">
         <table class="table table-dark table-striped table-hover align-middle entity-table">
           <thead>
             <tr>
@@ -172,8 +172,8 @@
         <p class="empty-state mb-0">No hay clases para los filtros aplicados.</p>
       </ng-template>
 
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredClasses.length > 0">
-        <small class="text-secondary">Mostrando {{ paginatedClasses.length }} de {{ filteredClasses.length }} clases</small>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="classesPage.totalElements > 0">
+        <small class="text-secondary">Mostrando {{ paginatedClasses.length }} de {{ classesPage.totalElements }} clases</small>
         <div class="d-flex flex-wrap align-items-center gap-1">
           <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
             Anterior
@@ -211,3 +211,5 @@
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
 ></app-confirm-popup>
+
+

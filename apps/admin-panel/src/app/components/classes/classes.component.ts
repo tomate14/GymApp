@@ -2,12 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Activity } from '../../class/activity.model';
 import { createEmptyClassDraft, GymClass, GymClassDraft } from '../../class/gym-class.model';
 import { User } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { ActivitiesService } from '../../services/activities.service';
-import { ClassesService } from '../../services/classes.service';
+import { ClassesService, GymClassPageFilters } from '../../services/classes.service';
 import { UsersService } from '../../services/users.service';
 import { ensureMinNumber } from '../../utils/id.util';
 
@@ -27,7 +28,7 @@ type ClassFilters = {
   styleUrl: './classes.component.css'
 })
 export class ClassesComponent implements OnInit {
-  classes: GymClass[] = [];
+  classesPage: PageResponse<GymClass> = createEmptyPageResponse<GymClass>();
   activities: Activity[] = [];
   teachers: User[] = [];
 
@@ -62,27 +63,15 @@ export class ClassesComponent implements OnInit {
   }
 
   get filteredClasses(): GymClass[] {
-    return this.classes.filter((item) => {
-      const matchesName =
-        this.filters.className.trim() === '' ||
-        item.className.toLowerCase().includes(this.filters.className.trim().toLowerCase());
-      const matchesActivity = this.filters.activityId === 0 || item.activityId === this.filters.activityId;
-      const matchesTeacher = this.filters.teacherId === 0 || item.teacherId === this.filters.teacherId;
-      const matchesFrom = this.filters.dateFrom === '' || item.date >= this.filters.dateFrom;
-      const matchesTo = this.filters.dateTo === '' || item.date <= this.filters.dateTo;
-
-      return matchesName && matchesActivity && matchesTeacher && matchesFrom && matchesTo;
-    });
+    return this.classesPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredClasses.length / this.pageSize));
+    return Math.max(1, this.classesPage.totalPages || 1);
   }
 
   get paginatedClasses(): GymClass[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredClasses.slice(start, start + this.pageSize);
+    return this.classesPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -118,7 +107,6 @@ export class ClassesComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar la clase en el backend.';
@@ -158,7 +146,6 @@ export class ClassesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar la clase en el backend.';
@@ -188,6 +175,7 @@ export class ClassesComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadClassesPage();
   }
 
   clearFilters(): void {
@@ -199,6 +187,7 @@ export class ClassesComponent implements OnInit {
       dateTo: ''
     };
     this.currentPage = 1;
+    this.loadClassesPage();
   }
 
   goToPage(page: number): void {
@@ -207,10 +196,12 @@ export class ClassesComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadClassesPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadClassesPage();
   }
 
   private loadData(): void {
@@ -218,23 +209,50 @@ export class ClassesComponent implements OnInit {
     this.apiError = null;
 
     forkJoin({
-      classes: this.classesService.findAll(),
+      classesPage: this.classesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize),
       activities: this.activitiesService.findAll(),
       teachers: this.usersService.findAll('profesor')
     }).subscribe({
       next: (result) => {
-        this.classes = result.classes;
+        this.classesPage = result.classesPage;
         this.activities = result.activities;
         this.teachers = result.teachers;
         this.isLoading = false;
       },
       error: () => {
         this.apiError = 'No se pudieron obtener clases del backend.';
-        this.classes = this.classesService.getAll();
+        this.classesPage = createEmptyPageResponse<GymClass>();
         this.activities = this.activitiesService.getAll();
         this.teachers = this.usersService.getByType('profesor');
         this.isLoading = false;
       }
     });
+  }
+
+  private loadClassesPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.classesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.classesPage = pageResult;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener clases del backend.';
+        this.classesPage = createEmptyPageResponse<GymClass>();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private toPageFilters(): GymClassPageFilters {
+    return {
+      className: this.filters.className,
+      activityId: this.filters.activityId,
+      teacherId: this.filters.teacherId,
+      dateFrom: this.filters.dateFrom,
+      dateTo: this.filters.dateTo
+    };
   }
 }

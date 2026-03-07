@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Plan } from '../../class/plan.model';
 import { createEmptyUserDraft, PaymentStatus, User, UserDraft, UserType } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { PlansService } from '../../services/plans.service';
-import { UsersService } from '../../services/users.service';
+import { UserPageFilters, UsersService } from '../../services/users.service';
 
 type UserTableFilters = {
   name: string;
@@ -27,7 +28,7 @@ type UserTableFilters = {
   styleUrl: './users.component.css'
 })
 export class UsersComponent implements OnInit {
-  users: User[] = [];
+  usersPage: PageResponse<User> = createEmptyPageResponse<User>();
   plans: Plan[] = [];
   showForm = false;
   userDraft: UserDraft = createEmptyUserDraft();
@@ -62,38 +63,15 @@ export class UsersComponent implements OnInit {
   }
 
   get filteredUsers(): User[] {
-    return this.users.filter((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-      const matchesName = this.filters.name.trim() === '' || fullName.includes(this.filters.name.trim().toLowerCase());
-      const matchesDni = this.filters.dni.trim() === '' || user.dni.includes(this.filters.dni.trim());
-      const matchesType = this.filters.userType === 'all' || user.userType === this.filters.userType;
-      const matchesPayment = this.filters.paymentStatus === 'all' || user.paymentStatus === this.filters.paymentStatus;
-      const matchesRegistrationFrom = this.filters.registrationFrom === '' || user.registrationDate >= this.filters.registrationFrom;
-      const matchesRegistrationTo = this.filters.registrationTo === '' || user.registrationDate <= this.filters.registrationTo;
-      const matchesRenewalFrom = this.filters.renewalFrom === '' || user.renewalDate >= this.filters.renewalFrom;
-      const matchesRenewalTo = this.filters.renewalTo === '' || user.renewalDate <= this.filters.renewalTo;
-
-      return (
-        matchesName &&
-        matchesDni &&
-        matchesType &&
-        matchesPayment &&
-        matchesRegistrationFrom &&
-        matchesRegistrationTo &&
-        matchesRenewalFrom &&
-        matchesRenewalTo
-      );
-    });
+    return this.usersPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+    return Math.max(1, this.usersPage.totalPages || 1);
   }
 
   get paginatedUsers(): User[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredUsers.slice(start, start + this.pageSize);
+    return this.usersPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -123,8 +101,7 @@ export class UsersComponent implements OnInit {
     request$.subscribe({
       next: () => {
         this.cancelEdit();
-        this.loadUsersFromApi();
-        this.onFilterChange();
+        this.loadUsersPage();
       },
       error: () => {
         this.apiError = 'No se pudo guardar el usuario en el backend.';
@@ -166,8 +143,7 @@ export class UsersComponent implements OnInit {
           this.cancelEdit();
         }
 
-        this.loadUsersFromApi();
-        this.onFilterChange();
+        this.loadUsersPage();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar el usuario en el backend.';
@@ -181,6 +157,7 @@ export class UsersComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadUsersPage();
   }
 
   clearFilters(): void {
@@ -195,6 +172,7 @@ export class UsersComponent implements OnInit {
       renewalTo: ''
     };
     this.currentPage = 1;
+    this.loadUsersPage();
   }
 
   goToPage(page: number): void {
@@ -203,10 +181,12 @@ export class UsersComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadUsersPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadUsersPage();
   }
 
   paymentStatusLabel(status: PaymentStatus): string {
@@ -236,8 +216,7 @@ export class UsersComponent implements OnInit {
 
     this.usersService.renewSubscription(user.id).subscribe({
       next: () => {
-        this.loadUsersFromApi();
-        this.onFilterChange();
+        this.loadUsersPage();
       },
       error: () => {
         this.apiError = 'No se pudo renovar la cuota en el backend.';
@@ -262,12 +241,11 @@ export class UsersComponent implements OnInit {
 
     forkJoin({
       plans: this.plansService.findAll(),
-      users: this.usersService.findAll()
+      usersPage: this.usersService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize)
     }).subscribe({
       next: (result) => {
         this.plans = result.plans;
-        this.users = result.users;
-        this.usersService.setAll(result.users);
+        this.usersPage = result.usersPage;
         this.isLoading = false;
 
         if (this.userDraft.userType === 'alumno' && this.userDraft.planId === null) {
@@ -277,7 +255,7 @@ export class UsersComponent implements OnInit {
       error: () => {
         this.apiError = 'No se pudieron obtener datos iniciales del backend.';
         this.plans = this.plansService.getAll();
-        this.users = this.usersService.getAll();
+        this.usersPage = createEmptyPageResponse<User>();
         this.isLoading = false;
       }
     });
@@ -296,18 +274,34 @@ export class UsersComponent implements OnInit {
     this.isLoading = true;
     this.apiError = null;
 
-    this.usersService.findAll().subscribe({
-      next: (users) => {
-        this.users = users;
-        this.usersService.setAll(users);
+    this.usersService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.usersPage = pageResult;
         this.isLoading = false;
       },
       error: () => {
-        this.apiError = 'No se pudo obtener usuarios del backend. Mostrando datos locales.';
-        this.users = this.usersService.getAll();
+        this.apiError = 'No se pudo obtener usuarios del backend.';
+        this.usersPage = createEmptyPageResponse<User>();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadUsersPage(): void {
+    this.loadUsersFromApi();
+  }
+
+  private toPageFilters(): UserPageFilters {
+    return {
+      name: this.filters.name,
+      dni: this.filters.dni,
+      userType: this.filters.userType,
+      paymentStatus: this.filters.paymentStatus,
+      registrationFrom: this.filters.registrationFrom,
+      registrationTo: this.filters.registrationTo,
+      renewalFrom: this.filters.renewalFrom,
+      renewalTo: this.filters.renewalTo
+    };
   }
 
   private todayIsoDate(): string {

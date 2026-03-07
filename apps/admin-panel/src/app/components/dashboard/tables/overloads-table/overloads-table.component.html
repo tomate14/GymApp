@@ -1,0 +1,67 @@
+<section class="admin-card h-100">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h2 class="section-title mb-0">Sobreasignacion de planes</h2>
+    <div class="d-flex align-items-center gap-2">
+      <label class="small text-secondary">Filas por pagina</label>
+      <select class="form-select form-select-sm page-size-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChanged($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-12 col-md-10">
+      <label class="form-label form-label-sm">Alumno o DNI</label>
+      <input class="form-control form-control-sm" type="text" [(ngModel)]="filters.search" (ngModelChange)="onFiltersChanged()" />
+    </div>
+    <div class="col-12 col-md-2 d-flex align-items-end">
+      <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="onClearFilters()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-2" *ngIf="isLoading">
+    <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+    <small class="text-secondary">Cargando control...</small>
+  </div>
+
+  <div class="table-responsive" *ngIf="page.content.length > 0">
+    <table class="table table-dark table-striped table-hover align-middle entity-table">
+      <thead>
+        <tr>
+          <th>Alumno</th>
+          <th>DNI</th>
+          <th>Plan</th>
+          <th>Dias plan</th>
+          <th>Dias asignados</th>
+          <th>Exceso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of page.content">
+          <td>{{ row.studentName }}</td>
+          <td>{{ row.dni }}</td>
+          <td>{{ row.planName }}</td>
+          <td>{{ row.maxDaysPerWeek }}</td>
+          <td>{{ row.assignedDays }}</td>
+          <td class="text-danger fw-bold">+{{ row.extraDays }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="empty-state mb-0" *ngIf="!isLoading && page.content.length === 0">Sin datos para los filtros aplicados.</p>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="page.content.length > 0">
+    <small class="text-secondary">Mostrando {{ page.content.length }} de {{ page.totalElements }} registros</small>
+    <div class="d-flex flex-wrap align-items-center gap-1">
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+        Anterior
+      </button>
+      <button class="btn btn-sm" *ngFor="let item of pages" [class.btn-brand]="item === currentPage" [class.btn-outline-light]="item !== currentPage" type="button" (click)="goToPage(item)">
+        {{ item }}
+      </button>
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+        Siguiente
+      </button>
+    </div>
+  </div>
+</section>

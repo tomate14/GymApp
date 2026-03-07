@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Exercise } from '../../class/exercise.model';
 import { createEmptyMachineDraft, Machine, MachineDraft } from '../../class/machine.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { ExercisesService } from '../../services/exercises.service';
-import { MachinesService } from '../../services/machines.service';
+import { MachinePageFilters, MachinesService } from '../../services/machines.service';
 
 type MachineFilters = {
   name: string;
@@ -21,7 +22,7 @@ type MachineFilters = {
   styleUrl: './machines.component.css'
 })
 export class MachinesComponent implements OnInit {
-  machines: Machine[] = [];
+  machinesPage: PageResponse<Machine> = createEmptyPageResponse<Machine>();
   exercises: Exercise[] = [];
   machineDraft: MachineDraft = createEmptyMachineDraft();
   editingMachineId: number | null = null;
@@ -49,23 +50,15 @@ export class MachinesComponent implements OnInit {
   }
 
   get filteredMachines(): Machine[] {
-    return this.machines.filter((machine) => {
-      const matchesName =
-        this.filters.name.trim() === '' || machine.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
-      const usage = this.exerciseUsageCount(machine.id);
-      const matchesInUse = !this.filters.onlyInUse || usage > 0;
-      return matchesName && matchesInUse;
-    });
+    return this.machinesPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredMachines.length / this.pageSize));
+    return Math.max(1, this.machinesPage.totalPages || 1);
   }
 
   get paginatedMachines(): Machine[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredMachines.slice(start, start + this.pageSize);
+    return this.machinesPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -85,7 +78,6 @@ export class MachinesComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar la maquina en el backend.';
@@ -123,7 +115,6 @@ export class MachinesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar la maquina en el backend.';
@@ -141,6 +132,7 @@ export class MachinesComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadMachinesPage();
   }
 
   clearFilters(): void {
@@ -149,6 +141,7 @@ export class MachinesComponent implements OnInit {
       onlyInUse: false
     };
     this.currentPage = 1;
+    this.loadMachinesPage();
   }
 
   goToPage(page: number): void {
@@ -157,10 +150,12 @@ export class MachinesComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadMachinesPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadMachinesPage();
   }
 
   private loadData(): void {
@@ -168,20 +163,44 @@ export class MachinesComponent implements OnInit {
     this.apiError = null;
 
     forkJoin({
-      machines: this.machinesService.findAll(),
+      machinesPage: this.machinesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize),
       exercises: this.exercisesService.findAll()
     }).subscribe({
       next: (result) => {
-        this.machines = result.machines;
+        this.machinesPage = result.machinesPage;
         this.exercises = result.exercises;
         this.isLoading = false;
       },
       error: () => {
         this.apiError = 'No se pudieron obtener maquinas del backend.';
-        this.machines = this.machinesService.getAll();
+        this.machinesPage = createEmptyPageResponse<Machine>();
         this.exercises = this.exercisesService.getAll();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadMachinesPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.machinesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.machinesPage = pageResult;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener maquinas del backend.';
+        this.machinesPage = createEmptyPageResponse<Machine>();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private toPageFilters(): MachinePageFilters {
+    return {
+      name: this.filters.name,
+      onlyInUse: this.filters.onlyInUse
+    };
   }
 }

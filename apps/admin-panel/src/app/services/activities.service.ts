@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import { Activity, ActivityDraft } from '../class/activity.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -9,6 +10,19 @@ type ActivityApiDto = {
   id: number;
   name: string;
   description: string;
+};
+
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type ActivityPageFilters = {
+  name?: string;
+  description?: string;
 };
 
 @Injectable({
@@ -24,6 +38,23 @@ export class ActivitiesService {
     return this.http.get<ActivityApiDto[]>(this.endpoint).pipe(
       map((items) => items.map((item) => this.mapFromApi(item))),
       tap((items) => this.setAll(items))
+    );
+  }
+
+  findPage(filters: ActivityPageFilters, page: number, size: number): Observable<PageResponse<Activity>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.name && filters.name.trim() !== '') {
+      params = params.set('name', filters.name.trim());
+    }
+    if (filters.description && filters.description.trim() !== '') {
+      params = params.set('description', filters.description.trim());
+    }
+
+    return this.http.get<PageApiDto<ActivityApiDto>>(`${this.endpoint}/page`, { params }).pipe(
+      map((response) => this.mapPageFromApi(response))
     );
   }
 
@@ -78,6 +109,16 @@ export class ActivitiesService {
       id: Number(dto.id),
       name: dto.name,
       description: dto.description
+    };
+  }
+
+  private mapPageFromApi(dto: PageApiDto<ActivityApiDto>): PageResponse<Activity> {
+    return {
+      content: dto.content.map((item) => this.mapFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 }

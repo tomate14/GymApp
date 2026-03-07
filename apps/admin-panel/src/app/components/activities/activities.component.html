@@ -75,7 +75,7 @@
         </div>
       </div>
 
-      <div class="table-responsive" *ngIf="filteredActivities.length > 0; else noActivities">
+      <div class="table-responsive" *ngIf="paginatedActivities.length > 0; else noActivities">
         <table class="table table-dark table-striped table-hover align-middle entity-table">
           <thead>
             <tr>
@@ -107,8 +107,8 @@
         <p class="empty-state mb-0">No hay actividades para los filtros aplicados.</p>
       </ng-template>
 
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredActivities.length > 0">
-        <small class="text-secondary">Mostrando {{ paginatedActivities.length }} de {{ filteredActivities.length }} actividades</small>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="activitiesPage.totalElements > 0">
+        <small class="text-secondary">Mostrando {{ paginatedActivities.length }} de {{ activitiesPage.totalElements }} actividades</small>
         <div class="d-flex flex-wrap align-items-center gap-1">
           <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
             Anterior
@@ -146,3 +146,5 @@
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
 ></app-confirm-popup>
+
+

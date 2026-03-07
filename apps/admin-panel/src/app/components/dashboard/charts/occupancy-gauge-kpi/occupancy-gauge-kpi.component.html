@@ -1,0 +1,7 @@
+<section class="kpi-card h-100">
+  <small class="text-secondary text-uppercase">{{ kpi?.label || 'Ocupacion promedio' }}</small>
+  <p class="empty-state mb-0 mt-2" *ngIf="!hasData">Sin datos para el periodo seleccionado.</p>
+  <div echarts [options]="options" class="gauge-host" *ngIf="hasData"></div>
+  <small class="text-secondary d-block mt-1">{{ kpi?.hint }}</small>
+</section>
+

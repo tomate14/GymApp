@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Activity } from '../../class/activity.model';
 import { createEmptyExerciseDraft, Exercise, ExerciseDraft } from '../../class/exercise.model';
 import { Machine } from '../../class/machine.model';
 import { RoutineTemplate } from '../../class/routine.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { ActivitiesService } from '../../services/activities.service';
-import { ExercisesService } from '../../services/exercises.service';
+import { ExercisePageFilters, ExercisesService } from '../../services/exercises.service';
 import { MachinesService } from '../../services/machines.service';
 import { RoutinesService } from '../../services/routines.service';
 
@@ -26,7 +27,7 @@ type ExerciseFilters = {
   styleUrl: './exercises.component.css'
 })
 export class ExercisesComponent implements OnInit {
-  exercises: Exercise[] = [];
+  exercisesPage: PageResponse<Exercise> = createEmptyPageResponse<Exercise>();
   activities: Activity[] = [];
   machines: Machine[] = [];
   routineTemplates: RoutineTemplate[] = [];
@@ -60,23 +61,15 @@ export class ExercisesComponent implements OnInit {
   }
 
   get filteredExercises(): Exercise[] {
-    return this.exercises.filter((exercise) => {
-      const matchesName =
-        this.filters.name.trim() === '' || exercise.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
-      const matchesActivity = this.filters.activityId === 0 || exercise.activityId === this.filters.activityId;
-      const matchesMachine = this.filters.machineId === 0 || exercise.machineId === this.filters.machineId;
-      return matchesName && matchesActivity && matchesMachine;
-    });
+    return this.exercisesPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredExercises.length / this.pageSize));
+    return Math.max(1, this.exercisesPage.totalPages || 1);
   }
 
   get paginatedExercises(): Exercise[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredExercises.slice(start, start + this.pageSize);
+    return this.exercisesPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -96,7 +89,6 @@ export class ExercisesComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar el ejercicio en el backend.';
@@ -134,7 +126,6 @@ export class ExercisesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar el ejercicio en el backend.';
@@ -162,6 +153,7 @@ export class ExercisesComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadExercisesPage();
   }
 
   clearFilters(): void {
@@ -171,6 +163,7 @@ export class ExercisesComponent implements OnInit {
       machineId: 0
     };
     this.currentPage = 1;
+    this.loadExercisesPage();
   }
 
   goToPage(page: number): void {
@@ -179,10 +172,12 @@ export class ExercisesComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadExercisesPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadExercisesPage();
   }
 
   private loadData(): void {
@@ -190,13 +185,13 @@ export class ExercisesComponent implements OnInit {
     this.apiError = null;
 
     forkJoin({
-      exercises: this.exercisesService.findAll(),
+      exercisesPage: this.exercisesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize),
       activities: this.activitiesService.findAll(),
       machines: this.machinesService.findAll(),
       routineTemplates: this.routinesService.findTemplates()
     }).subscribe({
       next: (result) => {
-        this.exercises = result.exercises;
+        this.exercisesPage = result.exercisesPage;
         this.activities = result.activities;
         this.machines = result.machines;
         this.routineTemplates = result.routineTemplates;
@@ -204,12 +199,37 @@ export class ExercisesComponent implements OnInit {
       },
       error: () => {
         this.apiError = 'No se pudieron obtener ejercicios del backend.';
-        this.exercises = this.exercisesService.getAll();
+        this.exercisesPage = createEmptyPageResponse<Exercise>();
         this.activities = this.activitiesService.getAll();
         this.machines = this.machinesService.getAll();
         this.routineTemplates = this.routinesService.getTemplates();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadExercisesPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.exercisesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.exercisesPage = pageResult;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener ejercicios del backend.';
+        this.exercisesPage = createEmptyPageResponse<Exercise>();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private toPageFilters(): ExercisePageFilters {
+    return {
+      name: this.filters.name,
+      activityId: this.filters.activityId,
+      machineId: this.filters.machineId
+    };
   }
 }

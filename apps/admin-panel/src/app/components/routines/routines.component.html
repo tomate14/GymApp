@@ -327,7 +327,7 @@
         </div>
       </div>
 
-      <div class="table-responsive" *ngIf="filteredTemplates.length > 0; else noTemplates">
+      <div class="table-responsive" *ngIf="paginatedTemplates.length > 0; else noTemplates">
         <table class="table table-dark table-striped table-hover align-middle entity-table">
           <thead>
             <tr>
@@ -359,8 +359,8 @@
         <p class="empty-state mb-0">No hay rutinas para los filtros aplicados.</p>
       </ng-template>
 
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredTemplates.length > 0">
-        <small class="text-secondary">Mostrando {{ paginatedTemplates.length }} de {{ filteredTemplates.length }} rutinas</small>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="templateTablePage.totalElements > 0">
+        <small class="text-secondary">Mostrando {{ paginatedTemplates.length }} de {{ templateTablePage.totalElements }} rutinas</small>
         <div class="d-flex flex-wrap align-items-center gap-1">
           <button
             class="btn btn-sm btn-outline-light"
@@ -428,7 +428,7 @@
         </div>
       </div>
 
-      <div class="table-responsive" *ngIf="filteredAssignments.length > 0; else noAssignments">
+      <div class="table-responsive" *ngIf="paginatedAssignments.length > 0; else noAssignments">
         <table class="table table-dark table-striped table-hover align-middle entity-table">
           <thead>
             <tr>
@@ -463,8 +463,8 @@
         <p class="empty-state mb-0">No hay asignaciones para los filtros aplicados.</p>
       </ng-template>
 
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredAssignments.length > 0">
-        <small class="text-secondary">Mostrando {{ paginatedAssignments.length }} de {{ filteredAssignments.length }} asignaciones</small>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="assignmentTablePage.totalElements > 0">
+        <small class="text-secondary">Mostrando {{ paginatedAssignments.length }} de {{ assignmentTablePage.totalElements }} asignaciones</small>
         <div class="d-flex flex-wrap align-items-center gap-1">
           <button
             class="btn btn-sm btn-outline-light"
@@ -517,3 +517,7 @@
   (confirmed)="confirmDeleteAssignment()"
   (cancelled)="cancelDeleteAssignment()"
 ></app-confirm-popup>
+
+
+
+

@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Activity, ActivityDraft, createEmptyActivityDraft } from '../../class/activity.model';
 import { GymClass } from '../../class/gym-class.model';
 import { Exercise } from '../../class/exercise.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
-import { ActivitiesService } from '../../services/activities.service';
+import { ActivitiesService, ActivityPageFilters } from '../../services/activities.service';
 import { ClassesService } from '../../services/classes.service';
 import { ExercisesService } from '../../services/exercises.service';
 
@@ -23,7 +24,7 @@ type ActivityFilters = {
   styleUrl: './activities.component.css'
 })
 export class ActivitiesComponent implements OnInit {
-  activities: Activity[] = [];
+  activitiesPage: PageResponse<Activity> = createEmptyPageResponse<Activity>();
   classRefs: GymClass[] = [];
   exerciseRefs: Exercise[] = [];
 
@@ -54,25 +55,15 @@ export class ActivitiesComponent implements OnInit {
   }
 
   get filteredActivities(): Activity[] {
-    return this.activities.filter((activity) => {
-      const matchesName =
-        this.filters.name.trim() === '' || activity.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
-      const matchesDescription =
-        this.filters.description.trim() === '' ||
-        activity.description.toLowerCase().includes(this.filters.description.trim().toLowerCase());
-
-      return matchesName && matchesDescription;
-    });
+    return this.activitiesPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredActivities.length / this.pageSize));
+    return Math.max(1, this.activitiesPage.totalPages || 1);
   }
 
   get paginatedActivities(): Activity[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredActivities.slice(start, start + this.pageSize);
+    return this.activitiesPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -92,7 +83,6 @@ export class ActivitiesComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar la actividad en el backend.';
@@ -130,7 +120,6 @@ export class ActivitiesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar la actividad en el backend.';
@@ -152,11 +141,13 @@ export class ActivitiesComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadActivitiesPage();
   }
 
   clearFilters(): void {
     this.filters = { name: '', description: '' };
     this.currentPage = 1;
+    this.loadActivitiesPage();
   }
 
   goToPage(page: number): void {
@@ -165,10 +156,12 @@ export class ActivitiesComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadActivitiesPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadActivitiesPage();
   }
 
   private loadData(): void {
@@ -176,23 +169,47 @@ export class ActivitiesComponent implements OnInit {
     this.apiError = null;
 
     forkJoin({
-      activities: this.activitiesService.findAll(),
+      activitiesPage: this.activitiesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize),
       classRefs: this.classesService.findAll(),
       exerciseRefs: this.exercisesService.findAll()
     }).subscribe({
       next: (result) => {
-        this.activities = result.activities;
+        this.activitiesPage = result.activitiesPage;
         this.classRefs = result.classRefs;
         this.exerciseRefs = result.exerciseRefs;
         this.isLoading = false;
       },
       error: () => {
         this.apiError = 'No se pudieron obtener actividades del backend.';
-        this.activities = this.activitiesService.getAll();
+        this.activitiesPage = createEmptyPageResponse<Activity>();
         this.classRefs = this.classesService.getAll();
         this.exerciseRefs = this.exercisesService.getAll();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadActivitiesPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.activitiesService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.activitiesPage = pageResult;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener actividades del backend.';
+        this.activitiesPage = createEmptyPageResponse<Activity>();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private toPageFilters(): ActivityPageFilters {
+    return {
+      name: this.filters.name,
+      description: this.filters.description
+    };
   }
 }

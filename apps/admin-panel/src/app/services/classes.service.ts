@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import { GymClass, GymClassDraft } from '../class/gym-class.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -25,6 +26,22 @@ type GymClassApiRequest = {
   time: string;
 };
 
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type GymClassPageFilters = {
+  className?: string;
+  activityId?: number | 0;
+  teacherId?: number | 0;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,6 +55,32 @@ export class ClassesService {
     return this.http.get<GymClassApiDto[]>(this.endpoint).pipe(
       map((items) => items.map((item) => this.mapFromApi(item))),
       tap((items) => this.setAll(items))
+    );
+  }
+
+  findPage(filters: GymClassPageFilters, page: number, size: number): Observable<PageResponse<GymClass>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.className && filters.className.trim() !== '') {
+      params = params.set('className', filters.className.trim());
+    }
+    if (filters.activityId && filters.activityId > 0) {
+      params = params.set('activityId', String(filters.activityId));
+    }
+    if (filters.teacherId && filters.teacherId > 0) {
+      params = params.set('teacherId', String(filters.teacherId));
+    }
+    if (filters.dateFrom && filters.dateFrom !== '') {
+      params = params.set('dateFrom', filters.dateFrom);
+    }
+    if (filters.dateTo && filters.dateTo !== '') {
+      params = params.set('dateTo', filters.dateTo);
+    }
+
+    return this.http.get<PageApiDto<GymClassApiDto>>(`${this.endpoint}/page`, { params }).pipe(
+      map((response) => this.mapPageFromApi(response))
     );
   }
 
@@ -109,6 +152,16 @@ export class ClassesService {
       teacherId: dto.teacherId === null ? null : Number(dto.teacherId),
       date: dto.date,
       time: dto.time.slice(0, 5)
+    };
+  }
+
+  private mapPageFromApi(dto: PageApiDto<GymClassApiDto>): PageResponse<GymClass> {
+    return {
+      content: dto.content.map((item) => this.mapFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 }

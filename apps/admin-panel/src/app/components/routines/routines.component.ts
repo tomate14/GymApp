@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Exercise } from '../../class/exercise.model';
 import { SearchableFieldConfig, SearchableSelectValue } from '../../class/searchable-select.model';
 import {
@@ -21,7 +22,11 @@ import { SearchableSelectComponent } from '../searchable-select/searchable-selec
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { ExercisesService } from '../../services/exercises.service';
 import { PlansService } from '../../services/plans.service';
-import { RoutinesService } from '../../services/routines.service';
+import {
+  RoutineAssignmentPageFilters,
+  RoutineTemplatePageFilters,
+  RoutinesService
+} from '../../services/routines.service';
 import { UsersService } from '../../services/users.service';
 import { ensureMinNumber } from '../../utils/id.util';
 
@@ -60,6 +65,8 @@ export class RoutinesComponent implements OnInit {
   routineTemplates: RoutineTemplate[] = [];
   allRoutineAssignments: RoutineAssignment[] = [];
   routineAssignments: RoutineAssignment[] = [];
+  templateTablePage: PageResponse<RoutineTemplate> = createEmptyPageResponse<RoutineTemplate>();
+  assignmentTablePage: PageResponse<RoutineAssignment> = createEmptyPageResponse<RoutineAssignment>();
 
   templateDraft: RoutineTemplateDraft = createEmptyRoutineTemplateDraft();
   templateExerciseDraft: RoutineTemplateExerciseDraft = createEmptyRoutineTemplateExerciseDraft();
@@ -113,46 +120,27 @@ export class RoutinesComponent implements OnInit {
   }
 
   get filteredTemplates(): RoutineTemplate[] {
-    return this.routineTemplates.filter((template) => {
-      const matchesName =
-        this.templateFilters.name.trim() === '' ||
-        template.name.toLowerCase().includes(this.templateFilters.name.trim().toLowerCase());
-      const matchesExerciseCount = template.exercises.length >= this.templateFilters.minExercises;
-      const matchesStudentCount = this.templateUsageCount(template.id) >= this.templateFilters.minStudents;
-      return matchesName && matchesExerciseCount && matchesStudentCount;
-    });
+    return this.templateTablePage.content;
   }
 
   get filteredAssignments(): RoutineAssignment[] {
-    return this.routineAssignments.filter((assignment) => {
-      const studentName = this.usersService.fullName(assignment.userId).toLowerCase();
-      const matchesStudent =
-        this.assignmentFilters.student.trim() === '' ||
-        studentName.includes(this.assignmentFilters.student.trim().toLowerCase());
-      const matchesTemplate =
-        this.assignmentFilters.templateId === 0 || assignment.routineTemplateId === this.assignmentFilters.templateId;
-      return matchesStudent && matchesTemplate;
-    });
+    return this.assignmentTablePage.content;
   }
 
   get templateTotalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredTemplates.length / this.templatePageSize));
+    return Math.max(1, this.templateTablePage.totalPages || 1);
   }
 
   get assignmentTotalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredAssignments.length / this.assignmentPageSize));
+    return Math.max(1, this.assignmentTablePage.totalPages || 1);
   }
 
   get paginatedTemplates(): RoutineTemplate[] {
-    const safePage = Math.min(this.templateCurrentPage, this.templateTotalPages);
-    const start = (safePage - 1) * this.templatePageSize;
-    return this.filteredTemplates.slice(start, start + this.templatePageSize);
+    return this.templateTablePage.content;
   }
 
   get paginatedAssignments(): RoutineAssignment[] {
-    const safePage = Math.min(this.assignmentCurrentPage, this.assignmentTotalPages);
-    const start = (safePage - 1) * this.assignmentPageSize;
-    return this.filteredAssignments.slice(start, start + this.assignmentPageSize);
+    return this.assignmentTablePage.content;
   }
 
   get templatePageNumbers(): number[] {
@@ -241,7 +229,6 @@ export class RoutinesComponent implements OnInit {
       next: () => {
         this.cancelTemplateEdit();
         this.loadData();
-        this.onTemplateFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar la rutina en el backend.';
@@ -376,8 +363,6 @@ export class RoutinesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onTemplateFilterChange();
-        this.onAssignmentFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar la rutina en el backend.';
@@ -408,7 +393,6 @@ export class RoutinesComponent implements OnInit {
         }
 
         this.loadData();
-        this.onAssignmentFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar la asignacion en el backend.';
@@ -473,6 +457,7 @@ export class RoutinesComponent implements OnInit {
 
   onTemplateFilterChange(): void {
     this.templateCurrentPage = 1;
+    this.loadTemplatePage();
   }
 
   clearTemplateFilters(): void {
@@ -482,6 +467,7 @@ export class RoutinesComponent implements OnInit {
       minStudents: 0
     };
     this.templateCurrentPage = 1;
+    this.loadTemplatePage();
   }
 
   goToTemplatePage(page: number): void {
@@ -490,14 +476,17 @@ export class RoutinesComponent implements OnInit {
     }
 
     this.templateCurrentPage = page;
+    this.loadTemplatePage();
   }
 
   onTemplatePageSizeChange(): void {
     this.templateCurrentPage = 1;
+    this.loadTemplatePage();
   }
 
   onAssignmentFilterChange(): void {
     this.assignmentCurrentPage = 1;
+    this.loadAssignmentPage();
   }
 
   clearAssignmentFilters(): void {
@@ -506,6 +495,7 @@ export class RoutinesComponent implements OnInit {
       templateId: 0
     };
     this.assignmentCurrentPage = 1;
+    this.loadAssignmentPage();
   }
 
   goToAssignmentPage(page: number): void {
@@ -514,10 +504,12 @@ export class RoutinesComponent implements OnInit {
     }
 
     this.assignmentCurrentPage = page;
+    this.loadAssignmentPage();
   }
 
   onAssignmentPageSizeChange(): void {
     this.assignmentCurrentPage = 1;
+    this.loadAssignmentPage();
   }
 
   private calculateAssignmentPlanWarning(): string | null {
@@ -665,7 +657,17 @@ export class RoutinesComponent implements OnInit {
       plans: this.plansService.findAll(),
       exercises: this.exercisesService.findAll(),
       routineTemplates: this.routinesService.findTemplates(),
-      routineAssignments: this.routinesService.findAssignments()
+      routineAssignments: this.routinesService.findAssignments(),
+      templatePage: this.routinesService.findTemplatesPage(
+        this.toTemplatePageFilters(),
+        this.templateCurrentPage - 1,
+        this.templatePageSize
+      ),
+      assignmentPage: this.routinesService.findAssignmentsPage(
+        this.toAssignmentPageFilters(),
+        this.assignmentCurrentPage - 1,
+        this.assignmentPageSize
+      )
     }).subscribe({
       next: (result) => {
         this.students = result.students;
@@ -673,6 +675,8 @@ export class RoutinesComponent implements OnInit {
         this.routineTemplates = result.routineTemplates;
         this.allRoutineAssignments = result.routineAssignments;
         this.routineAssignments = this.routinesService.filterCurrentAssignments(result.routineAssignments);
+        this.templateTablePage = result.templatePage;
+        this.assignmentTablePage = result.assignmentPage;
 
         this.studentSelectItems = this.students.map((student) => ({
           id: student.id,
@@ -699,6 +703,8 @@ export class RoutinesComponent implements OnInit {
         this.routineTemplates = this.routinesService.getTemplates();
         this.allRoutineAssignments = this.routinesService.getAssignments();
         this.routineAssignments = this.routinesService.filterCurrentAssignments(this.allRoutineAssignments);
+        this.templateTablePage = createEmptyPageResponse<RoutineTemplate>();
+        this.assignmentTablePage = createEmptyPageResponse<RoutineAssignment>();
         this.studentSelectItems = this.students.map((student) => ({
           id: student.id,
           firstName: student.firstName,
@@ -712,6 +718,60 @@ export class RoutinesComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private loadTemplatePage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.routinesService
+      .findTemplatesPage(this.toTemplatePageFilters(), this.templateCurrentPage - 1, this.templatePageSize)
+      .subscribe({
+        next: (pageResult) => {
+          this.templateTablePage = pageResult;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.apiError = 'No se pudieron obtener plantillas de rutina del backend.';
+          this.templateTablePage = createEmptyPageResponse<RoutineTemplate>();
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private loadAssignmentPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.routinesService
+      .findAssignmentsPage(this.toAssignmentPageFilters(), this.assignmentCurrentPage - 1, this.assignmentPageSize)
+      .subscribe({
+        next: (pageResult) => {
+          this.assignmentTablePage = pageResult;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.apiError = 'No se pudieron obtener asignaciones de rutina del backend.';
+          this.assignmentTablePage = createEmptyPageResponse<RoutineAssignment>();
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private toTemplatePageFilters(): RoutineTemplatePageFilters {
+    return {
+      name: this.templateFilters.name,
+      minExercises: this.templateFilters.minExercises,
+      minStudents: this.templateFilters.minStudents
+    };
+  }
+
+  private toAssignmentPageFilters(): RoutineAssignmentPageFilters {
+    return {
+      student: this.assignmentFilters.student,
+      templateId: this.assignmentFilters.templateId,
+      currentOnly: true
+    };
   }
 
   private todayIsoDate(): string {

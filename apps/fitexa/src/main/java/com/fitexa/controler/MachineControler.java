@@ -2,6 +2,7 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.MachineRequestDto;
 import com.fitexa.dtos.MachineResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.MachineService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,6 +27,16 @@ public class MachineControler {
     @GetMapping
     public List<MachineResponseDto> findAll() {
         return machineService.findAll();
+    }
+
+    @GetMapping("/page")
+    public DashboardPageResponseDto<MachineResponseDto> findPage(
+        @RequestParam(name = "name", required = false) String name,
+        @RequestParam(name = "onlyInUse", defaultValue = "false") boolean onlyInUse,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "8") int size
+    ) {
+        return machineService.findPage(name, onlyInUse, page, size);
     }
 
     @GetMapping("/{id}")

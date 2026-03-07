@@ -5,6 +5,7 @@ import com.fitexa.dtos.RoutineAssignmentExerciseResponseDto;
 import com.fitexa.dtos.RoutineAssignmentRequestDto;
 import com.fitexa.dtos.RoutineAssignmentResponseDto;
 import com.fitexa.dtos.RoutineAssignmentSaveResultDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.ExerciseEntity;
 import com.fitexa.entities.PrescriptionMode;
 import com.fitexa.entities.RoutineAssignmentEntity;
@@ -20,17 +21,23 @@ import com.fitexa.repository.RoutineTemplateRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.RoutineAssignmentService;
 import com.fitexa.services.RoutinePlanValidationStrategy;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final RoutineAssignmentRepository routineAssignmentRepository;
     private final RoutineTemplateRepository routineTemplateRepository;
@@ -42,6 +49,30 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
     @Transactional(readOnly = true)
     public List<RoutineAssignmentResponseDto> findAll() {
         return routineAssignmentRepository.findAll().stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardPageResponseDto<RoutineAssignmentResponseDto> findPage(
+        String student,
+        Long templateId,
+        boolean currentOnly,
+        int page,
+        int size
+    ) {
+        Page<RoutineAssignmentResponseDto> result = routineAssignmentRepository.findForTable(
+            clean(student),
+            templateId,
+            currentOnly,
+            LocalDate.now(),
+            PageRequest.of(
+                sanitizePage(page),
+                sanitizeSize(size),
+                Sort.by(Sort.Direction.DESC, "startDate").and(Sort.by(Sort.Direction.DESC, "id"))
+            )
+        ).map(this::toDto);
+
+        return toPageResponse(result);
     }
 
     @Override
@@ -200,5 +231,33 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
                     .build()
             ).toList())
             .build();
+    }
+
+    private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {
+        return DashboardPageResponseDto.<T>builder()
+            .content(page.getContent())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .build();
+    }
+
+    private String clean(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private int sanitizePage(int page) {
+        return Math.max(0, page);
+    }
+
+    private int sanitizeSize(int size) {
+        if (size <= 0) {
+            return 8;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 }

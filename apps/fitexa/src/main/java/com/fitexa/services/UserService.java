@@ -2,10 +2,24 @@ package com.fitexa.services;
 
 import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface UserService {
     List<UserResponseDto> findAll();
+    DashboardPageResponseDto<UserResponseDto> findPage(
+        String type,
+        String name,
+        String dni,
+        String paymentStatus,
+        LocalDate registrationFrom,
+        LocalDate registrationTo,
+        LocalDate renewalFrom,
+        LocalDate renewalTo,
+        int page,
+        int size
+    );
     List<UserResponseDto> findStudents();
     List<UserResponseDto> findTeachers();
     UserResponseDto findById(Long id);

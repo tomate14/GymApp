@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import { Plan, PlanDraft } from '../class/plan.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -18,6 +19,19 @@ type PlanApiRequest = {
   price: number;
   maxDaysPerWeek: number;
   active: boolean;
+};
+
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type PlanPageFilters = {
+  name?: string;
+  status?: 'all' | 'active' | 'inactive';
 };
 
 @Injectable({
@@ -37,6 +51,23 @@ export class PlansService {
           this.setAll(items);
         }
       })
+    );
+  }
+
+  findPage(filters: PlanPageFilters, page: number, size: number): Observable<PageResponse<Plan>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.name && filters.name.trim() !== '') {
+      params = params.set('name', filters.name.trim());
+    }
+    if (filters.status && filters.status !== 'all') {
+      params = params.set('status', filters.status);
+    }
+
+    return this.http.get<PageApiDto<PlanApiDto>>(`${this.endpoint}/page`, { params }).pipe(
+      map((response) => this.mapPageFromApi(response))
     );
   }
 
@@ -107,6 +138,16 @@ export class PlansService {
       price: Number(dto.price),
       maxDaysPerWeek: Number(dto.maxDaysPerWeek),
       isActive: Boolean(dto.active)
+    };
+  }
+
+  private mapPageFromApi(dto: PageApiDto<PlanApiDto>): PageResponse<Plan> {
+    return {
+      content: dto.content.map((item) => this.mapFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 }

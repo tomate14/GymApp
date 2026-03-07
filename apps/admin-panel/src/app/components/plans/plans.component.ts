@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { createEmptyPlanDraft, Plan, PlanDraft } from '../../class/plan.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
-import { PlansService } from '../../services/plans.service';
+import { PlanPageFilters, PlansService } from '../../services/plans.service';
 import { UsersService } from '../../services/users.service';
 
 type PlanFilters = {
@@ -20,7 +21,7 @@ type PlanFilters = {
   styleUrl: './plans.component.css'
 })
 export class PlansComponent implements OnInit {
-  plans: Plan[] = [];
+  plansPage: PageResponse<Plan> = createEmptyPageResponse<Plan>();
   planDraft: PlanDraft = createEmptyPlanDraft();
   editingPlanId: number | null = null;
   deleteCandidate: Plan | null = null;
@@ -47,25 +48,15 @@ export class PlansComponent implements OnInit {
   }
 
   get filteredPlans(): Plan[] {
-    return this.plans.filter((plan) => {
-      const matchesName = this.filters.name.trim() === '' || plan.name.toLowerCase().includes(this.filters.name.trim().toLowerCase());
-      const matchesStatus =
-        this.filters.status === 'all' ||
-        (this.filters.status === 'active' && plan.isActive) ||
-        (this.filters.status === 'inactive' && !plan.isActive);
-
-      return matchesName && matchesStatus;
-    });
+    return this.plansPage.content;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredPlans.length / this.pageSize));
+    return Math.max(1, this.plansPage.totalPages || 1);
   }
 
   get paginatedPlans(): Plan[] {
-    const safePage = Math.min(this.currentPage, this.totalPages);
-    const start = (safePage - 1) * this.pageSize;
-    return this.filteredPlans.slice(start, start + this.pageSize);
+    return this.plansPage.content;
   }
 
   get pageNumbers(): number[] {
@@ -85,7 +76,6 @@ export class PlansComponent implements OnInit {
       next: () => {
         this.cancelEdit();
         this.loadPlans();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo guardar el plan en el backend.';
@@ -123,7 +113,6 @@ export class PlansComponent implements OnInit {
         }
 
         this.loadPlans();
-        this.onFilterChange();
       },
       error: () => {
         this.apiError = 'No se pudo eliminar el plan en el backend.';
@@ -145,6 +134,7 @@ export class PlansComponent implements OnInit {
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.loadPlansPage();
   }
 
   clearFilters(): void {
@@ -153,6 +143,7 @@ export class PlansComponent implements OnInit {
       status: 'all'
     };
     this.currentPage = 1;
+    this.loadPlansPage();
   }
 
   goToPage(page: number): void {
@@ -161,10 +152,12 @@ export class PlansComponent implements OnInit {
     }
 
     this.currentPage = page;
+    this.loadPlansPage();
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.loadPlansPage();
   }
 
   private loadPlans(): void {
@@ -172,19 +165,43 @@ export class PlansComponent implements OnInit {
     this.apiError = null;
 
     forkJoin({
-      plans: this.plansService.findAll(),
+      plansPage: this.plansService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize),
       users: this.usersService.findAll()
     }).subscribe({
       next: (result) => {
-        this.plans = result.plans;
+        this.plansPage = result.plansPage;
         this.usersService.setAll(result.users);
         this.isLoading = false;
       },
       error: () => {
         this.apiError = 'No se pudieron obtener planes del backend.';
-        this.plans = this.plansService.getAll();
+        this.plansPage = createEmptyPageResponse<Plan>();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadPlansPage(): void {
+    this.isLoading = true;
+    this.apiError = null;
+
+    this.plansService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize).subscribe({
+      next: (pageResult) => {
+        this.plansPage = pageResult;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.apiError = 'No se pudieron obtener planes del backend.';
+        this.plansPage = createEmptyPageResponse<Plan>();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private toPageFilters(): PlanPageFilters {
+    return {
+      name: this.filters.name,
+      status: this.filters.status
+    };
   }
 }

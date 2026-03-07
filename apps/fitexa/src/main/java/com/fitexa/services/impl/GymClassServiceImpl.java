@@ -2,6 +2,7 @@ package com.fitexa.services.impl;
 
 import com.fitexa.dtos.GymClassRequestDto;
 import com.fitexa.dtos.GymClassResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.ActivityEntity;
 import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.UserEntity;
@@ -13,14 +14,20 @@ import com.fitexa.repository.GymClassRepository;
 import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.GymClassService;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class GymClassServiceImpl implements GymClassService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final GymClassRepository gymClassRepository;
     private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
@@ -31,6 +38,33 @@ public class GymClassServiceImpl implements GymClassService {
     @Transactional(readOnly = true)
     public List<GymClassResponseDto> findAll() {
         return gymClassRepository.findAll().stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardPageResponseDto<GymClassResponseDto> findPage(
+        String className,
+        Long activityId,
+        Long teacherId,
+        LocalDate dateFrom,
+        LocalDate dateTo,
+        int page,
+        int size
+    ) {
+        Page<GymClassResponseDto> result = gymClassRepository.findForTable(
+            clean(className),
+            activityId,
+            teacherId,
+            dateFrom,
+            dateTo,
+            PageRequest.of(
+                sanitizePage(page),
+                sanitizeSize(size),
+                Sort.by(Sort.Direction.ASC, "date").and(Sort.by(Sort.Direction.ASC, "time"))
+            )
+        ).map(this::toDto);
+
+        return toPageResponse(result);
     }
 
     @Override
@@ -127,5 +161,33 @@ public class GymClassServiceImpl implements GymClassService {
         }
 
         return Math.toIntExact(subscribedCount);
+    }
+
+    private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {
+        return DashboardPageResponseDto.<T>builder()
+            .content(page.getContent())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .build();
+    }
+
+    private String clean(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private int sanitizePage(int page) {
+        return Math.max(0, page);
+    }
+
+    private int sanitizeSize(int size) {
+        if (size <= 0) {
+            return 8;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 }

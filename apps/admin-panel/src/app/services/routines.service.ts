@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import {
   DayOfWeek,
   RoutineAssignment,
@@ -77,6 +78,26 @@ type RoutineAssignmentSaveResultApiDto = {
   warning: string | null;
 };
 
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type RoutineTemplatePageFilters = {
+  name?: string;
+  minExercises?: number;
+  minStudents?: number;
+};
+
+export type RoutineAssignmentPageFilters = {
+  student?: string;
+  templateId?: number | 0;
+  currentOnly?: boolean;
+};
+
 export interface RoutineAssignmentSaveResult {
   assignment: RoutineAssignment;
   warning: string | null;
@@ -105,6 +126,52 @@ export class RoutinesService {
     return this.http.get<RoutineAssignmentApiDto[]>(this.assignmentEndpoint).pipe(
       map((items) => items.map((item) => this.mapAssignmentFromApi(item))),
       tap((items) => this.setAssignments(items))
+    );
+  }
+
+  findTemplatesPage(
+    filters: RoutineTemplatePageFilters,
+    page: number,
+    size: number
+  ): Observable<PageResponse<RoutineTemplate>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.name && filters.name.trim() !== '') {
+      params = params.set('name', filters.name.trim());
+    }
+    if (typeof filters.minExercises === 'number' && filters.minExercises > 0) {
+      params = params.set('minExercises', String(filters.minExercises));
+    }
+    if (typeof filters.minStudents === 'number' && filters.minStudents > 0) {
+      params = params.set('minStudents', String(filters.minStudents));
+    }
+
+    return this.http.get<PageApiDto<RoutineTemplateApiDto>>(`${this.templateEndpoint}/page`, { params }).pipe(
+      map((response) => this.mapTemplatePageFromApi(response))
+    );
+  }
+
+  findAssignmentsPage(
+    filters: RoutineAssignmentPageFilters,
+    page: number,
+    size: number
+  ): Observable<PageResponse<RoutineAssignment>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size))
+      .set('currentOnly', String(filters.currentOnly ?? true));
+
+    if (filters.student && filters.student.trim() !== '') {
+      params = params.set('student', filters.student.trim());
+    }
+    if (filters.templateId && filters.templateId > 0) {
+      params = params.set('templateId', String(filters.templateId));
+    }
+
+    return this.http.get<PageApiDto<RoutineAssignmentApiDto>>(`${this.assignmentEndpoint}/page`, { params }).pipe(
+      map((response) => this.mapAssignmentPageFromApi(response))
     );
   }
 
@@ -296,6 +363,26 @@ export class RoutinesService {
         minWeight: item.minWeight === null ? null : Number(item.minWeight),
         maxWeight: item.maxWeight === null ? null : Number(item.maxWeight)
       }))
+    };
+  }
+
+  private mapTemplatePageFromApi(dto: PageApiDto<RoutineTemplateApiDto>): PageResponse<RoutineTemplate> {
+    return {
+      content: dto.content.map((item) => this.mapTemplateFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
+    };
+  }
+
+  private mapAssignmentPageFromApi(dto: PageApiDto<RoutineAssignmentApiDto>): PageResponse<RoutineAssignment> {
+    return {
+      content: dto.content.map((item) => this.mapAssignmentFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 

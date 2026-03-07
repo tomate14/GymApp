@@ -1,0 +1,91 @@
+<section class="admin-card">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h2 class="section-title mb-0">Agenda de clases</h2>
+    <div class="d-flex align-items-center gap-2">
+      <label class="small text-secondary">Filas por pagina</label>
+      <select class="form-select form-select-sm page-size-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChanged($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-12 col-md-3">
+      <label class="form-label form-label-sm">Clase</label>
+      <input class="form-control form-control-sm" type="text" [(ngModel)]="filters.search" (ngModelChange)="onFiltersChanged()" />
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label form-label-sm">Actividad</label>
+      <select class="form-select form-select-sm" [(ngModel)]="filters.activityId" (ngModelChange)="onFiltersChanged()">
+        <option [ngValue]="0">Todas</option>
+        <option *ngFor="let activity of activities" [ngValue]="activity.id">{{ activity.name }}</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label form-label-sm">Profesor</label>
+      <select class="form-select form-select-sm" [(ngModel)]="filters.teacherId" (ngModelChange)="onFiltersChanged()">
+        <option [ngValue]="0">Todos</option>
+        <option *ngFor="let teacher of teachers" [ngValue]="teacher.id">{{ teacher.firstName }} {{ teacher.lastName }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label form-label-sm">Fecha desde</label>
+      <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="onFiltersChanged()" />
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label form-label-sm">Fecha hasta</label>
+      <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="onFiltersChanged()" />
+    </div>
+    <div class="col-12 col-md-1 d-flex align-items-end">
+      <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="onClearFilters()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-2" *ngIf="isLoading">
+    <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+    <small class="text-secondary">Cargando clases...</small>
+  </div>
+
+  <div class="table-responsive" *ngIf="page.content.length > 0">
+    <table class="table table-dark table-striped table-hover align-middle entity-table">
+      <thead>
+        <tr>
+          <th>Clase</th>
+          <th>Actividad</th>
+          <th>Profesor</th>
+          <th>Fecha</th>
+          <th>Horario</th>
+          <th>Anotados/Cupo</th>
+          <th>Ocupacion</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of page.content">
+          <td>{{ row.className }}</td>
+          <td>{{ row.activityName }}</td>
+          <td>{{ row.teacherName }}</td>
+          <td>{{ row.date }}</td>
+          <td>{{ row.time.slice(0, 5) }}</td>
+          <td>{{ capacityLabel(row) }}</td>
+          <td>{{ row.occupancyPercent | number: '1.0-2' }}%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="empty-state mb-0" *ngIf="!isLoading && page.content.length === 0">Sin datos para los filtros aplicados.</p>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="page.content.length > 0">
+    <small class="text-secondary">Mostrando {{ page.content.length }} de {{ page.totalElements }} registros</small>
+    <div class="d-flex flex-wrap align-items-center gap-1">
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+        Anterior
+      </button>
+      <button class="btn btn-sm" *ngFor="let item of pages" [class.btn-brand]="item === currentPage" [class.btn-outline-light]="item !== currentPage" type="button" (click)="goToPage(item)">
+        {{ item }}
+      </button>
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+        Siguiente
+      </button>
+    </div>
+  </div>
+</section>

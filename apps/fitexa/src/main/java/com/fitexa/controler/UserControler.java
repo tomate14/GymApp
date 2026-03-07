@@ -2,8 +2,10 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.UserService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +34,33 @@ public class UserControler {
             return userService.findTeachers();
         }
         return userService.findAll();
+    }
+
+    @GetMapping("/page")
+    public DashboardPageResponseDto<UserResponseDto> findPage(
+        @RequestParam(name = "type", required = false) String type,
+        @RequestParam(name = "name", required = false) String name,
+        @RequestParam(name = "dni", required = false) String dni,
+        @RequestParam(name = "paymentStatus", required = false) String paymentStatus,
+        @RequestParam(name = "registrationFrom", required = false) LocalDate registrationFrom,
+        @RequestParam(name = "registrationTo", required = false) LocalDate registrationTo,
+        @RequestParam(name = "renewalFrom", required = false) LocalDate renewalFrom,
+        @RequestParam(name = "renewalTo", required = false) LocalDate renewalTo,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "8") int size
+    ) {
+        return userService.findPage(
+            type,
+            name,
+            dni,
+            paymentStatus,
+            registrationFrom,
+            registrationTo,
+            renewalFrom,
+            renewalTo,
+            page,
+            size
+        );
     }
 
     @GetMapping("/{id}")

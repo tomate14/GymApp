@@ -1,0 +1,165 @@
+<div class="row g-3">
+  <div class="col-12" *ngIf="apiError !== null">
+    <div class="alert alert-danger py-2 px-3 mb-0" role="alert">
+      {{ apiError }}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-2">
+        <div>
+          <h2 class="section-title mb-0">Panel ejecutivo</h2>
+          <small class="text-secondary">Resumen general de operacion del gimnasio</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-end">
+          <div>
+            <label class="form-label form-label-sm">Desde</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="summaryFilters.fromDate" />
+          </div>
+          <div>
+            <label class="form-label form-label-sm">Hasta</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="summaryFilters.toDate" />
+          </div>
+          <button type="button" class="btn btn-sm btn-brand" (click)="refreshSummary()">Aplicar filtro global</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12" *ngIf="isLoadingSummary">
+    <section class="admin-card d-flex align-items-center gap-2">
+      <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+      <small class="text-secondary">Cargando panel...</small>
+    </section>
+  </div>
+
+  <div class="col-12" *ngIf="!isLoadingSummary && kpis.length > 0">
+    <div class="row g-2 kpi-layout">
+      <div class="col-12 col-xl-4">
+        <div class="row g-2">
+          <div class="col-12" *ngFor="let kpi of kpiColumnLeft">
+            <section class="kpi-card kpi-card-compact h-100">
+              <small class="text-secondary text-uppercase">{{ kpi.label }}</small>
+              <h3 class="kpi-value mb-1">{{ kpi.value }}</h3>
+              <small class="text-secondary">{{ kpi.hint }}</small>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-4">
+        <div class="row g-2">
+          <div class="col-12" *ngFor="let kpi of kpiColumnRight">
+            <section class="kpi-card kpi-card-compact h-100">
+              <small class="text-secondary text-uppercase">{{ kpi.label }}</small>
+              <h3 class="kpi-value mb-1">{{ kpi.value }}</h3>
+              <small class="text-secondary">{{ kpi.hint }}</small>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-4" *ngIf="occupancyKpi !== null">
+        <app-occupancy-gauge-kpi [kpi]="occupancyKpi" class="h-100 d-block"></app-occupancy-gauge-kpi>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12" *ngIf="!isLoadingSummary && alerts.length > 0">
+    <section class="admin-card">
+      <h2 class="section-title mb-2">Alertas operativas</h2>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge rounded-pill px-3 py-2" [class]="alertClass(alert)" *ngFor="let alert of alerts">
+          {{ alert.label }}: {{ alert.count }}
+        </span>
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-students-trend-chart [chart]="studentsTrendChart" [mode]="studentsTrendMode" (modeChange)="onStudentsTrendModeChange($event)"></app-students-trend-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-students-by-teacher-race-chart [chart]="studentsByTeacherChart"></app-students-by-teacher-race-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-classes-by-activity-chart [chart]="classesByActivityChart"></app-classes-by-activity-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-occupancy-by-activity-chart [chart]="occupancyByActivityChart"></app-occupancy-by-activity-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-payment-status-chart [chart]="paymentStatusChart"></app-payment-status-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-students-by-plan-chart [chart]="studentsByPlanChart"></app-students-by-plan-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-top-exercises-chart [chart]="topExercisesChart"></app-top-exercises-chart>
+  </div>
+  <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
+    <app-top-machines-chart [chart]="topMachinesChart"></app-top-machines-chart>
+  </div>
+
+  <div class="col-12">
+    <app-renewals-table
+      [plans]="plans"
+      [filters]="renewalsFilters"
+      [page]="renewalsPage"
+      [currentPage]="renewalsCurrentPage"
+      [pageSize]="renewalsPageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      [isLoading]="isLoadingRenewals"
+      (filtersChange)="onRenewalsFiltersChange()"
+      (clearFilters)="clearRenewalsFilters()"
+      (pageChange)="goToRenewalsPage($event)"
+      (pageSizeChange)="onRenewalsPageSizeChange($event)"
+    ></app-renewals-table>
+  </div>
+
+  <div class="col-12">
+    <app-classes-table
+      [activities]="activities"
+      [teachers]="teachers"
+      [filters]="classesFilters"
+      [page]="classesPage"
+      [currentPage]="classesCurrentPage"
+      [pageSize]="classesPageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      [isLoading]="isLoadingClasses"
+      (filtersChange)="onClassesFiltersChange()"
+      (clearFilters)="clearClassesFilters()"
+      (pageChange)="goToClassesPage($event)"
+      (pageSizeChange)="onClassesPageSizeChange($event)"
+    ></app-classes-table>
+  </div>
+
+  <div class="col-12 col-xl-6">
+    <app-ranking-table
+      [filters]="rankingFilters"
+      [page]="rankingPage"
+      [currentPage]="rankingCurrentPage"
+      [pageSize]="rankingPageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      [isLoading]="isLoadingRanking"
+      (filtersChange)="onRankingFiltersChange()"
+      (clearFilters)="clearRankingFilters()"
+      (pageChange)="goToRankingPage($event)"
+      (pageSizeChange)="onRankingPageSizeChange($event)"
+    ></app-ranking-table>
+  </div>
+
+  <div class="col-12 col-xl-6">
+    <app-overloads-table
+      [filters]="overloadsFilters"
+      [page]="overloadsPage"
+      [currentPage]="overloadsCurrentPage"
+      [pageSize]="overloadsPageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      [isLoading]="isLoadingOverloads"
+      (filtersChange)="onOverloadsFiltersChange()"
+      (clearFilters)="clearOverloadsFilters()"
+      (pageChange)="goToOverloadsPage($event)"
+      (pageSizeChange)="onOverloadsPageSizeChange($event)"
+    ></app-overloads-table>
+  </div>
+</div>

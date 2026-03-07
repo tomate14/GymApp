@@ -1,0 +1,15 @@
+<section class="admin-card h-100">
+  <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+    <h2 class="section-title mb-0">{{ chart?.title || 'Altas de alumnos' }}</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <label class="form-label form-label-sm mb-0">Vista</label>
+      <select class="form-select form-select-sm mode-select" [(ngModel)]="selectedMode" (ngModelChange)="emitModeChange($event)">
+        <option value="month">Por mes (max 12)</option>
+        <option value="year">Por ano (ultimos 12)</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="empty-state mb-0" *ngIf="!hasData">Sin datos para el periodo seleccionado.</p>
+  <div echarts [options]="options" class="chart-host" *ngIf="hasData"></div>
+</section>

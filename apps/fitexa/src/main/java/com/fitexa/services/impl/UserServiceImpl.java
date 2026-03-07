@@ -2,6 +2,7 @@ package com.fitexa.services.impl;
 
 import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.PlanEntity;
 import com.fitexa.entities.UserEntity;
@@ -15,12 +16,17 @@ import com.fitexa.utils.DateUtils;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
@@ -29,6 +35,39 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<UserResponseDto> findAll() {
         return userRepository.findAll().stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardPageResponseDto<UserResponseDto> findPage(
+        String type,
+        String name,
+        String dni,
+        String paymentStatus,
+        LocalDate registrationFrom,
+        LocalDate registrationTo,
+        LocalDate renewalFrom,
+        LocalDate renewalTo,
+        int page,
+        int size
+    ) {
+        Page<UserResponseDto> result = userRepository.findForTable(
+            parseUserType(type),
+            clean(name),
+            clean(dni),
+            parsePaymentStatus(paymentStatus),
+            registrationFrom,
+            registrationTo,
+            renewalFrom,
+            renewalTo,
+            PageRequest.of(
+                sanitizePage(page),
+                sanitizeSize(size),
+                Sort.by(Sort.Direction.DESC, "registrationDate").and(Sort.by(Sort.Direction.ASC, "lastName"))
+            )
+        ).map(this::toDto);
+
+        return toPageResponse(result);
     }
 
     @Override
@@ -156,5 +195,47 @@ public class UserServiceImpl implements UserService {
             .renewalDate(entity.getRenewalDate())
             .paymentStatus(entity.getPaymentStatus())
             .build();
+    }
+
+    private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {
+        return DashboardPageResponseDto.<T>builder()
+            .content(page.getContent())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .build();
+    }
+
+    private UserType parseUserType(String type) {
+        if (type == null || type.isBlank()) {
+            return null;
+        }
+        return UserType.fromValue(type.trim());
+    }
+
+    private PaymentStatus parsePaymentStatus(String paymentStatus) {
+        if (paymentStatus == null || paymentStatus.isBlank()) {
+            return null;
+        }
+        return PaymentStatus.fromValue(paymentStatus.trim());
+    }
+
+    private String clean(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private int sanitizePage(int page) {
+        return Math.max(0, page);
+    }
+
+    private int sanitizeSize(int size) {
+        if (size <= 0) {
+            return 8;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 }

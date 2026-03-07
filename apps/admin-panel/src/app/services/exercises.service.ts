@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { PageResponse } from '../class/page.model';
 import { Exercise, ExerciseDraft } from '../class/exercise.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -20,6 +21,20 @@ type ExerciseApiRequest = {
   videoUrl: string;
 };
 
+type PageApiDto<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type ExercisePageFilters = {
+  name?: string;
+  activityId?: number | 0;
+  machineId?: number | 0;
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,6 +48,26 @@ export class ExercisesService {
     return this.http.get<ExerciseApiDto[]>(this.endpoint).pipe(
       map((items) => items.map((item) => this.mapFromApi(item))),
       tap((items) => this.setAll(items))
+    );
+  }
+
+  findPage(filters: ExercisePageFilters, page: number, size: number): Observable<PageResponse<Exercise>> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(0, page)))
+      .set('size', String(size));
+
+    if (filters.name && filters.name.trim() !== '') {
+      params = params.set('name', filters.name.trim());
+    }
+    if (filters.activityId && filters.activityId > 0) {
+      params = params.set('activityId', String(filters.activityId));
+    }
+    if (filters.machineId && filters.machineId > 0) {
+      params = params.set('machineId', String(filters.machineId));
+    }
+
+    return this.http.get<PageApiDto<ExerciseApiDto>>(`${this.endpoint}/page`, { params }).pipe(
+      map((response) => this.mapPageFromApi(response))
     );
   }
 
@@ -107,6 +142,16 @@ export class ExercisesService {
       activityId: dto.activityId === null ? null : Number(dto.activityId),
       videoUrl: dto.videoUrl,
       machineId: dto.machineId === null ? null : Number(dto.machineId)
+    };
+  }
+
+  private mapPageFromApi(dto: PageApiDto<ExerciseApiDto>): PageResponse<Exercise> {
+    return {
+      content: dto.content.map((item) => this.mapFromApi(item)),
+      page: Number(dto.page),
+      size: Number(dto.size),
+      totalElements: Number(dto.totalElements),
+      totalPages: Number(dto.totalPages)
     };
   }
 }

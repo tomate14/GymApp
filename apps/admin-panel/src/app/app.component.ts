@@ -12,6 +12,7 @@ import { AdminMenuItem } from './class/menu-item.model';
 })
 export class AppComponent implements OnInit {
   readonly menuItems: AdminMenuItem[] = [
+    { label: 'Dashboard', path: 'dashboard', shortLabel: 'D' },
     { label: 'Usuarios', path: 'usuarios', shortLabel: 'U' },
     { label: 'Planes', path: 'planes', shortLabel: 'P' },
     { label: 'Actividades', path: 'actividades', shortLabel: 'A' },
@@ -38,7 +39,7 @@ export class AppComponent implements OnInit {
 
   get sectionTitle(): string {
     const current = this.menuItems.find((item) => this.router.url.includes(`/${item.path}`));
-    return current?.label ?? 'Usuarios';
+    return current?.label ?? 'Dashboard';
   }
 
   toggleMenu(): void {

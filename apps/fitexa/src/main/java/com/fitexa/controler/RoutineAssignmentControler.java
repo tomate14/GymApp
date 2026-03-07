@@ -3,6 +3,7 @@ package com.fitexa.controler;
 import com.fitexa.dtos.RoutineAssignmentRequestDto;
 import com.fitexa.dtos.RoutineAssignmentResponseDto;
 import com.fitexa.dtos.RoutineAssignmentSaveResultDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.RoutineAssignmentPdfService;
 import com.fitexa.services.RoutineAssignmentService;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,6 +33,17 @@ public class RoutineAssignmentControler {
     @GetMapping
     public List<RoutineAssignmentResponseDto> findAll() {
         return routineAssignmentService.findAll();
+    }
+
+    @GetMapping("/page")
+    public DashboardPageResponseDto<RoutineAssignmentResponseDto> findPage(
+        @RequestParam(name = "student", required = false) String student,
+        @RequestParam(name = "templateId", required = false) Long templateId,
+        @RequestParam(name = "currentOnly", defaultValue = "true") boolean currentOnly,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "8") int size
+    ) {
+        return routineAssignmentService.findPage(student, templateId, currentOnly, page, size);
     }
 
     @GetMapping("/{id}")

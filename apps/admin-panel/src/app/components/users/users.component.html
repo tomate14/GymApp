@@ -209,7 +209,7 @@
         <small class="text-secondary">Cargando usuarios...</small>
       </div>
 
-      <div class="table-responsive" *ngIf="filteredUsers.length > 0; else noUsers">
+      <div class="table-responsive" *ngIf="paginatedUsers.length > 0; else noUsers">
         <table class="table table-dark table-striped table-hover align-middle user-table">
           <thead>
             <tr>
@@ -258,9 +258,9 @@
         <p class="empty-state mb-0">No hay usuarios para los filtros aplicados.</p>
       </ng-template>
 
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="filteredUsers.length > 0">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="usersPage.totalElements > 0">
         <small class="text-secondary">
-          Mostrando {{ paginatedUsers.length }} de {{ filteredUsers.length }} usuarios filtrados
+          Mostrando {{ paginatedUsers.length }} de {{ usersPage.totalElements }} usuarios filtrados
         </small>
 
         <div class="d-flex flex-wrap align-items-center gap-1">

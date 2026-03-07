@@ -2,6 +2,7 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.RoutineTemplateRequestDto;
 import com.fitexa.dtos.RoutineTemplateResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.RoutineTemplateService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,6 +27,17 @@ public class RoutineTemplateControler {
     @GetMapping
     public List<RoutineTemplateResponseDto> findAll() {
         return routineTemplateService.findAll();
+    }
+
+    @GetMapping("/page")
+    public DashboardPageResponseDto<RoutineTemplateResponseDto> findPage(
+        @RequestParam(name = "name", required = false) String name,
+        @RequestParam(name = "minExercises", required = false) Integer minExercises,
+        @RequestParam(name = "minStudents", required = false) Integer minStudents,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "8") int size
+    ) {
+        return routineTemplateService.findPage(name, minExercises, minStudents, page, size);
     }
 
     @GetMapping("/{id}")

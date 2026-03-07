@@ -2,18 +2,24 @@ package com.fitexa.services.impl;
 
 import com.fitexa.dtos.PlanRequestDto;
 import com.fitexa.dtos.PlanResponseDto;
+import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.PlanEntity;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.PlanRepository;
 import com.fitexa.services.PlanService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class PlanServiceImpl implements PlanService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final PlanRepository planRepository;
 
@@ -25,11 +31,20 @@ public class PlanServiceImpl implements PlanService {
 
     @Override
     @Transactional(readOnly = true)
+    public DashboardPageResponseDto<PlanResponseDto> findPage(String name, String status, int page, int size) {
+        Page<PlanResponseDto> result = planRepository.findForTable(
+            clean(name),
+            parseStatus(status),
+            PageRequest.of(sanitizePage(page), sanitizeSize(size), Sort.by(Sort.Direction.ASC, "name"))
+        ).map(this::toDto);
+
+        return toPageResponse(result);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PlanResponseDto> findActive() {
-        return planRepository.findAll().stream()
-            .filter(PlanEntity::getActive)
-            .map(this::toDto)
-            .toList();
+        return planRepository.findByActiveTrue().stream().map(this::toDto).toList();
     }
 
     @Override
@@ -80,5 +95,46 @@ public class PlanServiceImpl implements PlanService {
             .maxDaysPerWeek(entity.getMaxDaysPerWeek())
             .active(entity.getActive())
             .build();
+    }
+
+    private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {
+        return DashboardPageResponseDto.<T>builder()
+            .content(page.getContent())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .build();
+    }
+
+    private String clean(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private Boolean parseStatus(String status) {
+        if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) {
+            return null;
+        }
+        if ("active".equalsIgnoreCase(status)) {
+            return true;
+        }
+        if ("inactive".equalsIgnoreCase(status)) {
+            return false;
+        }
+        return null;
+    }
+
+    private int sanitizePage(int page) {
+        return Math.max(0, page);
+    }
+
+    private int sanitizeSize(int size) {
+        if (size <= 0) {
+            return 8;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 }

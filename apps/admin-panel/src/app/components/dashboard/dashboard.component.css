@@ -1,0 +1,27 @@
+.kpi-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.8rem;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.kpi-value {
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.kpi-card-compact {
+  min-height: 108px;
+  padding: 0.65rem 0.75rem;
+}
+
+.kpi-card-compact .kpi-value {
+  font-size: 1.25rem;
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 1199px) {
+  .kpi-card-compact {
+    min-height: auto;
+  }
+}
