@@ -23,6 +23,17 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT fk_users_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS user_payment_movements (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    plan_id BIGINT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    detail VARCHAR(255) NOT NULL,
+    paid_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_payment_movements_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_payment_movements_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS activities (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(140) NOT NULL UNIQUE,

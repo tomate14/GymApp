@@ -242,6 +242,9 @@
               </td>
               <td class="text-end">
                 <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                  <button class="btn btn-sm btn-outline-info" type="button" (click)="togglePayments(user)" [disabled]="user.userType !== 'alumno'">
+                    Pagos
+                  </button>
                   <button class="btn btn-sm btn-outline-warning" type="button" (click)="renewQuota(user)" [disabled]="user.userType !== 'alumno' || user.planId === null">
                     Renovar cuota
                   </button>
@@ -291,6 +294,7 @@
       </div>
     </section>
   </div>
+
 </div>
 
 <app-confirm-popup
@@ -302,3 +306,12 @@
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
 ></app-confirm-popup>
+
+<app-payments-popup
+  [visible]="selectedPaymentsUser !== null"
+  [user]="selectedPaymentsUser"
+  [movements]="paymentMovements"
+  [isLoading]="isLoadingPayments"
+  [error]="paymentsError"
+  (closed)="closePayments()"
+></app-payments-popup>

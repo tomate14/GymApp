@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS routine_assignments;
 DROP TABLE IF EXISTS routine_template_exercises;
 DROP TABLE IF EXISTS routine_templates;
 DROP TABLE IF EXISTS gym_class_subscriptions;
+DROP TABLE IF EXISTS user_payment_movements;
 DROP TABLE IF EXISTS gym_class_days;
 DROP TABLE IF EXISTS gym_classes;
 DROP TABLE IF EXISTS exercises;
@@ -40,6 +41,17 @@ CREATE TABLE users (
     renewal_date DATE NOT NULL,
     payment_status VARCHAR(40) NOT NULL,
     CONSTRAINT fk_users_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
+);
+
+CREATE TABLE user_payment_movements (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    plan_id BIGINT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    detail VARCHAR(255) NOT NULL,
+    paid_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_payment_movements_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_payment_movements_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
 );
 
 CREATE TABLE activities (
@@ -215,6 +227,40 @@ FROM (
     ) t
     WHERE (t.n * 10 + o.n) + 1 <= 50
 ) seq;
+
+INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
+SELECT
+    u.id,
+    u.plan_id,
+    CASE u.plan_id
+        WHEN 1 THEN 22000.00
+        WHEN 2 THEN 29000.00
+        WHEN 3 THEN 36000.00
+        ELSE 9000.00
+    END AS amount,
+    'Renovacion de cuota' AS detail,
+    DATE_SUB(NOW(), INTERVAL (5 + MOD(u.id, 40)) DAY) AS paid_at
+FROM users u
+WHERE u.user_type = 'ALUMNO'
+  AND u.plan_id IS NOT NULL
+  AND MOD(u.id, 2) = 0;
+
+INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
+SELECT
+    u.id,
+    u.plan_id,
+    CASE u.plan_id
+        WHEN 1 THEN 22000.00
+        WHEN 2 THEN 29000.00
+        WHEN 3 THEN 36000.00
+        ELSE 9000.00
+    END AS amount,
+    'Renovacion de cuota' AS detail,
+    DATE_SUB(NOW(), INTERVAL (45 + MOD(u.id, 70)) DAY) AS paid_at
+FROM users u
+WHERE u.user_type = 'ALUMNO'
+  AND u.plan_id IS NOT NULL
+  AND MOD(u.id, 5) = 0;
 
 INSERT INTO activities (id, name, description) VALUES
     (1, 'Musculacion', 'Sala libre con seguimiento mensual'),

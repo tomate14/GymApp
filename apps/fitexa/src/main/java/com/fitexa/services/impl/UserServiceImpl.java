@@ -11,6 +11,7 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.PlanRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.UserPaymentMovementService;
 import com.fitexa.services.UserService;
 import com.fitexa.utils.DateUtils;
 import java.time.LocalDate;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
+    private final UserPaymentMovementService userPaymentMovementService;
 
     @Override
     @Transactional(readOnly = true)
@@ -152,7 +154,9 @@ public class UserServiceImpl implements UserService {
 
         entity.setRenewalDate(DateUtils.plusOneMonth(LocalDate.now()));
         entity.setPaymentStatus(PaymentStatus.AL_DIA);
-        return toDto(userRepository.save(entity));
+        UserEntity savedEntity = userRepository.save(entity);
+        userPaymentMovementService.registerRenewalMovement(savedEntity);
+        return toDto(savedEntity);
     }
 
     @Override

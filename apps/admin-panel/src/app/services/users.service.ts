@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { PageResponse } from '../class/page.model';
+import { UserPaymentMovement } from '../class/user-payment-movement.model';
 import { User, UserDraft, UserType } from '../class/user.model';
 import { API_BASE_URL } from '../utils/api.util';
 
@@ -34,6 +35,17 @@ type UserApiRequest = {
   planId: number | null;
   registrationDate: string;
   paymentStatus: User['paymentStatus'];
+};
+
+type UserPaymentMovementApiDto = {
+  id: number;
+  userId: number;
+  studentName: string;
+  planId: number | null;
+  planName: string;
+  amount: number;
+  detail: string;
+  paidAt: string;
 };
 
 type PageApiDto<T> = {
@@ -145,6 +157,12 @@ export class UsersService {
     );
   }
 
+  findPayments(userId: number): Observable<UserPaymentMovement[]> {
+    return this.http.get<UserPaymentMovementApiDto[]>(`${this.endpoint}/${userId}/payments`).pipe(
+      map((items) => items.map((item) => this.mapPaymentFromApi(item)))
+    );
+  }
+
   remove(userId: number): Observable<void> {
     return this.http.delete<void>(`${this.endpoint}/${userId}`).pipe(
       tap(() => {
@@ -224,6 +242,19 @@ export class UsersService {
       registrationDate: dto.registrationDate,
       renewalDate: dto.renewalDate,
       paymentStatus: dto.paymentStatus
+    };
+  }
+
+  private mapPaymentFromApi(dto: UserPaymentMovementApiDto): UserPaymentMovement {
+    return {
+      id: Number(dto.id),
+      userId: Number(dto.userId),
+      studentName: dto.studentName,
+      planId: dto.planId === null ? null : Number(dto.planId),
+      planName: dto.planName,
+      amount: Number(dto.amount),
+      detail: dto.detail,
+      paidAt: dto.paidAt
     };
   }
 

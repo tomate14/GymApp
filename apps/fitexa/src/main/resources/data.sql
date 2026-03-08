@@ -12,6 +12,18 @@ INSERT IGNORE INTO users (id, first_name, last_name, dni, address, phone, email,
     (6, 'Juan', 'Perez', '38992011', 'Mendoza 640', '3415448877', 'juan.perez@email.com', '1997-02-18', 'ALUMNO', 1, '2025-11-21', '2026-03-12', 'ADEUDA'),
     (7, 'Camila', 'Navarro', '41588231', 'Roca 310', '3415099877', 'camila.navarro@email.com', '2001-07-09', 'ALUMNO', 3, '2026-01-07', '2026-03-20', 'AL_DIA');
 
+INSERT IGNORE INTO user_payment_movements (id, user_id, plan_id, amount, detail, paid_at) VALUES
+    (1, 2, 2, 22000.00, 'Renovacion de cuota', '2025-12-20 10:15:00'),
+    (2, 2, 2, 22000.00, 'Renovacion de cuota', '2026-01-20 10:20:00'),
+    (3, 2, 2, 22000.00, 'Renovacion de cuota', '2026-02-20 10:25:00'),
+    (4, 4, 1, 18000.00, 'Renovacion de cuota', '2025-12-03 18:35:00'),
+    (5, 4, 1, 18000.00, 'Renovacion de cuota', '2026-01-03 18:40:00'),
+    (6, 4, 1, 18000.00, 'Renovacion de cuota', '2026-02-03 18:45:00'),
+    (7, 6, 1, 18000.00, 'Renovacion de cuota', '2026-01-12 09:10:00'),
+    (8, 6, 1, 18000.00, 'Renovacion de cuota', '2026-02-12 09:15:00'),
+    (9, 7, 3, 28000.00, 'Renovacion de cuota', '2026-01-20 08:30:00'),
+    (10, 7, 3, 28000.00, 'Renovacion de cuota', '2026-02-20 08:35:00');
+
 INSERT IGNORE INTO activities (id, name, description) VALUES
     (1, 'Musculacion', 'Sala libre con seguimiento mensual'),
     (2, 'Crossfit', 'Entrenamiento funcional de alta intensidad'),

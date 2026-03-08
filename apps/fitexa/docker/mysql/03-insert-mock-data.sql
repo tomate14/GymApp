@@ -68,6 +68,40 @@ FROM (
     WHERE (t.n * 10 + o.n) + 1 <= 50
 ) seq;
 
+INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
+SELECT
+    u.id,
+    u.plan_id,
+    CASE u.plan_id
+        WHEN 1 THEN 22000.00
+        WHEN 2 THEN 29000.00
+        WHEN 3 THEN 36000.00
+        ELSE 9000.00
+    END AS amount,
+    'Renovacion de cuota' AS detail,
+    DATE_SUB(NOW(), INTERVAL (5 + MOD(u.id, 40)) DAY) AS paid_at
+FROM users u
+WHERE u.user_type = 'ALUMNO'
+  AND u.plan_id IS NOT NULL
+  AND MOD(u.id, 2) = 0;
+
+INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
+SELECT
+    u.id,
+    u.plan_id,
+    CASE u.plan_id
+        WHEN 1 THEN 22000.00
+        WHEN 2 THEN 29000.00
+        WHEN 3 THEN 36000.00
+        ELSE 9000.00
+    END AS amount,
+    'Renovacion de cuota' AS detail,
+    DATE_SUB(NOW(), INTERVAL (45 + MOD(u.id, 70)) DAY) AS paid_at
+FROM users u
+WHERE u.user_type = 'ALUMNO'
+  AND u.plan_id IS NOT NULL
+  AND MOD(u.id, 5) = 0;
+
 INSERT INTO activities (id, name, description) VALUES
     (1, 'Musculacion', 'Sala libre con seguimiento mensual'),
     (2, 'Crossfit', 'Entrenamiento funcional de alta intensidad'),

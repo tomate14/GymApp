@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Plan } from '../../class/plan.model';
+import { UserPaymentMovement } from '../../class/user-payment-movement.model';
 import { createEmptyUserDraft, PaymentStatus, User, UserDraft, UserType } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
+import { PaymentsPopupComponent } from '../../popups/payments-popup/payments-popup.component';
 import { PlansService } from '../../services/plans.service';
 import { UserPageFilters, UsersService } from '../../services/users.service';
 
@@ -23,7 +25,7 @@ type UserTableFilters = {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmPopupComponent],
+  imports: [CommonModule, FormsModule, ConfirmPopupComponent, PaymentsPopupComponent],
   templateUrl: './users.component.html',
   styleUrl: './users.component.css'
 })
@@ -36,6 +38,10 @@ export class UsersComponent implements OnInit {
   deleteCandidate: User | null = null;
   isLoading = false;
   apiError: string | null = null;
+  selectedPaymentsUser: User | null = null;
+  paymentMovements: UserPaymentMovement[] = [];
+  isLoadingPayments = false;
+  paymentsError: string | null = null;
 
   filters: UserTableFilters = {
     name: '',
@@ -217,11 +223,33 @@ export class UsersComponent implements OnInit {
     this.usersService.renewSubscription(user.id).subscribe({
       next: () => {
         this.loadUsersPage();
+        if (this.selectedPaymentsUser?.id === user.id) {
+          this.loadPaymentMovements(user.id);
+        }
       },
       error: () => {
         this.apiError = 'No se pudo renovar la cuota en el backend.';
       }
     });
+  }
+
+  togglePayments(user: User): void {
+    if (user.userType !== 'alumno') {
+      return;
+    }
+    if (this.selectedPaymentsUser?.id === user.id) {
+      this.closePayments();
+      return;
+    }
+    this.selectedPaymentsUser = user;
+    this.loadPaymentMovements(user.id);
+  }
+
+  closePayments(): void {
+    this.selectedPaymentsUser = null;
+    this.paymentMovements = [];
+    this.paymentsError = null;
+    this.isLoadingPayments = false;
   }
 
   onUserTypeChange(): void {
@@ -289,6 +317,23 @@ export class UsersComponent implements OnInit {
 
   private loadUsersPage(): void {
     this.loadUsersFromApi();
+  }
+
+  private loadPaymentMovements(userId: number): void {
+    this.isLoadingPayments = true;
+    this.paymentsError = null;
+    this.paymentMovements = [];
+
+    this.usersService.findPayments(userId).subscribe({
+      next: (items) => {
+        this.paymentMovements = items;
+        this.isLoadingPayments = false;
+      },
+      error: () => {
+        this.paymentsError = 'No se pudieron obtener los movimientos de pago del alumno.';
+        this.isLoadingPayments = false;
+      }
+    });
   }
 
   private toPageFilters(): UserPageFilters {
