@@ -140,38 +140,35 @@ INSERT INTO routine_template_exercises (routine_template_id, exercise_id) VALUES
     (9, 8), (9, 9), (9, 20), (9, 18),
     (10, 22), (10, 23), (10, 24), (10, 7);
 
-INSERT INTO gym_classes (id, class_name, activity_id, max_capacity, enrolled, teacher_id, date, time)
-SELECT
-    seq.n AS id,
-    CONCAT(
-        ELT(((seq.n - 1) % 8) + 1, 'Musculacion', 'Crossfit', 'Pilates', 'Spinning', 'Funcional', 'Yoga', 'HIIT', 'Stretching'),
-        ' ',
-        ELT(((seq.n - 1) % 3) + 1, 'Morning', 'Noon', 'Evening')
-    ) AS class_name,
-    ((seq.n - 1) % 8) + 1 AS activity_id,
-    CASE
-        WHEN ((seq.n - 1) % 8) + 1 = 1 THEN NULL
-        ELSE 16 + MOD(seq.n, 15)
-    END AS max_capacity,
-    0 AS enrolled,
-    CASE
-        WHEN ((seq.n - 1) % 8) + 1 = 1 OR MOD(seq.n, 17) = 0 THEN NULL
-        ELSE ((MOD(seq.n, 6)) + 1)
-    END AS teacher_id,
-    DATE_ADD('2026-01-01', INTERVAL seq.n DAY) AS date,
-    ELT((MOD(seq.n, 6) + 1), '06:30:00', '08:00:00', '10:30:00', '17:30:00', '19:00:00', '20:30:00') AS time
-FROM (
-    SELECT (t.n * 10 + o.n) + 1 AS n
-    FROM (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL
-        SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
-    ) o
-    CROSS JOIN (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL
-        SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
-    ) t
-    WHERE (t.n * 10 + o.n) + 1 <= 72
-) seq;
+-- Escenario semanal realista para el calendario:
+-- 20 clases totales por semana y maximo 2 clases por franja horaria.
+INSERT INTO gym_classes (id, class_name, activity_id, max_capacity, enrolled, teacher_id, date, all_day, start_time, end_time) VALUES
+    (1, 'Musculacion Morning', 1, NULL, 0, NULL, '2026-03-02', 1, NULL, NULL),
+    (2, 'Crossfit Morning', 2, 18, 0, 1, '2026-03-02', 0, '08:00:00', '09:00:00'),
+    (3, 'Pilates Suelo', 3, 20, 0, 3, '2026-03-03', 0, '09:30:00', '10:30:00'),
+    (4, 'Yoga Flow', 6, 22, 0, 5, '2026-03-03', 0, '09:30:00', '10:30:00'),
+    (5, 'Spinning Power', 4, 18, 0, 5, '2026-03-02', 0, '19:00:00', '20:00:00'),
+    (6, 'Funcional Express', 5, 16, 0, 3, '2026-03-03', 0, '07:15:00', '08:00:00'),
+    (7, 'HIIT Mediodia', 7, 14, 0, 2, '2026-03-04', 0, '12:30:00', '13:15:00'),
+    (8, 'Stretching Recovery', 8, 25, 0, 5, '2026-03-07', 1, NULL, NULL),
+    (9, 'Core y Movilidad', 8, 20, 0, 6, '2026-03-05', 0, '20:00:00', '20:45:00'),
+    (10, 'Box Funcional', 5, 18, 0, 4, '2026-03-06', 0, '19:00:00', '20:00:00'),
+    (11, 'Musculacion Intermedio', 1, NULL, 0, NULL, '2026-03-03', 0, '18:00:00', '19:00:00'),
+    (12, 'Crossfit Evening', 2, 16, 0, 1, '2026-03-03', 0, '18:00:00', '19:00:00');
+
+INSERT INTO gym_class_days (gym_class_id, day) VALUES
+    (1, 'LUNES'), (1, 'MIERCOLES'),
+    (2, 'LUNES'), (2, 'MIERCOLES'),
+    (3, 'MARTES'), (3, 'JUEVES'),
+    (4, 'MARTES'), (4, 'JUEVES'),
+    (5, 'LUNES'), (5, 'VIERNES'),
+    (6, 'MARTES'), (6, 'VIERNES'),
+    (7, 'MIERCOLES'),
+    (8, 'SABADO'),
+    (9, 'JUEVES'),
+    (10, 'VIERNES'),
+    (11, 'MARTES'), (11, 'JUEVES'),
+    (12, 'MARTES'), (12, 'JUEVES');
 
 CREATE TEMPORARY TABLE tmp_class_candidates AS
 SELECT
@@ -192,7 +189,7 @@ INSERT INTO gym_class_subscriptions (gym_class_id, user_id, subscribed_at)
 SELECT
     c.gym_class_id,
     c.user_id,
-    TIMESTAMP(gc.date, gc.time) - INTERVAL (1 + MOD(c.user_id + c.gym_class_id, 9)) DAY
+    TIMESTAMP(gc.date, COALESCE(gc.start_time, '08:00:00')) - INTERVAL (1 + MOD(c.user_id + c.gym_class_id, 9)) DAY
 FROM tmp_class_candidates c
 JOIN gym_classes gc ON gc.id = c.gym_class_id
 WHERE c.rn <= c.target;

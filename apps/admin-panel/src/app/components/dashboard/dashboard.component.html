@@ -117,23 +117,6 @@
   </div>
 
   <div class="col-12">
-    <app-classes-table
-      [activities]="activities"
-      [teachers]="teachers"
-      [filters]="classesFilters"
-      [page]="classesPage"
-      [currentPage]="classesCurrentPage"
-      [pageSize]="classesPageSize"
-      [pageSizeOptions]="pageSizeOptions"
-      [isLoading]="isLoadingClasses"
-      (filtersChange)="onClassesFiltersChange()"
-      (clearFilters)="clearClassesFilters()"
-      (pageChange)="goToClassesPage($event)"
-      (pageSizeChange)="onClassesPageSizeChange($event)"
-    ></app-classes-table>
-  </div>
-
-  <div class="col-12 col-xl-6">
     <app-ranking-table
       [filters]="rankingFilters"
       [page]="rankingPage"
@@ -148,7 +131,7 @@
     ></app-ranking-table>
   </div>
 
-  <div class="col-12 col-xl-6">
+  <div class="col-12">
     <app-overloads-table
       [filters]="overloadsFilters"
       [page]="overloadsPage"

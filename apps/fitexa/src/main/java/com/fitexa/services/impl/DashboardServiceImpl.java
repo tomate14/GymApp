@@ -9,10 +9,11 @@ import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.dtos.DashboardPlanOverloadRowDto;
 import com.fitexa.dtos.DashboardRenewalRowDto;
 import com.fitexa.dtos.DashboardSummaryResponseDto;
+import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
-import com.fitexa.repository.DashboardActivityRankingProjection;
+import com.fitexa.entities.WeekDay;
 import com.fitexa.repository.DashboardPlanOverloadProjection;
 import com.fitexa.repository.GymClassRepository;
 import com.fitexa.repository.RoutineAssignmentRepository;
@@ -26,8 +27,14 @@ import com.fitexa.utils.DashboardUserSpecifications;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -184,47 +191,45 @@ public class DashboardServiceImpl implements DashboardService {
         Long teacherId,
         LocalDate fromDate,
         LocalDate toDate,
-        LocalDate dateFrom,
-        LocalDate dateTo,
         int page,
         int size
     ) {
-        LocalDate[] globalRange = resolveDateRange(fromDate, toDate);
-        LocalDate effectiveDateFrom = dateFrom == null ? globalRange[0] : max(dateFrom, globalRange[0]);
-        LocalDate effectiveDateTo = dateTo == null ? globalRange[1] : min(dateTo, globalRange[1]);
-        if (effectiveDateFrom.isAfter(effectiveDateTo)) {
-            effectiveDateFrom = globalRange[0];
-            effectiveDateTo = globalRange[1];
-        }
+        LocalDate[] range = resolveDateRange(fromDate, toDate);
+        LocalDate effectiveFrom = range[0];
+        LocalDate effectiveTo = range[1];
 
-        Pageable pageable = PageRequest.of(
-            sanitizePage(page),
-            sanitizeSize(size),
-            Sort.by(Sort.Direction.ASC, "date").and(Sort.by(Sort.Direction.ASC, "time"))
-        );
+        List<DashboardClassRowDto> scheduleRows = gymClassRepository
+            .findAll(
+                DashboardGymClassSpecifications.buildClassScheduleFilter(clean(search), activityId, teacherId),
+                Sort.by(Sort.Direction.DESC, "allDay")
+                    .and(Sort.by(Sort.Direction.ASC, "startTime"))
+                    .and(Sort.by(Sort.Direction.ASC, "className"))
+            )
+            .stream()
+            .flatMap(item -> buildScheduleRows(item, effectiveFrom, effectiveTo).stream())
+            .sorted(
+                Comparator
+                    .comparing(DashboardClassRowDto::getDate)
+                    .thenComparing(row -> Boolean.TRUE.equals(row.getAllDay()) ? 0 : 1)
+                    .thenComparing(DashboardClassRowDto::getStartTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(DashboardClassRowDto::getClassName)
+            )
+            .toList();
 
-        Page<DashboardClassRowDto> dtoPage = gymClassRepository.findAll(
-            DashboardGymClassSpecifications.buildClassScheduleFilter(clean(search), activityId, teacherId, effectiveDateFrom, effectiveDateTo),
-            pageable
-        ).map(item -> {
-            double occupancy = item.getMaxCapacity() == null || item.getMaxCapacity() <= 0
-                ? 0d
-                : (item.getEnrolled() * 100.0) / item.getMaxCapacity();
+        int safePage = sanitizePage(page);
+        int safeSize = sanitizeSize(size);
+        int fromIndex = Math.min(safePage * safeSize, scheduleRows.size());
+        int toIndex = Math.min(fromIndex + safeSize, scheduleRows.size());
+        List<DashboardClassRowDto> content = scheduleRows.subList(fromIndex, toIndex);
+        int totalPages = scheduleRows.isEmpty() ? 1 : (int) Math.ceil(scheduleRows.size() / (double) safeSize);
 
-            return DashboardClassRowDto.builder()
-                .classId(item.getId())
-                .className(item.getClassName())
-                .activityName(item.getActivity() == null ? "Sin actividad" : item.getActivity().getName())
-                .teacherName(item.getTeacher() == null ? "Sin profesor" : item.getTeacher().getFirstName() + " " + item.getTeacher().getLastName())
-                .date(item.getDate())
-                .time(item.getTime())
-                .enrolled(item.getEnrolled())
-                .maxCapacity(item.getMaxCapacity())
-                .occupancyPercent(occupancy)
-                .build();
-        });
-
-        return toPageResponse(dtoPage);
+        return DashboardPageResponseDto.<DashboardClassRowDto>builder()
+            .content(content)
+            .page(safePage)
+            .size(safeSize)
+            .totalElements(scheduleRows.size())
+            .totalPages(totalPages)
+            .build();
     }
 
     @Override
@@ -237,16 +242,54 @@ public class DashboardServiceImpl implements DashboardService {
         int size
     ) {
         LocalDate[] range = resolveDateRange(fromDate, toDate);
-        Pageable pageable = PageRequest.of(sanitizePage(page), sanitizeSize(size));
+        String safeSearch = clean(search);
+        Map<String, ActivityRankingAccumulator> aggregations = new HashMap<>();
 
-        Page<DashboardActivityRankingRowDto> dtoPage = gymClassRepository.findActivityRanking(
-            range[0],
-            range[1],
-            clean(search),
-            pageable
-        ).map(this::toActivityRankingDto);
+        for (GymClassEntity item : gymClassRepository.findAll()) {
+            int occurrences = countOccurrences(item, range[0], range[1]);
+            if (occurrences <= 0) {
+                continue;
+            }
 
-        return toPageResponse(dtoPage);
+            Long activityId = item.getActivity() == null ? null : item.getActivity().getId();
+            String activityName = item.getActivity() == null ? "Sin actividad" : item.getActivity().getName();
+            if (safeSearch != null && !activityName.toLowerCase().contains(safeSearch.toLowerCase())) {
+                continue;
+            }
+
+            String key = (activityId == null ? "null" : activityId.toString()) + "|" + activityName;
+            ActivityRankingAccumulator accumulator = aggregations.computeIfAbsent(
+                key,
+                ignored -> new ActivityRankingAccumulator(activityId, activityName)
+            );
+            accumulator.add(item, occurrences);
+        }
+
+        List<DashboardActivityRankingRowDto> rows = aggregations.values()
+            .stream()
+            .map(ActivityRankingAccumulator::toDto)
+            .sorted(
+                Comparator
+                    .comparingLong(DashboardActivityRankingRowDto::getClassesCount)
+                    .thenComparingLong(DashboardActivityRankingRowDto::getTotalEnrolled)
+                    .reversed()
+            )
+            .toList();
+
+        int safePage = sanitizePage(page);
+        int safeSize = sanitizeSize(size);
+        int fromIndex = Math.min(safePage * safeSize, rows.size());
+        int toIndex = Math.min(fromIndex + safeSize, rows.size());
+        List<DashboardActivityRankingRowDto> content = rows.subList(fromIndex, toIndex);
+        int totalPages = rows.isEmpty() ? 1 : (int) Math.ceil(rows.size() / (double) safeSize);
+
+        return DashboardPageResponseDto.<DashboardActivityRankingRowDto>builder()
+            .content(content)
+            .page(safePage)
+            .size(safeSize)
+            .totalElements(rows.size())
+            .totalPages(totalPages)
+            .build();
     }
 
     @Override
@@ -269,16 +312,6 @@ public class DashboardServiceImpl implements DashboardService {
         ).map(this::toPlanOverloadDto);
 
         return toPageResponse(dtoPage);
-    }
-
-    private DashboardActivityRankingRowDto toActivityRankingDto(DashboardActivityRankingProjection projection) {
-        return DashboardActivityRankingRowDto.builder()
-            .activityId(projection.getActivityId())
-            .activityName(projection.getActivityName())
-            .classesCount(defaultZero(projection.getClassesCount()))
-            .totalEnrolled(defaultZero(projection.getTotalEnrolled()))
-            .averageOccupancyPercent(defaultZero(projection.getAverageOccupancyPercent()))
-            .build();
     }
 
     private DashboardPlanOverloadRowDto toPlanOverloadDto(DashboardPlanOverloadProjection projection) {
@@ -338,6 +371,85 @@ public class DashboardServiceImpl implements DashboardService {
         return value.trim();
     }
 
+    private List<DashboardClassRowDto> buildScheduleRows(GymClassEntity item, LocalDate fromDate, LocalDate toDate) {
+        List<DashboardClassRowDto> rows = new ArrayList<>();
+        Set<WeekDay> weekDays = resolveWeekDays(item);
+        boolean allDay = Boolean.TRUE.equals(item.getAllDay());
+        LocalTime safeStartTime = null;
+        LocalTime safeEndTime = null;
+        if (!allDay) {
+            safeStartTime = item.getStartTime() == null ? LocalTime.NOON : item.getStartTime();
+            safeEndTime = item.getEndTime() == null ? safeStartTime.plusHours(1) : item.getEndTime();
+        }
+        double occupancy = item.getMaxCapacity() == null || item.getMaxCapacity() <= 0
+            ? 0d
+            : (item.getEnrolled() * 100.0) / item.getMaxCapacity();
+
+        LocalDate cursor = fromDate;
+        while (!cursor.isAfter(toDate)) {
+            WeekDay day = toWeekDay(cursor.getDayOfWeek().getValue());
+            if (weekDays.contains(day)) {
+                rows.add(DashboardClassRowDto.builder()
+                    .classId(item.getId())
+                    .className(item.getClassName())
+                    .activityName(item.getActivity() == null ? "Sin actividad" : item.getActivity().getName())
+                    .teacherName(item.getTeacher() == null ? "Sin profesor" : item.getTeacher().getFirstName() + " " + item.getTeacher().getLastName())
+                    .date(cursor)
+                    .weekDay(day.getValue())
+                    .allDay(allDay)
+                    .startTime(safeStartTime)
+                    .endTime(safeEndTime)
+                    .enrolled(item.getEnrolled())
+                    .maxCapacity(item.getMaxCapacity())
+                    .occupancyPercent(occupancy)
+                    .build());
+            }
+            cursor = cursor.plusDays(1);
+        }
+
+        return rows;
+    }
+
+    private Set<WeekDay> resolveWeekDays(GymClassEntity item) {
+        if (item.getWeekDays() != null && !item.getWeekDays().isEmpty()) {
+            return item.getWeekDays();
+        }
+        LinkedHashSet<WeekDay> fallback = new LinkedHashSet<>();
+        if (item.getDate() != null) {
+            fallback.add(toWeekDay(item.getDate().getDayOfWeek().getValue()));
+        }
+        return fallback;
+    }
+
+    private int countOccurrences(GymClassEntity item, LocalDate fromDate, LocalDate toDate) {
+        Set<WeekDay> days = resolveWeekDays(item);
+        if (days.isEmpty()) {
+            return 0;
+        }
+        int total = 0;
+        LocalDate cursor = fromDate;
+        while (!cursor.isAfter(toDate)) {
+            WeekDay day = toWeekDay(cursor.getDayOfWeek().getValue());
+            if (days.contains(day)) {
+                total++;
+            }
+            cursor = cursor.plusDays(1);
+        }
+        return total;
+    }
+
+    private WeekDay toWeekDay(int dayOfWeekValue) {
+        return switch (dayOfWeekValue) {
+            case 1 -> WeekDay.LUNES;
+            case 2 -> WeekDay.MARTES;
+            case 3 -> WeekDay.MIERCOLES;
+            case 4 -> WeekDay.JUEVES;
+            case 5 -> WeekDay.VIERNES;
+            case 6 -> WeekDay.SABADO;
+            default -> WeekDay.DOMINGO;
+        };
+    }
+
     private int sanitizePage(int page) {
         return Math.max(0, page);
     }
@@ -372,5 +484,38 @@ public class DashboardServiceImpl implements DashboardService {
 
     private String dateRangeHint(LocalDate fromDate, LocalDate toDate) {
         return fromDate + " a " + toDate;
+    }
+
+    private static final class ActivityRankingAccumulator {
+        private final Long activityId;
+        private final String activityName;
+        private long classesCount = 0L;
+        private long totalEnrolled = 0L;
+        private double occupancySum = 0d;
+
+        private ActivityRankingAccumulator(Long activityId, String activityName) {
+            this.activityId = activityId;
+            this.activityName = activityName;
+        }
+
+        private void add(GymClassEntity item, int occurrences) {
+            classesCount += occurrences;
+            totalEnrolled += (long) item.getEnrolled() * occurrences;
+            if (item.getMaxCapacity() != null && item.getMaxCapacity() > 0) {
+                double occupancy = (item.getEnrolled() * 100.0) / item.getMaxCapacity();
+                occupancySum += occupancy * occurrences;
+            }
+        }
+
+        private DashboardActivityRankingRowDto toDto() {
+            double average = classesCount == 0 ? 0d : occupancySum / classesCount;
+            return DashboardActivityRankingRowDto.builder()
+                .activityId(activityId)
+                .activityName(activityName)
+                .classesCount(classesCount)
+                .totalEnrolled(totalEnrolled)
+                .averageOccupancyPercent(average)
+                .build();
+        }
     }
 }

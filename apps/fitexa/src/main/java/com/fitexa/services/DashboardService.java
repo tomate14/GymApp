@@ -29,8 +29,6 @@ public interface DashboardService {
         Long teacherId,
         LocalDate fromDate,
         LocalDate toDate,
-        LocalDate dateFrom,
-        LocalDate dateTo,
         int page,
         int size
     );

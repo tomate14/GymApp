@@ -11,8 +11,7 @@ public interface GymClassService {
         String className,
         Long activityId,
         Long teacherId,
-        java.time.LocalDate dateFrom,
-        java.time.LocalDate dateTo,
+        String weekDay,
         int page,
         int size
     );

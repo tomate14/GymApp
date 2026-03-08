@@ -53,12 +53,10 @@ public class DashboardControler {
         @RequestParam(name = "teacherId", required = false) Long teacherId,
         @RequestParam(name = "fromDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
         @RequestParam(name = "toDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-        @RequestParam(name = "dateFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-        @RequestParam(name = "dateTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "size", defaultValue = "8") int size
     ) {
-        return dashboardService.findClasses(search, activityId, teacherId, fromDate, toDate, dateFrom, dateTo, page, size);
+        return dashboardService.findClasses(search, activityId, teacherId, fromDate, toDate, page, size);
     }
 
     @GetMapping("/activity-ranking")

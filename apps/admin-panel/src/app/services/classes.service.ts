@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { PageResponse } from '../class/page.model';
-import { GymClass, GymClassDraft } from '../class/gym-class.model';
+import { GymClass, GymClassDraft, WeekDay } from '../class/gym-class.model';
 import { API_BASE_URL } from '../utils/api.util';
 
 type GymClassApiDto = {
@@ -13,8 +13,10 @@ type GymClassApiDto = {
   maxCapacity: number | null;
   enrolled: number;
   teacherId: number | null;
-  date: string;
-  time: string;
+  weekDays: WeekDay[];
+  allDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
 };
 
 type GymClassApiRequest = {
@@ -22,8 +24,10 @@ type GymClassApiRequest = {
   activityId: number | null;
   maxCapacity: number | null;
   teacherId: number | null;
-  date: string;
-  time: string;
+  weekDays: WeekDay[];
+  allDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
 };
 
 type PageApiDto<T> = {
@@ -38,8 +42,7 @@ export type GymClassPageFilters = {
   className?: string;
   activityId?: number | 0;
   teacherId?: number | 0;
-  dateFrom?: string;
-  dateTo?: string;
+  weekDay?: WeekDay | '';
 };
 
 @Injectable({
@@ -72,11 +75,8 @@ export class ClassesService {
     if (filters.teacherId && filters.teacherId > 0) {
       params = params.set('teacherId', String(filters.teacherId));
     }
-    if (filters.dateFrom && filters.dateFrom !== '') {
-      params = params.set('dateFrom', filters.dateFrom);
-    }
-    if (filters.dateTo && filters.dateTo !== '') {
-      params = params.set('dateTo', filters.dateTo);
+    if (filters.weekDay) {
+      params = params.set('weekDay', filters.weekDay);
     }
 
     return this.http.get<PageApiDto<GymClassApiDto>>(`${this.endpoint}/page`, { params }).pipe(
@@ -122,13 +122,16 @@ export class ClassesService {
   }
 
   private toApiRequest(draft: GymClassDraft): GymClassApiRequest {
+    const allDay = Boolean(draft.allDay);
     return {
       className: draft.className,
       activityId: draft.activityId,
       maxCapacity: draft.maxCapacity,
       teacherId: draft.teacherId,
-      date: draft.date,
-      time: draft.time.length === 5 ? `${draft.time}:00` : draft.time
+      weekDays: draft.weekDays,
+      allDay,
+      startTime: allDay ? null : this.normalizeTime(draft.startTime),
+      endTime: allDay ? null : this.normalizeTime(draft.endTime)
     };
   }
 
@@ -150,9 +153,18 @@ export class ClassesService {
       maxCapacity: dto.maxCapacity === null ? null : Number(dto.maxCapacity),
       enrolled: Number(dto.enrolled),
       teacherId: dto.teacherId === null ? null : Number(dto.teacherId),
-      date: dto.date,
-      time: dto.time.slice(0, 5)
+      weekDays: dto.weekDays ?? [],
+      allDay: Boolean(dto.allDay),
+      startTime: dto.startTime ? dto.startTime.slice(0, 5) : '',
+      endTime: dto.endTime ? dto.endTime.slice(0, 5) : ''
     };
+  }
+
+  private normalizeTime(value: string): string | null {
+    if (!value || value.trim() === '') {
+      return null;
+    }
+    return value.length === 5 ? `${value}:00` : value;
   }
 
   private mapPageFromApi(dto: PageApiDto<GymClassApiDto>): PageResponse<GymClass> {

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ActivitiesComponent } from './components/activities/activities.component';
+import { ClassScheduleComponent } from './components/class-schedule/class-schedule.component';
 import { ClassesComponent } from './components/classes/classes.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ExercisesComponent } from './components/exercises/exercises.component';
@@ -11,6 +12,7 @@ import { UsersComponent } from './components/users/users.component';
 export const APP_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent },
+  { path: 'agenda-clases', component: ClassScheduleComponent },
   { path: 'usuarios', component: UsersComponent },
   { path: 'planes', component: PlansComponent },
   { path: 'actividades', component: ActivitiesComponent },

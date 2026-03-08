@@ -13,6 +13,7 @@ import { AdminMenuItem } from './class/menu-item.model';
 export class AppComponent implements OnInit {
   readonly menuItems: AdminMenuItem[] = [
     { label: 'Dashboard', path: 'dashboard', shortLabel: 'D' },
+    { label: 'Agenda', path: 'agenda-clases', shortLabel: 'Ag' },
     { label: 'Usuarios', path: 'usuarios', shortLabel: 'U' },
     { label: 'Planes', path: 'planes', shortLabel: 'P' },
     { label: 'Actividades', path: 'actividades', shortLabel: 'A' },

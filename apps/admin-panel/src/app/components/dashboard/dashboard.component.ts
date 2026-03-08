@@ -1,13 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Activity } from '../../class/activity.model';
 import {
   DashboardActivityRankingRow,
   DashboardAlert,
   DashboardChart,
-  DashboardClassesFilters,
-  DashboardClassRow,
   DashboardKpi,
   DashboardOverloadsFilters,
   DashboardPageResponse,
@@ -20,7 +17,6 @@ import {
   DashboardStudentsTrendMode
 } from '../../class/dashboard.model';
 import { Plan } from '../../class/plan.model';
-import { User } from '../../class/user.model';
 import { ClassesByActivityChartComponent } from './charts/classes-by-activity-chart/classes-by-activity-chart.component';
 import { OccupancyGaugeKpiComponent } from './charts/occupancy-gauge-kpi/occupancy-gauge-kpi.component';
 import { OccupancyByActivityChartComponent } from './charts/occupancy-by-activity-chart/occupancy-by-activity-chart.component';
@@ -30,14 +26,11 @@ import { StudentsByTeacherRaceChartComponent } from './charts/students-by-teache
 import { StudentsTrendChartComponent } from './charts/students-trend-chart/students-trend-chart.component';
 import { TopExercisesChartComponent } from './charts/top-exercises-chart/top-exercises-chart.component';
 import { TopMachinesChartComponent } from './charts/top-machines-chart/top-machines-chart.component';
-import { ClassesTableComponent } from './tables/classes-table/classes-table.component';
 import { OverloadsTableComponent } from './tables/overloads-table/overloads-table.component';
 import { RankingTableComponent } from './tables/ranking-table/ranking-table.component';
 import { RenewalsTableComponent } from './tables/renewals-table/renewals-table.component';
-import { ActivitiesService } from '../../services/activities.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { PlansService } from '../../services/plans.service';
-import { UsersService } from '../../services/users.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -55,7 +48,6 @@ import { UsersService } from '../../services/users.service';
     TopExercisesChartComponent,
     TopMachinesChartComponent,
     RenewalsTableComponent,
-    ClassesTableComponent,
     RankingTableComponent,
     OverloadsTableComponent
   ],
@@ -78,8 +70,6 @@ export class DashboardComponent implements OnInit {
   topMachinesChart: DashboardChart | null = null;
 
   plans: Plan[] = [];
-  activities: Activity[] = [];
-  teachers: User[] = [];
 
   summaryFilters: DashboardSummaryFilters = {
     fromDate: this.oneMonthAgoIsoDate(),
@@ -95,14 +85,6 @@ export class DashboardComponent implements OnInit {
     renewalTo: ''
   };
 
-  classesFilters: DashboardClassesFilters = {
-    search: '',
-    activityId: 0,
-    teacherId: 0,
-    dateFrom: '',
-    dateTo: ''
-  };
-
   rankingFilters: DashboardRankingFilters = {
     search: '',
     fromDate: '',
@@ -114,24 +96,20 @@ export class DashboardComponent implements OnInit {
   };
 
   renewalsPage = this.emptyPage<DashboardRenewalRow>();
-  classesPage = this.emptyPage<DashboardClassRow>();
   rankingPage = this.emptyPage<DashboardActivityRankingRow>();
   overloadsPage = this.emptyPage<DashboardPlanOverloadRow>();
 
   renewalsCurrentPage = 1;
-  classesCurrentPage = 1;
   rankingCurrentPage = 1;
   overloadsCurrentPage = 1;
 
   renewalsPageSize = 8;
-  classesPageSize = 8;
   rankingPageSize = 8;
   overloadsPageSize = 8;
   readonly pageSizeOptions = [5, 8, 10, 15];
 
   isLoadingSummary = false;
   isLoadingRenewals = false;
-  isLoadingClasses = false;
   isLoadingRanking = false;
   isLoadingOverloads = false;
 
@@ -139,9 +117,7 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private readonly dashboardService: DashboardService,
-    private readonly plansService: PlansService,
-    private readonly activitiesService: ActivitiesService,
-    private readonly usersService: UsersService
+    private readonly plansService: PlansService
   ) {}
 
   ngOnInit(): void {
@@ -176,14 +152,6 @@ export class DashboardComponent implements OnInit {
     this.loadRenewals();
   }
 
-  goToClassesPage(page: number): void {
-    if (page < 1 || page > this.classesTotalPages) {
-      return;
-    }
-    this.classesCurrentPage = page;
-    this.loadClasses();
-  }
-
   goToRankingPage(page: number): void {
     if (page < 1 || page > this.rankingTotalPages) {
       return;
@@ -205,11 +173,6 @@ export class DashboardComponent implements OnInit {
     this.loadRenewals();
   }
 
-  onClassesFiltersChange(): void {
-    this.classesCurrentPage = 1;
-    this.loadClasses();
-  }
-
   onRankingFiltersChange(): void {
     this.rankingCurrentPage = 1;
     this.loadRanking();
@@ -229,17 +192,6 @@ export class DashboardComponent implements OnInit {
       renewalTo: ''
     };
     this.onRenewalsFiltersChange();
-  }
-
-  clearClassesFilters(): void {
-    this.classesFilters = {
-      search: '',
-      activityId: 0,
-      teacherId: 0,
-      dateFrom: '',
-      dateTo: ''
-    };
-    this.onClassesFiltersChange();
   }
 
   clearRankingFilters(): void {
@@ -264,12 +216,6 @@ export class DashboardComponent implements OnInit {
     this.loadRenewals();
   }
 
-  onClassesPageSizeChange(size: number): void {
-    this.classesPageSize = size;
-    this.classesCurrentPage = 1;
-    this.loadClasses();
-  }
-
   onRankingPageSizeChange(size: number): void {
     this.rankingPageSize = size;
     this.rankingCurrentPage = 1;
@@ -284,10 +230,6 @@ export class DashboardComponent implements OnInit {
 
   get renewalsTotalPages(): number {
     return Math.max(1, this.renewalsPage.totalPages || 1);
-  }
-
-  get classesTotalPages(): number {
-    return Math.max(1, this.classesPage.totalPages || 1);
   }
 
   get rankingTotalPages(): number {
@@ -320,16 +262,6 @@ export class DashboardComponent implements OnInit {
     this.plansService.findAll().subscribe({
       next: (plans) => {
         this.plans = plans;
-      }
-    });
-    this.activitiesService.findAll().subscribe({
-      next: (activities) => {
-        this.activities = activities;
-      }
-    });
-    this.usersService.findAll('profesor').subscribe({
-      next: (teachers) => {
-        this.teachers = teachers;
       }
     });
   }
@@ -388,33 +320,6 @@ export class DashboardComponent implements OnInit {
         error: () => {
           this.apiError = 'No se pudo obtener la tabla de vencimientos.';
           this.isLoadingRenewals = false;
-        }
-      });
-  }
-
-  private loadClasses(): void {
-    this.isLoadingClasses = true;
-    this.dashboardService
-      .getClasses({
-        search: this.classesFilters.search || undefined,
-        activityId: this.classesFilters.activityId || undefined,
-        teacherId: this.classesFilters.teacherId || undefined,
-        fromDate: this.summaryFilters.fromDate || undefined,
-        toDate: this.summaryFilters.toDate || undefined,
-        dateFrom: this.classesFilters.dateFrom || undefined,
-        dateTo: this.classesFilters.dateTo || undefined,
-        page: this.classesCurrentPage - 1,
-        size: this.classesPageSize
-      })
-      .subscribe({
-        next: (result) => {
-          this.classesPage = result;
-          this.classesCurrentPage = result.page + 1;
-          this.isLoadingClasses = false;
-        },
-        error: () => {
-          this.apiError = 'No se pudo obtener la tabla de clases.';
-          this.isLoadingClasses = false;
         }
       });
   }
@@ -503,12 +408,10 @@ export class DashboardComponent implements OnInit {
 
   private applyGlobalDateFilter(): void {
     this.renewalsCurrentPage = 1;
-    this.classesCurrentPage = 1;
     this.rankingCurrentPage = 1;
     this.overloadsCurrentPage = 1;
     this.loadSummary();
     this.loadRenewals();
-    this.loadClasses();
     this.loadRanking();
     this.loadOverloads();
   }

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Activity } from '../../class/activity.model';
-import { createEmptyClassDraft, GymClass, GymClassDraft } from '../../class/gym-class.model';
+import { createEmptyClassDraft, GymClass, GymClassDraft, WeekDay } from '../../class/gym-class.model';
 import { User } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { ActivitiesService } from '../../services/activities.service';
@@ -16,8 +16,7 @@ type ClassFilters = {
   className: string;
   activityId: number | 0;
   teacherId: number | 0;
-  dateFrom: string;
-  dateTo: string;
+  weekDay: WeekDay | '';
 };
 
 @Component({
@@ -44,9 +43,17 @@ export class ClassesComponent implements OnInit {
     className: '',
     activityId: 0,
     teacherId: 0,
-    dateFrom: '',
-    dateTo: ''
+    weekDay: ''
   };
+  readonly weekDayOptions: Array<{ value: WeekDay; label: string }> = [
+    { value: 'lunes', label: 'Lunes' },
+    { value: 'martes', label: 'Martes' },
+    { value: 'miercoles', label: 'Miercoles' },
+    { value: 'jueves', label: 'Jueves' },
+    { value: 'viernes', label: 'Viernes' },
+    { value: 'sabado', label: 'Sabado' },
+    { value: 'domingo', label: 'Domingo' }
+  ];
 
   currentPage = 1;
   pageSize = 8;
@@ -92,7 +99,13 @@ export class ClassesComponent implements OnInit {
   }
 
   saveClass(): void {
-    if (!this.classDraft.className || !this.classDraft.date || !this.classDraft.time) {
+    if (!this.classDraft.className || this.classDraft.weekDays.length === 0) {
+      return;
+    }
+    if (!this.classDraft.allDay && (!this.classDraft.startTime || !this.classDraft.endTime)) {
+      return;
+    }
+    if (!this.classDraft.allDay && this.classDraft.startTime >= this.classDraft.endTime) {
       return;
     }
 
@@ -117,7 +130,10 @@ export class ClassesComponent implements OnInit {
   editClass(item: GymClass): void {
     this.showForm = true;
     this.editingClassId = item.id;
-    this.classDraft = { ...item };
+    this.classDraft = {
+      ...item,
+      weekDays: [...item.weekDays]
+    };
     this.classNoLimit = item.maxCapacity === null;
   }
 
@@ -125,6 +141,14 @@ export class ClassesComponent implements OnInit {
     this.editingClassId = null;
     this.classNoLimit = false;
     this.classDraft = createEmptyClassDraft();
+  }
+
+  onAllDayChanged(): void {
+    if (!this.classDraft.allDay) {
+      return;
+    }
+    this.classDraft.startTime = '';
+    this.classDraft.endTime = '';
   }
 
   askDelete(item: GymClass): void {
@@ -183,8 +207,7 @@ export class ClassesComponent implements OnInit {
       className: '',
       activityId: 0,
       teacherId: 0,
-      dateFrom: '',
-      dateTo: ''
+      weekDay: ''
     };
     this.currentPage = 1;
     this.loadClassesPage();
@@ -202,6 +225,39 @@ export class ClassesComponent implements OnInit {
   onPageSizeChange(): void {
     this.currentPage = 1;
     this.loadClassesPage();
+  }
+
+  isDaySelected(day: WeekDay): boolean {
+    return this.classDraft.weekDays.includes(day);
+  }
+
+  toggleDay(day: WeekDay, checked: boolean): void {
+    const selected = new Set(this.classDraft.weekDays);
+    if (checked) {
+      selected.add(day);
+    } else {
+      selected.delete(day);
+    }
+    this.classDraft.weekDays = this.weekDayOptions
+      .map((option) => option.value)
+      .filter((value) => selected.has(value));
+  }
+
+  weekDaysLabel(days: WeekDay[] | null | undefined): string {
+    if (!days || days.length === 0) {
+      return '-';
+    }
+    const labels = this.weekDayOptions
+      .filter((option) => days.includes(option.value))
+      .map((option) => option.label);
+    return labels.join(', ');
+  }
+
+  scheduleText(item: GymClass): string {
+    if (item.allDay) {
+      return 'Todo el dia';
+    }
+    return `${item.startTime} - ${item.endTime}`;
   }
 
   private loadData(): void {
@@ -251,8 +307,7 @@ export class ClassesComponent implements OnInit {
       className: this.filters.className,
       activityId: this.filters.activityId,
       teacherId: this.filters.teacherId,
-      dateFrom: this.filters.dateFrom,
-      dateTo: this.filters.dateTo
+      weekDay: this.filters.weekDay
     };
   }
 }

@@ -30,14 +30,42 @@
           </select>
         </div>
 
-        <div class="col-12 col-md-6 col-xl-2">
-          <label class="form-label form-label-sm">Fecha</label>
-          <input class="form-control form-control-sm" type="date" name="classDate" [(ngModel)]="classDraft.date" required />
+        <div class="col-12 col-md-6 col-xl-2 d-flex align-items-end">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              id="classAllDay"
+              type="checkbox"
+              name="classAllDay"
+              [(ngModel)]="classDraft.allDay"
+              (change)="onAllDayChanged()"
+            />
+            <label class="form-check-label small text-secondary" for="classAllDay">Todo el dia</label>
+          </div>
         </div>
 
         <div class="col-12 col-md-6 col-xl-2">
-          <label class="form-label form-label-sm">Horario</label>
-          <input class="form-control form-control-sm" type="time" name="classTime" [(ngModel)]="classDraft.time" required />
+          <label class="form-label form-label-sm">Hora inicio</label>
+          <input
+            class="form-control form-control-sm"
+            type="time"
+            name="classStartTime"
+            [(ngModel)]="classDraft.startTime"
+            [disabled]="classDraft.allDay"
+            [required]="!classDraft.allDay"
+          />
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label form-label-sm">Hora fin</label>
+          <input
+            class="form-control form-control-sm"
+            type="time"
+            name="classEndTime"
+            [(ngModel)]="classDraft.endTime"
+            [disabled]="classDraft.allDay"
+            [required]="!classDraft.allDay"
+          />
         </div>
 
         <div class="col-12 col-md-6 col-xl-2">
@@ -71,6 +99,25 @@
             <label class="form-check-label small text-secondary" for="classNoLimit">
               Sin capacidad maxima (ejemplo: musculacion)
             </label>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label form-label-sm d-block">Dias de la clase</label>
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check" *ngFor="let option of weekDayOptions">
+              <input
+                class="form-check-input"
+                [id]="'classDay-' + option.value"
+                type="checkbox"
+                [name]="'classDay-' + option.value"
+                [checked]="isDaySelected(option.value)"
+                (change)="toggleDay(option.value, $any($event.target).checked)"
+              />
+              <label class="form-check-label small text-secondary" [for]="'classDay-' + option.value">
+                {{ option.label }}
+              </label>
+            </div>
           </div>
         </div>
 
@@ -123,13 +170,12 @@
             <option *ngFor="let teacher of teachers" [ngValue]="teacher.id">{{ teacher.firstName }} {{ teacher.lastName }}</option>
           </select>
         </div>
-        <div class="col-6 col-md-1">
-          <label class="form-label form-label-sm">Fecha desde</label>
-          <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="onFilterChange()" />
-        </div>
-        <div class="col-6 col-md-1">
-          <label class="form-label form-label-sm">Fecha hasta</label>
-          <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="onFilterChange()" />
+        <div class="col-12 col-md-2">
+          <label class="form-label form-label-sm">Dia</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filters.weekDay" (ngModelChange)="onFilterChange()">
+            <option [ngValue]="''">Todos</option>
+            <option *ngFor="let option of weekDayOptions" [ngValue]="option.value">{{ option.label }}</option>
+          </select>
         </div>
         <div class="col-12 col-md-1 d-flex align-items-end">
           <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="clearFilters()">Limpiar</button>
@@ -143,7 +189,7 @@
               <th>Clase</th>
               <th>Actividad</th>
               <th>Profesor</th>
-              <th>Fecha</th>
+              <th>Dias</th>
               <th>Horario</th>
               <th>Anotados/Capacidad</th>
               <th class="text-end">Acciones</th>
@@ -154,8 +200,8 @@
               <td>{{ classItem.className }}</td>
               <td>{{ activityName(classItem.activityId) }}</td>
               <td>{{ teacherName(classItem.teacherId) }}</td>
-              <td>{{ classItem.date }}</td>
-              <td>{{ classItem.time }}</td>
+              <td>{{ weekDaysLabel(classItem.weekDays) }}</td>
+              <td>{{ scheduleText(classItem) }}</td>
               <td>{{ capacityText(classItem) }}</td>
               <td class="text-end">
                 <div class="d-inline-flex gap-2 flex-wrap justify-content-end">

@@ -53,9 +53,18 @@ CREATE TABLE IF NOT EXISTS gym_classes (
     enrolled INT NOT NULL,
     teacher_id BIGINT NULL,
     date DATE NOT NULL,
-    time TIME NOT NULL,
+    all_day TINYINT(1) NOT NULL DEFAULT 0,
+    start_time TIME NULL,
+    end_time TIME NULL,
     CONSTRAINT fk_classes_activity FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
     CONSTRAINT fk_classes_teacher FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS gym_class_days (
+    gym_class_id BIGINT NOT NULL,
+    day VARCHAR(32) NOT NULL,
+    PRIMARY KEY (gym_class_id, day),
+    CONSTRAINT fk_class_days_class FOREIGN KEY (gym_class_id) REFERENCES gym_classes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS gym_class_subscriptions (

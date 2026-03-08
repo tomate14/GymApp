@@ -1,3 +1,5 @@
+export type WeekDay = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
+
 export interface GymClass {
   id: number;
   className: string;
@@ -5,8 +7,10 @@ export interface GymClass {
   maxCapacity: number | null;
   enrolled: number;
   teacherId: number | null;
-  date: string;
-  time: string;
+  weekDays: WeekDay[];
+  allDay: boolean;
+  startTime: string;
+  endTime: string;
 }
 
 export type GymClassDraft = Omit<GymClass, 'id'>;
@@ -17,7 +21,8 @@ export const createEmptyClassDraft = (): GymClassDraft => ({
   maxCapacity: 20,
   enrolled: 0,
   teacherId: null,
-  date: '',
-  time: ''
+  weekDays: [],
+  allDay: false,
+  startTime: '',
+  endTime: ''
 });
-

@@ -49,8 +49,6 @@ export interface DashboardClassesFilters {
   search: string;
   activityId: number;
   teacherId: number;
-  dateFrom: string;
-  dateTo: string;
 }
 
 export interface DashboardRankingFilters {
@@ -87,7 +85,10 @@ export interface DashboardClassRow {
   activityName: string;
   teacherName: string;
   date: string;
-  time: string;
+  weekDay: string;
+  allDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
   enrolled: number;
   maxCapacity: number | null;
   occupancyPercent: number;

@@ -1,6 +1,7 @@
 package com.fitexa.repository;
 
 import com.fitexa.entities.GymClassEntity;
+import com.fitexa.entities.WeekDay;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -112,15 +113,13 @@ public interface GymClassRepository extends JpaRepository<GymClassEntity, Long>,
         where (:className is null or lower(gc.className) like lower(concat('%', :className, '%')))
           and (:activityId is null or gc.activity.id = :activityId)
           and (:teacherId is null or gc.teacher.id = :teacherId)
-          and (:dateFrom is null or gc.date >= :dateFrom)
-          and (:dateTo is null or gc.date <= :dateTo)
+          and (:weekDay is null or :weekDay in elements(gc.weekDays))
         """)
     Page<GymClassEntity> findForTable(
         @Param("className") String className,
         @Param("activityId") Long activityId,
         @Param("teacherId") Long teacherId,
-        @Param("dateFrom") LocalDate dateFrom,
-        @Param("dateTo") LocalDate dateTo,
+        @Param("weekDay") WeekDay weekDay,
         Pageable pageable
     );
 }

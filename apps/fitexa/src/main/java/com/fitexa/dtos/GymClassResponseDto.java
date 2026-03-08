@@ -1,7 +1,9 @@
 package com.fitexa.dtos;
 
+import com.fitexa.entities.WeekDay;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,5 +19,8 @@ public class GymClassResponseDto {
     private Long teacherId;
     private String teacherName;
     private LocalDate date;
-    private LocalTime time;
+    private Boolean allDay;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private Set<WeekDay> weekDays;
 }

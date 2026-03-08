@@ -35,13 +35,21 @@ INSERT IGNORE INTO exercises (id, name, activity_id, machine_id, video_url) VALU
     (6, 'Sprint en bicicleta', 4, NULL, 'https://www.youtube.com/watch?v=RjQf3Q9M9jE'),
     (7, 'Bird-dog controlado', 6, NULL, 'https://www.youtube.com/watch?v=wiFNA3sqjCA');
 
-INSERT IGNORE INTO gym_classes (id, class_name, activity_id, max_capacity, enrolled, teacher_id, date, time) VALUES
-    (1, 'WOD Morning', 2, 16, 12, 1, '2026-03-02', '08:00:00'),
-    (2, 'Sala Musculacion Turno Tarde', 1, NULL, 34, NULL, '2026-03-02', '18:00:00'),
-    (3, 'Pilates suelo intermedio', 3, 20, 14, 3, '2026-03-03', '09:30:00'),
-    (4, 'Spinning HIIT', 4, 18, 17, 5, '2026-03-03', '19:00:00'),
-    (5, 'Funcional express', 5, 22, 19, 3, '2026-03-04', '07:15:00'),
-    (6, 'Yoga movilidad', 6, 25, 11, 5, '2026-03-04', '20:00:00');
+INSERT IGNORE INTO gym_classes (id, class_name, activity_id, max_capacity, enrolled, teacher_id, date, all_day, start_time, end_time) VALUES
+    (1, 'WOD Morning', 2, 16, 12, 1, '2026-03-02', 0, '08:00:00', '09:00:00'),
+    (2, 'Sala Musculacion Libre', 1, NULL, 34, NULL, '2026-03-02', 1, NULL, NULL),
+    (3, 'Pilates suelo intermedio', 3, 20, 14, 3, '2026-03-03', 0, '09:30:00', '10:30:00'),
+    (4, 'Spinning HIIT', 4, 18, 17, 5, '2026-03-03', 0, '19:00:00', '20:00:00'),
+    (5, 'Funcional express', 5, 22, 19, 3, '2026-03-04', 0, '07:15:00', '08:00:00'),
+    (6, 'Yoga jornada bienestar', 6, 25, 11, 5, '2026-03-04', 1, NULL, NULL);
+
+INSERT IGNORE INTO gym_class_days (gym_class_id, day) VALUES
+    (1, 'LUNES'), (1, 'MIERCOLES'), (1, 'VIERNES'),
+    (2, 'LUNES'), (2, 'MARTES'), (2, 'MIERCOLES'), (2, 'JUEVES'), (2, 'VIERNES'),
+    (3, 'MARTES'), (3, 'JUEVES'),
+    (4, 'MARTES'), (4, 'JUEVES'),
+    (5, 'LUNES'), (5, 'MIERCOLES'), (5, 'VIERNES'),
+    (6, 'MIERCOLES'), (6, 'SABADO');
 
 INSERT IGNORE INTO routine_templates (id, name, created_at) VALUES
     (1, 'Hipertrofia inicial', '2026-01-12'),

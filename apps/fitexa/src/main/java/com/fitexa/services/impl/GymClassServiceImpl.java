@@ -7,6 +7,7 @@ import com.fitexa.entities.ActivityEntity;
 import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
+import com.fitexa.entities.WeekDay;
 import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
@@ -15,7 +16,10 @@ import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.GymClassService;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,21 +50,20 @@ public class GymClassServiceImpl implements GymClassService {
         String className,
         Long activityId,
         Long teacherId,
-        LocalDate dateFrom,
-        LocalDate dateTo,
+        String weekDay,
         int page,
         int size
     ) {
+        WeekDay parsedWeekDay = parseWeekDay(weekDay);
         Page<GymClassResponseDto> result = gymClassRepository.findForTable(
             clean(className),
             activityId,
             teacherId,
-            dateFrom,
-            dateTo,
+            parsedWeekDay,
             PageRequest.of(
                 sanitizePage(page),
                 sanitizeSize(size),
-                Sort.by(Sort.Direction.ASC, "date").and(Sort.by(Sort.Direction.ASC, "time"))
+                Sort.by(Sort.Direction.ASC, "startTime")
             )
         ).map(this::toDto);
 
@@ -76,14 +79,20 @@ public class GymClassServiceImpl implements GymClassService {
     @Override
     @Transactional
     public GymClassResponseDto create(GymClassRequestDto request) {
+        boolean allDay = Boolean.TRUE.equals(request.getAllDay());
+        validateSchedule(allDay, request.getStartTime(), request.getEndTime());
+        Set<WeekDay> weekDays = sanitizeWeekDays(request.getWeekDays());
         GymClassEntity entity = GymClassEntity.builder()
             .className(request.getClassName())
             .activity(findActivity(request.getActivityId()))
             .maxCapacity(request.getMaxCapacity())
             .enrolled(0)
             .teacher(findTeacher(request.getTeacherId()))
-            .date(request.getDate())
-            .time(request.getTime())
+            .weekDays(weekDays)
+            .date(resolveAnchorDate(weekDays))
+            .allDay(allDay)
+            .startTime(allDay ? null : request.getStartTime())
+            .endTime(allDay ? null : request.getEndTime())
             .build();
         return toDto(gymClassRepository.save(entity));
     }
@@ -91,13 +100,19 @@ public class GymClassServiceImpl implements GymClassService {
     @Override
     @Transactional
     public GymClassResponseDto update(Long id, GymClassRequestDto request) {
+        boolean allDay = Boolean.TRUE.equals(request.getAllDay());
+        validateSchedule(allDay, request.getStartTime(), request.getEndTime());
+        Set<WeekDay> weekDays = sanitizeWeekDays(request.getWeekDays());
         GymClassEntity entity = findEntity(id);
         entity.setClassName(request.getClassName());
         entity.setActivity(findActivity(request.getActivityId()));
         entity.setMaxCapacity(request.getMaxCapacity());
         entity.setTeacher(findTeacher(request.getTeacherId()));
-        entity.setDate(request.getDate());
-        entity.setTime(request.getTime());
+        entity.setWeekDays(weekDays);
+        entity.setDate(resolveAnchorDate(weekDays));
+        entity.setAllDay(allDay);
+        entity.setStartTime(allDay ? null : request.getStartTime());
+        entity.setEndTime(allDay ? null : request.getEndTime());
         entity.setEnrolled(resolveEnrolledCount(entity));
         return toDto(gymClassRepository.save(entity));
     }
@@ -146,7 +161,10 @@ public class GymClassServiceImpl implements GymClassService {
             .teacherId(entity.getTeacher() == null ? null : entity.getTeacher().getId())
             .teacherName(entity.getTeacher() == null ? null : entity.getTeacher().getFirstName() + " " + entity.getTeacher().getLastName())
             .date(entity.getDate())
-            .time(entity.getTime())
+            .allDay(Boolean.TRUE.equals(entity.getAllDay()))
+            .startTime(entity.getStartTime())
+            .endTime(entity.getEndTime())
+            .weekDays(entity.getWeekDays() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(entity.getWeekDays()))
             .build();
     }
 
@@ -189,5 +207,59 @@ public class GymClassServiceImpl implements GymClassService {
             return 8;
         }
         return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private WeekDay parseWeekDay(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return WeekDay.fromValue(value.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessValidationException(ex.getMessage());
+        }
+    }
+
+    private Set<WeekDay> sanitizeWeekDays(Set<WeekDay> input) {
+        if (input == null || input.isEmpty()) {
+            throw new BusinessValidationException("Debe seleccionar al menos un dia para la clase.");
+        }
+        return new LinkedHashSet<>(input);
+    }
+
+    private void validateSchedule(boolean allDay, LocalTime startTime, LocalTime endTime) {
+        if (allDay) {
+            return;
+        }
+        if (startTime == null || endTime == null) {
+            throw new BusinessValidationException("Debe indicar hora de inicio y hora de finalizacion o marcar la clase como todo el dia.");
+        }
+        if (!startTime.isBefore(endTime)) {
+            throw new BusinessValidationException("La hora de fin debe ser mayor que la hora de inicio.");
+        }
+    }
+
+    private LocalDate resolveAnchorDate(Set<WeekDay> days) {
+        LocalDate today = LocalDate.now();
+        for (int offset = 0; offset < 7; offset++) {
+            LocalDate candidate = today.plusDays(offset);
+            WeekDay candidateDay = toWeekDay(candidate.getDayOfWeek().getValue());
+            if (days.contains(candidateDay)) {
+                return candidate;
+            }
+        }
+        return today;
+    }
+
+    private WeekDay toWeekDay(int dayOfWeekValue) {
+        return switch (dayOfWeekValue) {
+            case 1 -> WeekDay.LUNES;
+            case 2 -> WeekDay.MARTES;
+            case 3 -> WeekDay.MIERCOLES;
+            case 4 -> WeekDay.JUEVES;
+            case 5 -> WeekDay.VIERNES;
+            case 6 -> WeekDay.SABADO;
+            default -> WeekDay.DOMINGO;
+        };
     }
 }

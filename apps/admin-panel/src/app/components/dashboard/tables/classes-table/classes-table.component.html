@@ -1,42 +1,36 @@
 <section class="admin-card">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-    <h2 class="section-title mb-0">Agenda de clases</h2>
-    <div class="d-flex align-items-center gap-2">
-      <label class="small text-secondary">Filas por pagina</label>
-      <select class="form-select form-select-sm page-size-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChanged($event)">
-        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
-      </select>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h2 class="section-title mb-0">Agenda de clases</h2>
+      <small class="text-secondary">Planificacion semanal</small>
+    </div>
+    <div class="week-nav">
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="onPreviousWeek()">Anterior</button>
+      <span class="week-label">{{ weekRangeLabel }}</span>
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="onNextWeek()">Siguiente</button>
     </div>
   </div>
 
   <div class="row g-2 mb-3">
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-4">
       <label class="form-label form-label-sm">Clase</label>
       <input class="form-control form-control-sm" type="text" [(ngModel)]="filters.search" (ngModelChange)="onFiltersChanged()" />
     </div>
-    <div class="col-12 col-md-2">
+    <div class="col-12 col-md-3">
       <label class="form-label form-label-sm">Actividad</label>
       <select class="form-select form-select-sm" [(ngModel)]="filters.activityId" (ngModelChange)="onFiltersChanged()">
         <option [ngValue]="0">Todas</option>
         <option *ngFor="let activity of activities" [ngValue]="activity.id">{{ activity.name }}</option>
       </select>
     </div>
-    <div class="col-12 col-md-2">
+    <div class="col-12 col-md-3">
       <label class="form-label form-label-sm">Profesor</label>
       <select class="form-select form-select-sm" [(ngModel)]="filters.teacherId" (ngModelChange)="onFiltersChanged()">
         <option [ngValue]="0">Todos</option>
         <option *ngFor="let teacher of teachers" [ngValue]="teacher.id">{{ teacher.firstName }} {{ teacher.lastName }}</option>
       </select>
     </div>
-    <div class="col-6 col-md-2">
-      <label class="form-label form-label-sm">Fecha desde</label>
-      <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="onFiltersChanged()" />
-    </div>
-    <div class="col-6 col-md-2">
-      <label class="form-label form-label-sm">Fecha hasta</label>
-      <input class="form-control form-control-sm" type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="onFiltersChanged()" />
-    </div>
-    <div class="col-12 col-md-1 d-flex align-items-end">
+    <div class="col-12 col-md-2 d-flex align-items-end">
       <button class="btn btn-sm btn-outline-light w-100" type="button" (click)="onClearFilters()">Limpiar</button>
     </div>
   </div>
@@ -46,46 +40,79 @@
     <small class="text-secondary">Cargando clases...</small>
   </div>
 
-  <div class="table-responsive" *ngIf="page.content.length > 0">
-    <table class="table table-dark table-striped table-hover align-middle entity-table">
+  <div class="table-responsive calendar-wrapper" *ngIf="allDayCells.length > 0 || calendarRows.length > 0">
+    <table class="table table-dark align-top weekly-calendar-table">
       <thead>
         <tr>
-          <th>Clase</th>
-          <th>Actividad</th>
-          <th>Profesor</th>
-          <th>Fecha</th>
-          <th>Horario</th>
-          <th>Anotados/Cupo</th>
-          <th>Ocupacion</th>
+          <th class="time-col">Hora</th>
+          <th *ngFor="let day of weekDays">
+            <div class="day-header">
+              <small>{{ day.shortLabel }}</small>
+              <strong>{{ day.dayNumber }}</strong>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of page.content">
-          <td>{{ row.className }}</td>
-          <td>{{ row.activityName }}</td>
-          <td>{{ row.teacherName }}</td>
-          <td>{{ row.date }}</td>
-          <td>{{ row.time.slice(0, 5) }}</td>
-          <td>{{ capacityLabel(row) }}</td>
-          <td>{{ row.occupancyPercent | number: '1.0-2' }}%</td>
+        <tr class="all-day-row" *ngIf="allDayCells.length > 0">
+          <th class="time-col">Todo el dia</th>
+          <td *ngFor="let cell of allDayCells">
+            <div class="slot-events slot-events-all-day" *ngIf="cell.classes.length > 0; else emptyAllDaySlot">
+              <button
+                class="calendar-event"
+                [class.calendar-event-expanded]="isExpanded(item)"
+                *ngFor="let item of cell.classes"
+                type="button"
+                (click)="toggleEvent(item)"
+              >
+                <h3 class="event-title">{{ item.className }}</h3>
+                <small class="event-meta">{{ item.teacherName }}</small>
+                <ng-container *ngIf="isExpanded(item)">
+                  <small class="event-meta">{{ item.activityName }}</small>
+                  <small class="event-meta">{{ scheduleLine(item) }}</small>
+                  <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
+                    {{ item.occupancyPercent | number: '1.0-0' }}%
+                  </span>
+                </ng-container>
+              </button>
+            </div>
+            <ng-template #emptyAllDaySlot>
+              <span class="empty-slot">-</span>
+            </ng-template>
+          </td>
+        </tr>
+
+        <tr *ngFor="let row of calendarRows">
+          <th class="time-col">{{ row.time }}</th>
+          <td *ngFor="let cell of row.cells">
+            <div class="slot-events" *ngIf="cell.classes.length > 0; else emptySlot">
+              <button
+                class="calendar-event"
+                [class.calendar-event-expanded]="isExpanded(item)"
+                *ngFor="let item of cell.classes"
+                type="button"
+                (click)="toggleEvent(item)"
+              >
+                <h3 class="event-title">{{ item.className }}</h3>
+                <small class="event-meta">{{ item.teacherName }}</small>
+                <ng-container *ngIf="isExpanded(item)">
+                  <small class="event-meta">{{ item.activityName }}</small>
+                  <small class="event-meta">{{ scheduleLine(item) }}</small>
+                  <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
+                    {{ item.occupancyPercent | number: '1.0-0' }}%
+                  </span>
+                </ng-container>
+              </button>
+            </div>
+            <ng-template #emptySlot>
+              <span class="empty-slot">-</span>
+            </ng-template>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
-  <p class="empty-state mb-0" *ngIf="!isLoading && page.content.length === 0">Sin datos para los filtros aplicados.</p>
-
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="page.content.length > 0">
-    <small class="text-secondary">Mostrando {{ page.content.length }} de {{ page.totalElements }} registros</small>
-    <div class="d-flex flex-wrap align-items-center gap-1">
-      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
-        Anterior
-      </button>
-      <button class="btn btn-sm" *ngFor="let item of pages" [class.btn-brand]="item === currentPage" [class.btn-outline-light]="item !== currentPage" type="button" (click)="goToPage(item)">
-        {{ item }}
-      </button>
-      <button class="btn btn-sm btn-outline-light" type="button" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
-        Siguiente
-      </button>
-    </div>
-  </div>
+  <p class="empty-state mb-0" *ngIf="!isLoading && calendarRows.length === 0 && allDayCells.length === 0">
+    Sin clases programadas para esta semana.
+  </p>
 </section>

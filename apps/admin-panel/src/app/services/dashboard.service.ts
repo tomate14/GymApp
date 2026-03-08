@@ -35,8 +35,6 @@ type ClassFilters = {
   teacherId?: number;
   fromDate?: string;
   toDate?: string;
-  dateFrom?: string;
-  dateTo?: string;
   page: number;
   size: number;
 };
@@ -92,8 +90,6 @@ export class DashboardService {
     params = this.appendIfPresent(params, 'teacherId', filters.teacherId);
     params = this.appendIfPresent(params, 'fromDate', filters.fromDate);
     params = this.appendIfPresent(params, 'toDate', filters.toDate);
-    params = this.appendIfPresent(params, 'dateFrom', filters.dateFrom);
-    params = this.appendIfPresent(params, 'dateTo', filters.dateTo);
     return this.http.get<DashboardPageResponse<DashboardClassRow>>(`${this.endpoint}/classes`, { params });
   }
 

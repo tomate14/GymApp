@@ -5,7 +5,6 @@ import com.fitexa.dtos.GymClassResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.GymClassService;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,12 +34,11 @@ public class GymClassControler {
         @RequestParam(name = "className", required = false) String className,
         @RequestParam(name = "activityId", required = false) Long activityId,
         @RequestParam(name = "teacherId", required = false) Long teacherId,
-        @RequestParam(name = "dateFrom", required = false) LocalDate dateFrom,
-        @RequestParam(name = "dateTo", required = false) LocalDate dateTo,
+        @RequestParam(name = "weekDay", required = false) String weekDay,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "size", defaultValue = "8") int size
     ) {
-        return gymClassService.findPage(className, activityId, teacherId, dateFrom, dateTo, page, size);
+        return gymClassService.findPage(className, activityId, teacherId, weekDay, page, size);
     }
 
     @GetMapping("/{id}")

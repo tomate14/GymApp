@@ -13,7 +13,10 @@ public class DashboardClassRowDto {
     private String activityName;
     private String teacherName;
     private LocalDate date;
-    private LocalTime time;
+    private String weekDay;
+    private Boolean allDay;
+    private LocalTime startTime;
+    private LocalTime endTime;
     private Integer enrolled;
     private Integer maxCapacity;
     private double occupancyPercent;

@@ -1,0 +1,22 @@
+<div class="row g-3">
+  <div class="col-12" *ngIf="apiError !== null">
+    <div class="alert alert-danger py-2 px-3 mb-0" role="alert">
+      {{ apiError }}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <app-classes-table
+      [activities]="activities"
+      [teachers]="teachers"
+      [filters]="classesFilters"
+      [page]="classesPage"
+      [isLoading]="isLoadingClasses"
+      [weekStart]="classesWeekStartIso"
+      (filtersChange)="onClassesFiltersChange()"
+      (clearFilters)="clearClassesFilters()"
+      (previousWeek)="goToPreviousClassesWeek()"
+      (nextWeek)="goToNextClassesWeek()"
+    ></app-classes-table>
+  </div>
+</div>
