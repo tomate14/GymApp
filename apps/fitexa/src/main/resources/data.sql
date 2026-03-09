@@ -3,14 +3,17 @@ INSERT IGNORE INTO plans (id, name, price, max_days_per_week, active) VALUES
     (2, '3 veces por semana', 22000.00, 3, 1),
     (3, 'Libre', 28000.00, 7, 1);
 
-INSERT IGNORE INTO users (id, first_name, last_name, dni, address, phone, email, birth_date, user_type, plan_id, registration_date, renewal_date, payment_status) VALUES
-    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@gymapp.com', '1992-09-05', 'PROFESOR', NULL, '2025-11-02', '2026-03-10', 'AL_DIA'),
-    (2, 'Matias', 'Lopez', '38221009', 'Brown 210', '3415667733', 'matias.lopez@email.com', '1998-01-20', 'ALUMNO', 2, '2025-10-18', '2026-02-20', 'ADEUDA'),
-    (3, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@gymapp.com', '1987-04-14', 'PROFESOR', NULL, '2025-09-10', '2026-03-05', 'AL_DIA'),
-    (4, 'Maria', 'Torres', '40155672', 'Italia 455', '3415233344', 'maria.torres@email.com', '2000-11-02', 'ALUMNO', 1, '2025-12-03', '2026-03-03', 'AL_DIA'),
-    (5, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@gymapp.com', '1990-06-25', 'PROFESOR', NULL, '2025-08-15', '2026-02-28', 'AL_DIA'),
-    (6, 'Juan', 'Perez', '38992011', 'Mendoza 640', '3415448877', 'juan.perez@email.com', '1997-02-18', 'ALUMNO', 1, '2025-11-21', '2026-03-12', 'ADEUDA'),
-    (7, 'Camila', 'Navarro', '41588231', 'Roca 310', '3415099877', 'camila.navarro@email.com', '2001-07-09', 'ALUMNO', 3, '2026-01-07', '2026-03-20', 'AL_DIA');
+INSERT IGNORE INTO users (
+    id, first_name, last_name, dni, address, phone, email, password, must_change_password,
+    birth_date, user_type, plan_id, registration_date, renewal_date, payment_status
+) VALUES
+    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@gymapp.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1992-09-05', 'PROFESOR', NULL, '2025-11-02', '2026-03-10', 'AL_DIA'),
+    (2, 'Matias', 'Lopez', '38221009', 'Brown 210', '3415667733', 'matias.lopez@email.com', '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy', 1, '1998-01-20', 'ALUMNO', 2, '2025-10-18', '2026-02-20', 'ADEUDA'),
+    (3, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@gymapp.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1987-04-14', 'PROFESOR', NULL, '2025-09-10', '2026-03-05', 'AL_DIA'),
+    (4, 'Maria', 'Torres', '40155672', 'Italia 455', '3415233344', 'maria.torres@email.com', '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy', 1, '2000-11-02', 'ALUMNO', 1, '2025-12-03', '2026-03-03', 'AL_DIA'),
+    (5, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@gymapp.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1990-06-25', 'PROFESOR', NULL, '2025-08-15', '2026-02-28', 'AL_DIA'),
+    (6, 'Juan', 'Perez', '38992011', 'Mendoza 640', '3415448877', 'juan.perez@email.com', '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy', 1, '1997-02-18', 'ALUMNO', 1, '2025-11-21', '2026-03-12', 'ADEUDA'),
+    (7, 'Camila', 'Navarro', '41588231', 'Roca 310', '3415099877', 'camila.navarro@email.com', '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy', 1, '2001-07-09', 'ALUMNO', 3, '2026-01-07', '2026-03-20', 'AL_DIA');
 
 INSERT IGNORE INTO user_payment_movements (id, user_id, plan_id, amount, detail, paid_at) VALUES
     (1, 2, 2, 22000.00, 'Renovacion de cuota', '2025-12-20 10:15:00'),

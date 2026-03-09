@@ -118,7 +118,7 @@ export class UsersComponent implements OnInit {
   editUser(user: User): void {
     this.showForm = true;
     this.editingUserId = user.id;
-    this.userDraft = { ...user };
+    this.userDraft = { ...user, password: '' };
   }
 
   toggleForm(): void {

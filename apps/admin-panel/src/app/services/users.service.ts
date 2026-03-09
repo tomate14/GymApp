@@ -30,6 +30,7 @@ type UserApiRequest = {
   address: string;
   phone: string;
   email: string;
+  password: string | null;
   birthDate: string;
   userType: User['userType'];
   planId: number | null;
@@ -219,6 +220,7 @@ export class UsersService {
       address: draft.address,
       phone: draft.phone,
       email: draft.email,
+      password: draft.password.trim() === '' ? null : draft.password.trim(),
       birthDate: draft.birthDate,
       userType: draft.userType,
       planId: draft.planId,

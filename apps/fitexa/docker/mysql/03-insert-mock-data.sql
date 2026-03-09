@@ -5,18 +5,18 @@ INSERT INTO plans (id, name, price, max_days_per_week, active) VALUES
     (4, 'Pase diario', 9000.00, 1, 1);
 
 INSERT INTO users (
-    id, first_name, last_name, dni, address, phone, email, birth_date,
+    id, first_name, last_name, dni, address, phone, email, password, must_change_password, birth_date,
     user_type, plan_id, registration_date, renewal_date, payment_status
 ) VALUES
-    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@fitexa.com', '1992-09-05', 'PROFESOR', NULL, '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), 'AL_DIA'),
-    (2, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@fitexa.com', '1987-04-14', 'PROFESOR', NULL, '2025-02-10', DATE_ADD(CURDATE(), INTERVAL 25 DAY), 'AL_DIA'),
-    (3, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@fitexa.com', '1990-06-25', 'PROFESOR', NULL, '2025-03-01', DATE_ADD(CURDATE(), INTERVAL 18 DAY), 'AL_DIA'),
-    (4, 'Nicolas', 'Vega', '30124577', 'Cordoba 522', '3415339981', 'nicolas.vega@fitexa.com', '1988-11-17', 'PROFESOR', NULL, '2025-02-18', DATE_ADD(CURDATE(), INTERVAL 22 DAY), 'AL_DIA'),
-    (5, 'Carla', 'Ibanez', '31977551', 'Roca 310', '3415099877', 'carla.ibanez@fitexa.com', '1991-08-30', 'PROFESOR', NULL, '2025-04-08', DATE_ADD(CURDATE(), INTERVAL 27 DAY), 'AL_DIA'),
-    (6, 'Pablo', 'Rossi', '28766331', 'Mendoza 640', '3415448877', 'pablo.rossi@fitexa.com', '1986-02-18', 'PROFESOR', NULL, '2025-01-28', DATE_ADD(CURDATE(), INTERVAL 19 DAY), 'AL_DIA');
+    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1992-09-05', 'PROFESOR', NULL, '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), 'AL_DIA'),
+    (2, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1987-04-14', 'PROFESOR', NULL, '2025-02-10', DATE_ADD(CURDATE(), INTERVAL 25 DAY), 'AL_DIA'),
+    (3, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1990-06-25', 'PROFESOR', NULL, '2025-03-01', DATE_ADD(CURDATE(), INTERVAL 18 DAY), 'AL_DIA'),
+    (4, 'Nicolas', 'Vega', '30124577', 'Cordoba 522', '3415339981', 'nicolas.vega@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1988-11-17', 'PROFESOR', NULL, '2025-02-18', DATE_ADD(CURDATE(), INTERVAL 22 DAY), 'AL_DIA'),
+    (5, 'Carla', 'Ibanez', '31977551', 'Roca 310', '3415099877', 'carla.ibanez@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1991-08-30', 'PROFESOR', NULL, '2025-04-08', DATE_ADD(CURDATE(), INTERVAL 27 DAY), 'AL_DIA'),
+    (6, 'Pablo', 'Rossi', '28766331', 'Mendoza 640', '3415448877', 'pablo.rossi@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1986-02-18', 'PROFESOR', NULL, '2025-01-28', DATE_ADD(CURDATE(), INTERVAL 19 DAY), 'AL_DIA');
 
 INSERT INTO users (
-    id, first_name, last_name, dni, address, phone, email, birth_date,
+    id, first_name, last_name, dni, address, phone, email, password, must_change_password, birth_date,
     user_type, plan_id, registration_date, renewal_date, payment_status
 )
 SELECT
@@ -38,6 +38,8 @@ SELECT
     CONCAT('Av. Entrenamiento ', 100 + seq.n) AS address,
     CONCAT('341', LPAD(5000000 + seq.n * 37, 7, '0')) AS phone,
     CONCAT('alumno', seq.n, '@fitexa.com') AS email,
+    '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy' AS password,
+    1 AS must_change_password,
     DATE_ADD('1988-01-01', INTERVAL seq.n * 137 DAY) AS birth_date,
     'ALUMNO' AS user_type,
     CASE

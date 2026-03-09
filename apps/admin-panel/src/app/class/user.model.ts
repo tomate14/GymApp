@@ -17,7 +17,9 @@ export interface User {
   paymentStatus: PaymentStatus;
 }
 
-export type UserDraft = Omit<User, 'id'>;
+export type UserDraft = Omit<User, 'id'> & {
+  password: string;
+};
 
 export const createEmptyUserDraft = (): UserDraft => ({
   firstName: '',
@@ -29,6 +31,7 @@ export const createEmptyUserDraft = (): UserDraft => ({
   birthDate: '',
   userType: 'alumno',
   planId: null,
+  password: '',
   registrationDate: '',
   renewalDate: '',
   paymentStatus: 'al-dia'

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AdminMenuItem } from './class/menu-item.model';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -27,7 +28,10 @@ export class AppComponent implements OnInit {
   mobileMenuOpen = false;
   isMobileView = false;
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.updateViewport();
@@ -60,6 +64,14 @@ export class AppComponent implements OnInit {
 
   onMenuItemClick(): void {
     this.closeMobileMenu();
+  }
+
+  isAuthStandaloneRoute(): boolean {
+    return this.router.url.startsWith('/login') || this.router.url.startsWith('/cambiar-password');
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 
   private updateViewport(): void {

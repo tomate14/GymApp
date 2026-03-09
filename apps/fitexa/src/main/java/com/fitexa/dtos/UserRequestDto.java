@@ -5,6 +5,7 @@ import com.fitexa.entities.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.Data;
 
@@ -28,6 +29,9 @@ public class UserRequestDto {
     @Email
     @NotBlank
     private String email;
+
+    @Size(min = 6, max = 120, message = "debe tener entre 6 y 120 caracteres")
+    private String password;
 
     @NotNull
     private LocalDate birthDate;

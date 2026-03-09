@@ -17,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
 
     Optional<UserEntity> findByDni(String dni);
+    Optional<UserEntity> findByEmailIgnoreCase(String email);
 
     long countByUserType(UserType userType);
 

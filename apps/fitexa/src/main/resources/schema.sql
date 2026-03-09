@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     address VARCHAR(250) NOT NULL,
     phone VARCHAR(80) NOT NULL,
     email VARCHAR(180) NOT NULL UNIQUE,
+    password VARCHAR(120) NOT NULL,
+    must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     birth_date DATE NOT NULL,
     user_type VARCHAR(40) NOT NULL,
     plan_id BIGINT NULL,

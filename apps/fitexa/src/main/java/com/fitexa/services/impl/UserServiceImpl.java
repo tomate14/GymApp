@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
     private final UserPaymentMovementService userPaymentMovementService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -101,6 +103,7 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto create(UserRequestDto request) {
         PlanEntity plan = resolvePlan(request.getUserType(), request.getPlanId());
         LocalDate registrationDate = request.getRegistrationDate() == null ? LocalDate.now() : request.getRegistrationDate();
+        String normalizedEmail = normalizeEmail(request.getEmail());
 
         UserEntity entity = UserEntity.builder()
             .firstName(request.getFirstName())
@@ -108,7 +111,9 @@ public class UserServiceImpl implements UserService {
             .dni(request.getDni())
             .address(request.getAddress())
             .phone(request.getPhone())
-            .email(request.getEmail())
+            .email(normalizedEmail)
+            .password(passwordEncoder.encode(normalizedEmail))
+            .mustChangePassword(true)
             .birthDate(request.getBirthDate())
             .userType(request.getUserType())
             .plan(plan)
@@ -131,12 +136,17 @@ public class UserServiceImpl implements UserService {
         entity.setDni(request.getDni());
         entity.setAddress(request.getAddress());
         entity.setPhone(request.getPhone());
-        entity.setEmail(request.getEmail());
+        entity.setEmail(normalizeEmail(request.getEmail()));
         entity.setBirthDate(request.getBirthDate());
         entity.setUserType(request.getUserType());
         entity.setPlan(plan);
         entity.setRegistrationDate(request.getRegistrationDate() == null ? entity.getRegistrationDate() : request.getRegistrationDate());
         entity.setPaymentStatus(request.getPaymentStatus());
+        String password = clean(request.getPassword());
+        if (password != null) {
+            entity.setPassword(passwordEncoder.encode(password));
+            entity.setMustChangePassword(false);
+        }
 
         return toDto(userRepository.save(entity));
     }
@@ -241,5 +251,10 @@ public class UserServiceImpl implements UserService {
             return 8;
         }
         return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private String normalizeEmail(String value) {
+        String cleanValue = clean(value);
+        return cleanValue == null ? null : cleanValue.toLowerCase();
     }
 }

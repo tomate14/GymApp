@@ -2,6 +2,7 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.ErrorResponseDto;
 import com.fitexa.exeptions.BusinessValidationException;
+import com.fitexa.exeptions.InvalidCredentialsException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleBusiness(BusinessValidationException ex) {
         return ResponseEntity.badRequest()
             .body(ErrorResponseDto.builder().message(ex.getMessage()).detail("BUSINESS_VALIDATION").build());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ErrorResponseDto.builder().message(ex.getMessage()).detail("INVALID_CREDENTIALS").build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

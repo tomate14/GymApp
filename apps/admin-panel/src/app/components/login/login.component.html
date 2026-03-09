@@ -1,0 +1,56 @@
+<div class="login-layout">
+  <section class="brand-panel">
+    <div class="brand-logo" aria-hidden="true">
+      <span>FX</span>
+    </div>
+    <p class="brand-eyebrow mb-1">Fitexa</p>
+    <h1 class="brand-title mb-2">Admin Panel</h1>
+    <p class="brand-copy mb-0">
+      Plataforma para gestionar alumnos, clases y rutinas del gimnasio.
+    </p>
+  </section>
+
+  <section class="form-panel">
+    <h2 class="form-title mb-3">Iniciar sesion</h2>
+
+    <form class="d-grid gap-3" (ngSubmit)="submit()">
+      <div>
+        <label class="form-label form-label-sm">Email</label>
+        <input
+          class="form-control form-control-lg"
+          type="email"
+          name="email"
+          placeholder="admin@fitexa.com"
+          [(ngModel)]="credentials.email"
+          [disabled]="isSubmitting"
+          required
+        />
+      </div>
+
+      <div>
+        <label class="form-label form-label-sm">Contrasena</label>
+        <input
+          class="form-control form-control-lg"
+          type="password"
+          name="password"
+          placeholder="Tu contrasena"
+          [(ngModel)]="credentials.password"
+          [disabled]="isSubmitting"
+          required
+        />
+      </div>
+
+      <div class="alert alert-danger py-2 px-3 mb-0" role="alert" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button class="btn btn-brand btn-lg mt-1" type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Ingresando...' : 'Ingresar' }}
+      </button>
+    </form>
+
+    <p class="hint mt-3 mb-0">
+      Password inicial por defecto: el mismo email del usuario.
+    </p>
+  </section>
+</div>

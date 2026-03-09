@@ -60,6 +60,20 @@
         <div class="col-12 col-md-6 col-xl-3">
           <label class="form-label form-label-sm">Email</label>
           <input class="form-control form-control-sm" type="email" name="userEmail" [(ngModel)]="userDraft.email" required />
+          <small class="text-secondary d-block mt-1" *ngIf="editingUserId === null">
+            Contrasena inicial automatica: se usa este email.
+          </small>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3" *ngIf="editingUserId !== null">
+          <label class="form-label form-label-sm">Nueva contrasena (opcional)</label>
+          <input
+            class="form-control form-control-sm"
+            type="password"
+            name="userPassword"
+            [(ngModel)]="userDraft.password"
+            placeholder="Dejar vacio para mantener"
+          />
         </div>
 
         <div class="col-12 col-md-6 col-xl-2">

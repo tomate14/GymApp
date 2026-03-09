@@ -1,42 +1,51 @@
-<div class="admin-shell" [class.sidebar-collapsed]="sidebarCollapsed" [class.sidebar-open]="mobileMenuOpen">
-  <aside class="admin-sidebar">
-    <div class="brand-card">
-      <p class="brand-overline mb-0">GymApp</p>
-      <h2 class="brand-title mb-0">Admin Panel</h2>
-    </div>
-
-    <nav class="nav flex-column gap-2">
-      <a
-        *ngFor="let item of menuItems"
-        class="menu-link"
-        [routerLink]="['/', item.path]"
-        routerLinkActive="active"
-        (click)="onMenuItemClick()"
-      >
-        <span class="menu-dot"></span>
-        <span class="menu-text">{{ item.label }}</span>
-        <span class="menu-short">{{ item.shortLabel }}</span>
-      </a>
-    </nav>
-  </aside>
-
-  <button type="button" class="sidebar-backdrop" *ngIf="mobileMenuOpen" (click)="closeMobileMenu()"></button>
-
-  <main class="admin-workspace">
-    <header class="admin-topbar">
-      <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-outline-light btn-sm" (click)="toggleMenu()">Menu</button>
-        <div>
-          <p class="eyebrow mb-0">Panel de administracion</p>
-          <h1 class="mb-0">{{ sectionTitle }}</h1>
-        </div>
+<ng-container *ngIf="!isAuthStandaloneRoute(); else loginOnly">
+  <div class="admin-shell" [class.sidebar-collapsed]="sidebarCollapsed" [class.sidebar-open]="mobileMenuOpen">
+    <aside class="admin-sidebar">
+      <div class="brand-card">
+        <p class="brand-overline mb-0">Fitexa</p>
+        <h2 class="brand-title mb-0">Admin Panel</h2>
       </div>
 
-      <span class="badge rounded-pill text-bg-dark border border-success-subtle text-success-emphasis">
-        Bootstrap responsive
-      </span>
-    </header>
+      <nav class="nav flex-column gap-2">
+        <a
+          *ngFor="let item of menuItems"
+          class="menu-link"
+          [routerLink]="['/', item.path]"
+          routerLinkActive="active"
+          (click)="onMenuItemClick()"
+        >
+          <span class="menu-dot"></span>
+          <span class="menu-text">{{ item.label }}</span>
+          <span class="menu-short">{{ item.shortLabel }}</span>
+        </a>
+      </nav>
+    </aside>
 
+    <button type="button" class="sidebar-backdrop" *ngIf="mobileMenuOpen" (click)="closeMobileMenu()"></button>
+
+    <main class="admin-workspace">
+      <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-light btn-sm" (click)="toggleMenu()">Menu</button>
+          <div>
+            <p class="eyebrow mb-0">Panel de administracion</p>
+            <h1 class="mb-0">{{ sectionTitle }}</h1>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-pill text-bg-dark border border-success-subtle text-success-emphasis">
+            JWT activo
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-light" (click)="logout()">Salir</button>
+        </div>
+      </header>
+
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</ng-container>
+
+<ng-template #loginOnly>
     <router-outlet></router-outlet>
-  </main>
-</div>
+</ng-template>

@@ -24,3 +24,9 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+fitexa:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:fitexa-default-jwt-secret-key-change-this-in-production-2026}
+      expiration-seconds: ${JWT_EXPIRATION_SECONDS:28800}
