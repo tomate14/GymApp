@@ -47,7 +47,10 @@ type RoutineAssignmentExerciseApiDto = {
 type RoutineAssignmentApiDto = {
   id: number;
   userId: number;
-  routineTemplateId: number;
+  routineTemplateId: number | null;
+  routineTemplateName: string;
+  customName: string | null;
+  custom: boolean;
   days: DayOfWeek[];
   startDate: string;
   endDate: string;
@@ -56,7 +59,8 @@ type RoutineAssignmentApiDto = {
 
 type RoutineAssignmentApiRequest = {
   userId: number;
-  routineTemplateId: number;
+  routineTemplateId: number | null;
+  customName: string | null;
   days: DayOfWeek[];
   startDate: string;
   endDate: string;
@@ -221,7 +225,8 @@ export class RoutinesService {
   upsertAssignment(draft: RoutineAssignmentDraft, editingId: number | null): Observable<RoutineAssignmentSaveResult> {
     const payload: RoutineAssignmentApiRequest = {
       userId: draft.userId,
-      routineTemplateId: draft.routineTemplateId,
+      routineTemplateId: draft.routineKind === 'generica' && draft.routineTemplateId > 0 ? draft.routineTemplateId : null,
+      customName: draft.routineKind === 'custom' ? (draft.customName.trim() || 'Rutina Custom') : null,
       days: [...draft.days],
       startDate: draft.startDate,
       endDate: draft.endDate,
@@ -303,7 +308,10 @@ export class RoutinesService {
     }));
   }
 
-  templateNameById(templateId: number): string {
+  templateNameById(templateId: number | null): string {
+    if (templateId === null) {
+      return 'Rutina Custom';
+    }
     return this.routineTemplates.find((template) => template.id === templateId)?.name ?? 'Sin rutina';
   }
 
@@ -347,7 +355,10 @@ export class RoutinesService {
     return {
       id: Number(dto.id),
       userId: Number(dto.userId),
-      routineTemplateId: Number(dto.routineTemplateId),
+      routineTemplateId: dto.routineTemplateId === null ? null : Number(dto.routineTemplateId),
+      routineTemplateName: dto.routineTemplateName,
+      customName: dto.customName,
+      custom: Boolean(dto.custom),
       days: dto.days.map((day) => day),
       startDate: dto.startDate,
       endDate: dto.endDate,

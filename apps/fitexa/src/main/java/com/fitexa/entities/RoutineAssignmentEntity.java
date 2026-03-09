@@ -42,8 +42,11 @@ public class RoutineAssignmentEntity {
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "routine_template_id", nullable = false)
+    @JoinColumn(name = "routine_template_id")
     private RoutineTemplateEntity routineTemplate;
+
+    @Column(name = "custom_name")
+    private String customName;
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)

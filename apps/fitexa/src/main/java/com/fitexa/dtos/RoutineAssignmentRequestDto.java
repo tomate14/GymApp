@@ -12,8 +12,9 @@ public class RoutineAssignmentRequestDto {
     @NotNull
     private Long userId;
 
-    @NotNull
     private Long routineTemplateId;
+
+    private String customName;
 
     @NotNull
     private Set<WeekDay> days;

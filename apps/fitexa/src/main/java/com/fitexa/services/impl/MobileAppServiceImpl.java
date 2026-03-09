@@ -278,9 +278,12 @@ public class MobileAppServiceImpl implements MobileAppService {
     }
 
     private MobileRoutineResponseDto toRoutineDto(RoutineAssignmentEntity entity, LocalDate today) {
+        String routineName = entity.getRoutineTemplate() == null
+            ? (entity.getCustomName() == null || entity.getCustomName().isBlank() ? "Rutina Custom" : entity.getCustomName())
+            : entity.getRoutineTemplate().getName();
         return MobileRoutineResponseDto.builder()
             .id(entity.getId())
-            .routineTemplateName(entity.getRoutineTemplate().getName())
+            .routineTemplateName(routineName)
             .status(resolveRoutineStatus(entity, today))
             .days(entity.getDays())
             .startDate(entity.getStartDate())

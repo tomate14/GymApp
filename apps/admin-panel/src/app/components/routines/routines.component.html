@@ -98,17 +98,31 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label form-label-sm">Rutina existente</label>
-          <select
-            class="form-select form-select-sm"
-            name="assignmentRoutineTemplateId"
-            [(ngModel)]="assignmentDraft.routineTemplateId"
-            (ngModelChange)="onAssignmentTemplateChange()"
-            required
-          >
-            <option [ngValue]="0">Seleccionar rutina</option>
-            <option *ngFor="let routine of routineTemplates" [ngValue]="routine.id">{{ routine.name }}</option>
-          </select>
+          <label class="form-label form-label-sm">Rutina generica</label>
+          <div class="assignment-source-card">
+            <select
+              class="form-select form-select-sm"
+              name="assignmentRoutineTemplateId"
+              [(ngModel)]="assignmentDraft.routineTemplateId"
+              (ngModelChange)="onAssignmentTemplateChange()"
+            >
+              <option [ngValue]="0">Seleccionar rutina</option>
+              <option *ngFor="let routine of routineTemplates" [ngValue]="routine.id">{{ routine.name }}</option>
+            </select>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+              <button
+                class="btn btn-sm btn-outline-warning"
+                type="button"
+                [disabled]="assignmentDraft.userId <= 0"
+                (click)="openCustomRoutinePopup()"
+              >
+                {{ isCustomAssignmentDraft ? 'Editar personalizado' : 'Crear personalizado' }}
+              </button>
+              <span class="badge rounded-pill text-bg-warning" *ngIf="isCustomAssignmentDraft">Rutina Custom</span>
+              <span class="text-secondary small" *ngIf="!isCustomAssignmentDraft">La rutina generica queda reusable para otros alumnos.</span>
+            </div>
+          </div>
         </div>
 
         <div class="col-12">
@@ -153,7 +167,7 @@
                 </thead>
                 <tbody>
                   <tr *ngFor="let assignment of selectedStudentHistory">
-                    <td>{{ templateName(assignment.routineTemplateId) }}</td>
+                    <td>{{ assignmentRoutineName(assignment) }}</td>
                     <td>{{ assignmentDaysLabel(assignment) }}</td>
                     <td>{{ assignment.startDate }}</td>
                     <td>{{ assignment.endDate }}</td>
@@ -256,7 +270,7 @@
             </div>
 
             <ng-template #noAssignmentExercises>
-              <p class="empty-state mb-0">Selecciona una rutina para cargar series/reps/peso por alumno.</p>
+              <p class="empty-state mb-0">{{ assignmentRoutinePlaceholder() }}</p>
             </ng-template>
           </div>
         </div>
@@ -265,7 +279,7 @@
           <button
             type="submit"
             class="btn btn-sm btn-brand"
-            [disabled]="assignmentDraft.userId <= 0 || assignmentDraft.routineTemplateId <= 0 || assignmentDraft.days.length === 0 || assignmentDraft.exercisePlans.length === 0"
+            [disabled]="assignmentDraft.userId <= 0 || assignmentDraft.days.length === 0 || assignmentDraft.exercisePlans.length === 0 || (assignmentDraft.routineKind === 'generica' && assignmentDraft.routineTemplateId <= 0)"
           >
             {{ editingAssignmentId === null ? 'Guardar asignacion' : 'Actualizar asignacion' }}
           </button>
@@ -443,7 +457,7 @@
           <tbody>
             <tr *ngFor="let assignment of paginatedAssignments">
               <td>{{ studentName(assignment.userId) }}</td>
-              <td>{{ templateName(assignment.routineTemplateId) }}</td>
+              <td>{{ assignmentRoutineName(assignment) }}</td>
               <td>{{ assignmentDaysLabel(assignment) }}</td>
               <td>{{ assignment.startDate }}</td>
               <td>{{ assignment.endDate }}</td>
@@ -517,6 +531,14 @@
   (confirmed)="confirmDeleteAssignment()"
   (cancelled)="cancelDeleteAssignment()"
 ></app-confirm-popup>
+
+<app-custom-routine-popup
+  [visible]="showCustomRoutinePopup"
+  [exercises]="exercises"
+  [selectedExerciseIds]="customRoutineSelectedExerciseIds"
+  (closed)="closeCustomRoutinePopup()"
+  (confirmed)="applyCustomRoutineSelection($event)"
+></app-custom-routine-popup>
 
 
 

@@ -20,6 +20,7 @@ import {
 import { User } from '../../class/user.model';
 import { SearchableSelectComponent } from '../searchable-select/searchable-select.component';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
+import { CustomRoutinePopupComponent } from '../../popups/custom-routine-popup/custom-routine-popup.component';
 import { ExercisesService } from '../../services/exercises.service';
 import { PlansService } from '../../services/plans.service';
 import {
@@ -44,7 +45,7 @@ type AssignmentFilters = {
 @Component({
   selector: 'app-routines',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmPopupComponent, SearchableSelectComponent],
+  imports: [CommonModule, FormsModule, ConfirmPopupComponent, SearchableSelectComponent, CustomRoutinePopupComponent],
   templateUrl: './routines.component.html',
   styleUrl: './routines.component.css'
 })
@@ -77,7 +78,9 @@ export class RoutinesComponent implements OnInit {
 
   showTemplateForm = false;
   showAssignmentForm = false;
+  showCustomRoutinePopup = false;
   historyStudentId: number | null = null;
+  customRoutineSelectedExerciseIds: number[] = [];
 
   deleteTemplateCandidate: RoutineTemplate | null = null;
   deleteAssignmentCandidate: RoutineAssignment | null = null;
@@ -153,6 +156,10 @@ export class RoutinesComponent implements OnInit {
 
   get assignmentPlanWarningMessage(): string | null {
     return this.calculateAssignmentPlanWarning();
+  }
+
+  get isCustomAssignmentDraft(): boolean {
+    return this.assignmentDraft.routineKind === 'custom';
   }
 
   get selectedStudentHistory(): RoutineAssignment[] {
@@ -254,6 +261,9 @@ export class RoutinesComponent implements OnInit {
   }
 
   onAssignmentTemplateChange(): void {
+    if (this.assignmentDraft.routineTemplateId > 0) {
+      this.assignmentDraft.routineKind = 'generica';
+    }
     this.syncAssignmentPlansWithTemplate();
   }
 
@@ -287,10 +297,51 @@ export class RoutinesComponent implements OnInit {
     this.historyStudentId = null;
   }
 
+  openCustomRoutinePopup(): void {
+    if (this.assignmentDraft.userId <= 0) {
+      return;
+    }
+
+    this.customRoutineSelectedExerciseIds = this.isCustomAssignmentDraft
+      ? this.assignmentDraft.exercisePlans.map((plan) => plan.exerciseId)
+      : [];
+    this.showCustomRoutinePopup = true;
+  }
+
+  closeCustomRoutinePopup(): void {
+    this.showCustomRoutinePopup = false;
+  }
+
+  applyCustomRoutineSelection(exerciseIds: number[]): void {
+    const selectedExercises = exerciseIds
+      .map((exerciseId) => this.exercises.find((exercise) => exercise.id === exerciseId))
+      .filter((exercise): exercise is Exercise => exercise !== undefined);
+
+    if (selectedExercises.length === 0) {
+      this.assignmentDraft.exercisePlans = [];
+      this.showCustomRoutinePopup = false;
+      return;
+    }
+
+    const existingByExerciseId = new Map(this.assignmentDraft.exercisePlans.map((plan) => [plan.exerciseId, plan]));
+    this.assignmentDraft.routineKind = 'custom';
+    this.assignmentDraft.routineTemplateId = 0;
+    this.assignmentDraft.customName = 'Rutina Custom';
+    this.assignmentDraft.exercisePlans = selectedExercises.map((exercise) => {
+      const existing = existingByExerciseId.get(exercise.id);
+      if (existing) {
+        return { ...existing, exerciseName: exercise.name };
+      }
+      return this.createDefaultAssignmentPlan(exercise.id, exercise.name);
+    });
+    this.customRoutineSelectedExerciseIds = selectedExercises.map((exercise) => exercise.id);
+    this.showCustomRoutinePopup = false;
+  }
+
   saveAssignment(): void {
     if (
       this.assignmentDraft.userId <= 0 ||
-      this.assignmentDraft.routineTemplateId <= 0 ||
+      !this.hasAssignmentRoutineSource() ||
       this.assignmentDraft.days.length === 0 ||
       this.assignmentDraft.startDate === '' ||
       this.assignmentDraft.endDate === '' ||
@@ -323,19 +374,26 @@ export class RoutinesComponent implements OnInit {
     this.editingAssignmentId = assignment.id;
     this.assignmentDraft = {
       userId: assignment.userId,
-      routineTemplateId: assignment.routineTemplateId,
+      routineTemplateId: assignment.routineTemplateId ?? 0,
+      routineKind: assignment.custom ? 'custom' : 'generica',
+      customName: assignment.customName ?? 'Rutina Custom',
       days: [...assignment.days],
       startDate: assignment.startDate,
       endDate: assignment.endDate,
       exercisePlans: assignment.exercisePlans.map((item) => ({ ...item }))
     };
-    this.syncAssignmentPlansWithTemplate();
+    this.customRoutineSelectedExerciseIds = this.assignmentDraft.exercisePlans.map((plan) => plan.exerciseId);
+    if (!assignment.custom) {
+      this.syncAssignmentPlansWithTemplate();
+    }
   }
 
   cancelAssignmentEdit(): void {
     this.editingAssignmentId = null;
     this.assignmentDraft = createEmptyRoutineAssignmentDraft();
     this.historyStudentId = null;
+    this.showCustomRoutinePopup = false;
+    this.customRoutineSelectedExerciseIds = [];
   }
 
   askDeleteTemplate(template: RoutineTemplate): void {
@@ -356,7 +414,7 @@ export class RoutinesComponent implements OnInit {
           this.cancelTemplateEdit();
         }
 
-        if (this.assignmentDraft.routineTemplateId === templateId) {
+        if (this.assignmentDraft.routineKind === 'generica' && this.assignmentDraft.routineTemplateId === templateId) {
           this.assignmentDraft.routineTemplateId = 0;
           this.assignmentDraft.days = [];
           this.assignmentDraft.exercisePlans = [];
@@ -447,8 +505,18 @@ export class RoutinesComponent implements OnInit {
     return this.usersService.fullName(userId);
   }
 
-  templateName(templateId: number): string {
+  templateName(templateId: number | null): string {
     return this.routinesService.templateNameById(templateId);
+  }
+
+  assignmentRoutineName(assignment: RoutineAssignment): string {
+    return assignment.routineTemplateName || this.templateName(assignment.routineTemplateId);
+  }
+
+  assignmentRoutinePlaceholder(): string {
+    return this.isCustomAssignmentDraft
+      ? 'Selecciona los ejercicios desde "Crear personalizado" para cargar series/reps/peso.'
+      : 'Selecciona una rutina para cargar series/reps/peso por alumno.';
   }
 
   templateUsageCount(templateId: number): number {
@@ -577,6 +645,10 @@ export class RoutinesComponent implements OnInit {
   }
 
   private syncAssignmentPlansWithTemplate(): void {
+    if (this.assignmentDraft.routineKind !== 'generica') {
+      return;
+    }
+
     const templateId = this.assignmentDraft.routineTemplateId;
     if (templateId <= 0) {
       this.assignmentDraft.exercisePlans = [];
@@ -598,6 +670,13 @@ export class RoutinesComponent implements OnInit {
 
       return this.createDefaultAssignmentPlan(exercise.exerciseId, exercise.exerciseName);
     });
+  }
+
+  private hasAssignmentRoutineSource(): boolean {
+    if (this.assignmentDraft.routineKind === 'custom') {
+      return this.assignmentDraft.exercisePlans.length > 0;
+    }
+    return this.assignmentDraft.routineTemplateId > 0;
   }
 
   private createDefaultAssignmentPlan(exerciseId: number, exerciseName: string): RoutineAssignmentExercise {
@@ -686,7 +765,7 @@ export class RoutinesComponent implements OnInit {
           fullName: `${student.firstName} ${student.lastName}`
         }));
 
-        if (this.assignmentDraft.routineTemplateId > 0) {
+        if (this.assignmentDraft.routineKind === 'generica' && this.assignmentDraft.routineTemplateId > 0) {
           this.syncAssignmentPlansWithTemplate();
         }
 
@@ -712,6 +791,9 @@ export class RoutinesComponent implements OnInit {
           dni: student.dni,
           fullName: `${student.firstName} ${student.lastName}`
         }));
+        if (this.assignmentDraft.routineKind === 'generica' && this.assignmentDraft.routineTemplateId > 0) {
+          this.syncAssignmentPlansWithTemplate();
+        }
         if (this.historyStudentId !== null && !this.students.some((student) => student.id === this.historyStudentId)) {
           this.historyStudentId = null;
         }

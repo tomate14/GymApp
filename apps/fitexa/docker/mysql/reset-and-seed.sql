@@ -150,7 +150,8 @@ CREATE TABLE routine_template_exercises (
 CREATE TABLE routine_assignments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    routine_template_id BIGINT NOT NULL,
+    routine_template_id BIGINT NULL,
+    custom_name VARCHAR(180) NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     CONSTRAINT fk_ra_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

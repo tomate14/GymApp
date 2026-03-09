@@ -1,5 +1,6 @@
 export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
 export type PrescriptionMode = 'fijo' | 'dinamico';
+export type RoutineAssignmentKind = 'generica' | 'custom';
 
 export interface RoutineTemplateExercise {
   exerciseId: number;
@@ -29,7 +30,10 @@ export interface RoutineAssignmentExercise {
 export interface RoutineAssignment {
   id: number;
   userId: number;
-  routineTemplateId: number;
+  routineTemplateId: number | null;
+  routineTemplateName: string;
+  customName: string | null;
+  custom: boolean;
   days: DayOfWeek[];
   startDate: string;
   endDate: string;
@@ -37,7 +41,16 @@ export interface RoutineAssignment {
 }
 
 export type RoutineTemplateDraft = Omit<RoutineTemplate, 'id'>;
-export type RoutineAssignmentDraft = Omit<RoutineAssignment, 'id'>;
+export interface RoutineAssignmentDraft {
+  userId: number;
+  routineTemplateId: number;
+  routineKind: RoutineAssignmentKind;
+  customName: string;
+  days: DayOfWeek[];
+  startDate: string;
+  endDate: string;
+  exercisePlans: RoutineAssignmentExercise[];
+}
 
 export interface RoutineTemplateExerciseDraft {
   exerciseId: number | null;
@@ -52,6 +65,8 @@ export const createEmptyRoutineTemplateDraft = (): RoutineTemplateDraft => ({
 export const createEmptyRoutineAssignmentDraft = (): RoutineAssignmentDraft => ({
   userId: 0,
   routineTemplateId: 0,
+  routineKind: 'generica',
+  customName: 'Rutina Custom',
   days: [],
   startDate: '',
   endDate: '',

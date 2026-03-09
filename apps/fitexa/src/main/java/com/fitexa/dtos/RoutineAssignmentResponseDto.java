@@ -15,6 +15,8 @@ public class RoutineAssignmentResponseDto {
     private String userName;
     private Long routineTemplateId;
     private String routineTemplateName;
+    private String customName;
+    private boolean custom;
     private Set<WeekDay> days;
     private LocalDate startDate;
     private LocalDate endDate;

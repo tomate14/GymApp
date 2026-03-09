@@ -23,6 +23,7 @@ import com.fitexa.services.RoutineAssignmentService;
 import com.fitexa.services.RoutinePlanValidationStrategy;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String DEFAULT_CUSTOM_ROUTINE_NAME = "Rutina Custom";
 
     private final RoutineAssignmentRepository routineAssignmentRepository;
     private final RoutineTemplateRepository routineTemplateRepository;
@@ -116,17 +118,25 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
             throw new BusinessValidationException("La asignacion de rutinas solo aplica para alumnos.");
         }
 
-        RoutineTemplateEntity routineTemplate = routineTemplateRepository.findById(request.getRoutineTemplateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Rutina no encontrada: " + request.getRoutineTemplateId()));
+        RoutineTemplateEntity routineTemplate = null;
+        boolean customAssignment = request.getRoutineTemplateId() == null;
+        if (!customAssignment) {
+            routineTemplate = routineTemplateRepository.findById(request.getRoutineTemplateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Rutina no encontrada: " + request.getRoutineTemplateId()));
+        }
+
+        String customName = resolveCustomName(request.getCustomName(), customAssignment);
+        validateExercisePlanUniqueness(request.getExercisePlans());
 
         RoutineAssignmentEntity entity = id == null ? new RoutineAssignmentEntity() : findEntity(id);
         entity.setUser(student);
         entity.setRoutineTemplate(routineTemplate);
+        entity.setCustomName(customName);
         entity.setDays(request.getDays());
         entity.setStartDate(request.getStartDate());
         entity.setEndDate(request.getEndDate());
         List<RoutineAssignmentExerciseEntity> mappedExercisePlans =
-            mapExercisePlans(entity, routineTemplate, request.getExercisePlans());
+            mapExercisePlans(entity, routineTemplate, request.getExercisePlans(), customAssignment);
         entity.getExercisePlans().clear();
         entity.getExercisePlans().addAll(mappedExercisePlans);
 
@@ -145,12 +155,15 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
     private List<RoutineAssignmentExerciseEntity> mapExercisePlans(
         RoutineAssignmentEntity assignment,
         RoutineTemplateEntity routineTemplate,
-        List<RoutineAssignmentExerciseRequestDto> requestItems
+        List<RoutineAssignmentExerciseRequestDto> requestItems,
+        boolean customAssignment
     ) {
-        Set<Long> templateExerciseIds = routineTemplate.getExercises().stream().map(ExerciseEntity::getId).collect(java.util.stream.Collectors.toSet());
+        Set<Long> templateExerciseIds = customAssignment || routineTemplate == null
+            ? Set.of()
+            : routineTemplate.getExercises().stream().map(ExerciseEntity::getId).collect(java.util.stream.Collectors.toSet());
         List<RoutineAssignmentExerciseEntity> mapped = new ArrayList<>();
         for (RoutineAssignmentExerciseRequestDto item : requestItems) {
-            if (!templateExerciseIds.contains(item.getExerciseId())) {
+            if (!customAssignment && !templateExerciseIds.contains(item.getExerciseId())) {
                 throw new BusinessValidationException("El ejercicio " + item.getExerciseId() + " no pertenece a la rutina seleccionada.");
             }
 
@@ -207,12 +220,16 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
     }
 
     private RoutineAssignmentResponseDto toDto(RoutineAssignmentEntity entity) {
+        boolean custom = entity.getRoutineTemplate() == null;
+        String routineName = custom ? resolveCustomName(entity.getCustomName(), true) : entity.getRoutineTemplate().getName();
         return RoutineAssignmentResponseDto.builder()
             .id(entity.getId())
             .userId(entity.getUser().getId())
             .userName(entity.getUser().getFirstName() + " " + entity.getUser().getLastName())
-            .routineTemplateId(entity.getRoutineTemplate().getId())
-            .routineTemplateName(entity.getRoutineTemplate().getName())
+            .routineTemplateId(entity.getRoutineTemplate() == null ? null : entity.getRoutineTemplate().getId())
+            .routineTemplateName(routineName)
+            .customName(custom ? routineName : null)
+            .custom(custom)
             .days(entity.getDays())
             .startDate(entity.getStartDate())
             .endDate(entity.getEndDate())
@@ -231,6 +248,25 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
                     .build()
             ).toList())
             .build();
+    }
+
+    private void validateExercisePlanUniqueness(List<RoutineAssignmentExerciseRequestDto> requestItems) {
+        Set<Long> seenExerciseIds = new HashSet<>();
+        for (RoutineAssignmentExerciseRequestDto item : requestItems) {
+            if (!seenExerciseIds.add(item.getExerciseId())) {
+                throw new BusinessValidationException("No se puede repetir el mismo ejercicio dentro de la asignacion.");
+            }
+        }
+    }
+
+    private String resolveCustomName(String customName, boolean customAssignment) {
+        if (!customAssignment) {
+            return null;
+        }
+        if (customName == null || customName.isBlank()) {
+            return DEFAULT_CUSTOM_ROUTINE_NAME;
+        }
+        return customName.trim();
     }
 
     private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {

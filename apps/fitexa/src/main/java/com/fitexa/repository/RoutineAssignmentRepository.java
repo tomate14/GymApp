@@ -174,12 +174,13 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
         select ra
         from RoutineAssignmentEntity ra
         join ra.user u
+        left join ra.routineTemplate rt
         where (
             :student is null
             or lower(concat(u.firstName, ' ', u.lastName)) like lower(concat('%', :student, '%'))
             or u.dni like concat('%', :student, '%')
         )
-          and (:templateId is null or ra.routineTemplate.id = :templateId)
+          and (:templateId is null or rt.id = :templateId)
           and (
             :currentOnly = false
             or (
