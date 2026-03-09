@@ -1,12 +1,13 @@
 package com.fitexa.services.impl;
 
-import com.fitexa.dtos.MachineRequestDto;
 import com.fitexa.dtos.MachineResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.MachineEntity;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.MachineRepository;
+import com.fitexa.services.MachinePhotoStorageService;
 import com.fitexa.services.MachineService;
+import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class MachineServiceImpl implements MachineService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final MachineRepository machineRepository;
+    private final MachinePhotoStorageService machinePhotoStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,27 +52,31 @@ public class MachineServiceImpl implements MachineService {
 
     @Override
     @Transactional
-    public MachineResponseDto create(MachineRequestDto request) {
+    public MachineResponseDto create(String name, MultipartFile photo) {
         MachineEntity entity = MachineEntity.builder()
-            .name(request.getName())
-            .photoUrl(request.getPhotoUrl())
+            .name(cleanRequired(name))
+            .photoUrl(storePhoto(photo))
             .build();
         return toDto(machineRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public MachineResponseDto update(Long id, MachineRequestDto request) {
+    public MachineResponseDto update(Long id, String name, MultipartFile photo) {
         MachineEntity entity = findEntity(id);
-        entity.setName(request.getName());
-        entity.setPhotoUrl(request.getPhotoUrl());
+        entity.setName(cleanRequired(name));
+        if (photo != null && !photo.isEmpty()) {
+            replaceStoredPhoto(entity, photo);
+        }
         return toDto(machineRepository.save(entity));
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        machineRepository.delete(findEntity(id));
+        MachineEntity entity = findEntity(id);
+        deleteStoredPhoto(entity.getPhotoUrl());
+        machineRepository.delete(entity);
     }
 
     private MachineEntity findEntity(Long id) {
@@ -102,6 +109,14 @@ public class MachineServiceImpl implements MachineService {
         return value.trim();
     }
 
+    private String cleanRequired(String value) {
+        String cleaned = clean(value);
+        if (cleaned == null) {
+            throw new IllegalArgumentException("El nombre de la maquina es obligatorio.");
+        }
+        return cleaned;
+    }
+
     private int sanitizePage(int page) {
         return Math.max(0, page);
     }
@@ -111,5 +126,26 @@ public class MachineServiceImpl implements MachineService {
             return 8;
         }
         return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private String storePhoto(MultipartFile photo) {
+        try {
+            return machinePhotoStorageService.store(photo);
+        } catch (IOException ex) {
+            throw new IllegalStateException("No se pudo guardar la imagen de la maquina.", ex);
+        }
+    }
+
+    private void replaceStoredPhoto(MachineEntity entity, MultipartFile photo) {
+        deleteStoredPhoto(entity.getPhotoUrl());
+        entity.setPhotoUrl(storePhoto(photo));
+    }
+
+    private void deleteStoredPhoto(String photoUrl) {
+        try {
+            machinePhotoStorageService.deleteByPhotoUrl(photoUrl);
+        } catch (IOException ex) {
+            throw new IllegalStateException("No se pudo eliminar la imagen de la maquina.", ex);
+        }
     }
 }

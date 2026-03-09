@@ -35,8 +35,14 @@ services:
       MYSQL_URL: jdbc:mysql://mysql:3306/fitexa?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: root
+      MACHINE_IMAGES_DIR: /app/data/machine-images
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_PUBLIC_BASE_URL: ${MP_PUBLIC_BASE_URL:-http://localhost:8080}
+      MP_MOBILE_BASE_URL: ${MP_MOBILE_BASE_URL:-http://localhost:8100}
     ports:
       - "8080:8080"
+    volumes:
+      - fitexa_machine_images:/app/data/machine-images
 
   admin-panel:
     build:
@@ -62,3 +68,4 @@ services:
 
 volumes:
   fitexa_mysql_data:
+  fitexa_machine_images:

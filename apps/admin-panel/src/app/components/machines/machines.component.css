@@ -25,3 +25,11 @@
   border-radius: 0.4rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
+
+.machine-form-preview {
+  width: min(100%, 320px);
+  height: 180px;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}

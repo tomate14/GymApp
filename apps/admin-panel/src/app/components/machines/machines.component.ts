@@ -25,6 +25,8 @@ export class MachinesComponent implements OnInit {
   machinesPage: PageResponse<Machine> = createEmptyPageResponse<Machine>();
   exercises: Exercise[] = [];
   machineDraft: MachineDraft = createEmptyMachineDraft();
+  selectedPhoto: File | null = null;
+  machinePhotoPreviewUrl = '';
   editingMachineId: number | null = null;
   deleteCandidate: Machine | null = null;
   showForm = false;
@@ -70,11 +72,11 @@ export class MachinesComponent implements OnInit {
   }
 
   saveMachine(): void {
-    if (!this.machineDraft.name || !this.machineDraft.photoUrl) {
+    if (!this.machineDraft.name || (this.editingMachineId === null && !this.selectedPhoto)) {
       return;
     }
 
-    this.machinesService.upsert(this.machineDraft, this.editingMachineId).subscribe({
+    this.machinesService.upsert(this.machineDraft, this.selectedPhoto, this.editingMachineId).subscribe({
       next: () => {
         this.cancelEdit();
         this.loadData();
@@ -89,11 +91,22 @@ export class MachinesComponent implements OnInit {
     this.showForm = true;
     this.editingMachineId = machine.id;
     this.machineDraft = { ...machine };
+    this.selectedPhoto = null;
+    this.machinePhotoPreviewUrl = machine.photoUrl;
   }
 
   cancelEdit(): void {
     this.editingMachineId = null;
     this.machineDraft = createEmptyMachineDraft();
+    this.selectedPhoto = null;
+    this.machinePhotoPreviewUrl = '';
+  }
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.selectedPhoto = file;
+    this.machinePhotoPreviewUrl = file ? URL.createObjectURL(file) : this.machineDraft.photoUrl;
   }
 
   askDelete(machine: Machine): void {

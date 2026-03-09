@@ -11,8 +11,7 @@ import {
   MobileProfileUpdateRequest,
   MobileRoutine
 } from '../models/mobile.model';
-
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+import { API_BASE_URL } from '../utils/api.util';
 
 @Injectable({
   providedIn: 'root'

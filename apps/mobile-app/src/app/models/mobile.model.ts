@@ -39,6 +39,7 @@ export type MobileRoutineExercise = {
   exerciseName: string;
   activityName: string;
   machineName: string;
+  machinePhotoUrl: string | null;
   videoUrl: string;
   sets: number;
   prescriptionMode: PrescriptionMode;

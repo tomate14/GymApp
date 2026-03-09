@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { PageResponse } from '../class/page.model';
 import { Machine, MachineDraft } from '../class/machine.model';
-import { API_BASE_URL } from '../utils/api.util';
+import { API_BASE_URL, resolveApiAssetUrl } from '../utils/api.util';
 
 type MachineApiDto = {
   id: number;
@@ -64,11 +64,17 @@ export class MachinesService {
     this.machines = machines.map((item) => ({ ...item }));
   }
 
-  upsert(draft: MachineDraft, editingId: number | null): Observable<Machine> {
+  upsert(draft: MachineDraft, photo: File | null, editingId: number | null): Observable<Machine> {
+    const payload = new FormData();
+    payload.append('name', draft.name);
+    if (photo) {
+      payload.append('photo', photo);
+    }
+
     const request$ =
       editingId === null
-        ? this.http.post<MachineApiDto>(this.endpoint, draft)
-        : this.http.put<MachineApiDto>(`${this.endpoint}/${editingId}`, draft);
+        ? this.http.post<MachineApiDto>(this.endpoint, payload)
+        : this.http.put<MachineApiDto>(`${this.endpoint}/${editingId}`, payload);
 
     return request$.pipe(
       map((item) => this.mapFromApi(item)),
@@ -106,7 +112,7 @@ export class MachinesService {
     return {
       id: Number(dto.id),
       name: dto.name,
-      photoUrl: dto.photoUrl
+      photoUrl: resolveApiAssetUrl(dto.photoUrl)
     };
   }
 

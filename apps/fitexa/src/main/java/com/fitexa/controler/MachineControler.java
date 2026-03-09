@@ -1,21 +1,21 @@
 package com.fitexa.controler;
 
-import com.fitexa.dtos.MachineRequestDto;
 import com.fitexa.dtos.MachineResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.MachineService;
-import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/machines")
@@ -44,14 +44,21 @@ public class MachineControler {
         return machineService.findById(id);
     }
 
-    @PostMapping
-    public MachineResponseDto create(@Valid @RequestBody MachineRequestDto request) {
-        return machineService.create(request);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public MachineResponseDto create(
+        @RequestParam("name") String name,
+        @RequestPart("photo") MultipartFile photo
+    ) {
+        return machineService.create(name, photo);
     }
 
-    @PutMapping("/{id}")
-    public MachineResponseDto update(@PathVariable Long id, @Valid @RequestBody MachineRequestDto request) {
-        return machineService.update(id, request);
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public MachineResponseDto update(
+        @PathVariable Long id,
+        @RequestParam("name") String name,
+        @RequestPart(value = "photo", required = false) MultipartFile photo
+    ) {
+        return machineService.update(id, name, photo);
     }
 
     @DeleteMapping("/{id}")

@@ -296,6 +296,7 @@ public class MobileAppServiceImpl implements MobileAppService {
             .exerciseName(item.getExerciseName())
             .activityName(exercise.getActivity() == null ? "Sin actividad" : exercise.getActivity().getName())
             .machineName(exercise.getMachine() == null ? "Peso libre" : exercise.getMachine().getName())
+            .machinePhotoUrl(exercise.getMachine() == null ? null : exercise.getMachine().getPhotoUrl())
             .videoUrl(exercise.getVideoUrl())
             .sets(item.getSets())
             .prescriptionMode(item.getPrescriptionMode())

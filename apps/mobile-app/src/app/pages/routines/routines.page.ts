@@ -5,6 +5,7 @@ import { addIcons } from 'ionicons';
 import { playCircleOutline } from 'ionicons/icons';
 import { MobileRoutine } from '../../models/mobile.model';
 import { MobileAppService } from '../../services/mobile-app.service';
+import { resolveApiAssetUrl } from '../../utils/api.util';
 
 @Component({
   selector: 'app-routines-page',
@@ -104,6 +105,11 @@ export class RoutinesPageComponent implements OnInit {
   }
 
   exerciseBackground(exercise: MobileRoutine['exercises'][number]): string {
+    const machinePhotoUrl = resolveApiAssetUrl(exercise.machinePhotoUrl);
+    if (machinePhotoUrl) {
+      return `linear-gradient(90deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.64) 38%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.08) 100%), url('${machinePhotoUrl}')`;
+    }
+
     const normalized = this.normalizeText(`${exercise.activityName} ${exercise.exerciseName}`);
     const match = this.previewImages.find((item) => item.keywords.some((keyword) => normalized.includes(keyword)));
     const imageUrl = match?.url ?? 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=900&q=80';

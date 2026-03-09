@@ -26,6 +26,12 @@ logging:
     org.hibernate.SQL: debug
 
 fitexa:
+  storage:
+    machine-images-dir: ${MACHINE_IMAGES_DIR:/app/data/machine-images}
+  mercadopago:
+    access-token: ${MP_ACCESS_TOKEN:}
+    public-base-url: ${MP_PUBLIC_BASE_URL:http://localhost:8080}
+    mobile-base-url: ${MP_MOBILE_BASE_URL:http://localhost:8100}
   security:
     jwt:
       secret: ${JWT_SECRET:fitexa-default-jwt-secret-key-change-this-in-production-2026}

@@ -120,3 +120,7 @@ set MYSQL_USERNAME=root
 set MYSQL_PASSWORD=root
 mvn spring-boot:run
 ```
+
+## Documentacion adicional
+
+- Mercado Pago y ngrok para `mobile-app`: [docs/mercado-pago/README.md](docs/mercado-pago/README.md)

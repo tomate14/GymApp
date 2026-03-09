@@ -11,6 +11,7 @@ public class MobileRoutineExerciseResponseDto {
     private String exerciseName;
     private String activityName;
     private String machineName;
+    private String machinePhotoUrl;
     private String videoUrl;
     private Integer sets;
     private PrescriptionMode prescriptionMode;
