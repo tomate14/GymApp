@@ -1,0 +1,17 @@
+<div class="popup-overlay" *ngIf="visible" (click)="closed.emit()"></div>
+
+<section class="popup-window card border-light-subtle bg-black text-light" *ngIf="visible" role="dialog" aria-modal="true">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h5 class="card-title mb-1">{{ title }}</h5>
+        <p class="text-secondary mb-0" *ngIf="summary">{{ summary }}</p>
+      </div>
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="closed.emit()">Cerrar</button>
+    </div>
+
+    <ul class="info-list mb-0" *ngIf="items.length > 0">
+      <li *ngFor="let item of items">{{ item }}</li>
+    </ul>
+  </div>
+</section>

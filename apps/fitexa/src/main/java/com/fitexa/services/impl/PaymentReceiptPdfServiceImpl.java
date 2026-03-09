@@ -149,7 +149,7 @@ public class PaymentReceiptPdfServiceImpl implements PaymentReceiptPdfService {
     }
 
     private float drawMovementDetail(PDPageContentStream stream, UserPaymentMovementEntity movement, float startY) throws IOException {
-        float blockHeight = 196f;
+        float blockHeight = 214f;
         drawCard(stream, MARGIN, startY - blockHeight, CONTENT_WIDTH, blockHeight);
 
         float labelX = MARGIN + 18f;
@@ -167,7 +167,7 @@ public class PaymentReceiptPdfServiceImpl implements PaymentReceiptPdfService {
         float noteX = MARGIN + 18f;
         float noteWidth = CONTENT_WIDTH - 36f;
         float noteHeight = 34f;
-        float noteY = Math.max(startY - blockHeight + 14f, rowY - 8f);
+        float noteY = rowY - noteHeight - 8f;
         fillRect(stream, noteX, noteY, noteWidth, noteHeight, COLOR_PRIMARY_SOFT);
         drawCenteredText(
             stream,

@@ -1,70 +1,160 @@
-﻿<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
+<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
   <article class="routine-banner">
     <p class="eyebrow">Training stack</p>
-    <h1>Rutinas activas e historicas</h1>
-    <p class="subtitle">Preview clara, visual y rapida para saber que toca entrenar hoy.</p>
+    <h1>Mis rutinas</h1>
+    <p class="subtitle">Consulta lo que toca hoy y revisa el historico completo sin perder contexto.</p>
   </article>
 
   <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-  <article class="routine-card" *ngFor="let routine of routines">
-    <div class="routine-card-head">
-      <div>
-        <p class="routine-days">{{ formatDays(routine.days) }}</p>
-        <h2>{{ routine.routineTemplateName }}</h2>
+  <div class="routine-tabs">
+    <button class="tab-chip" type="button" [class.active]="activeTab === 'current'" (click)="setActiveTab('current')">
+      Rutinas del dia
+    </button>
+    <button class="tab-chip" type="button" [class.active]="activeTab === 'history'" (click)="setActiveTab('history')">
+      Rutinas historicas
+    </button>
+  </div>
+
+  <section class="tab-panel" *ngIf="activeTab === 'current'; else historyTab">
+    <article class="date-navigator">
+      <div class="date-navigator-copy">
+        <p class="eyebrow">Fecha consultada</p>
+        <h2>{{ selectedDateLabel() }}</h2>
       </div>
-      <ion-badge [color]="routine.status === 'Activa' ? 'success' : routine.status === 'Proxima' ? 'warning' : 'medium'">
-        {{ routine.status }}
-      </ion-badge>
-    </div>
 
-    <p class="routine-range">{{ routine.startDate }} a {{ routine.endDate }}</p>
+      <div class="date-actions">
+        <ion-button fill="outline" size="small" [disabled]="!canGoToPreviousDate()" (click)="previousDate()">Anterior</ion-button>
+        <ion-button fill="solid" size="small" (click)="nextDate()">Siguiente</ion-button>
+      </div>
+    </article>
 
-    <div class="exercise-grid">
-      <article
-        class="exercise-preview"
-        *ngFor="let exercise of routine.exercises | slice:0:(expandedRoutineId === routine.id ? routine.exercises.length : 3)"
-        [style.background-image]="exerciseBackground(exercise)"
-      >
-        <div class="exercise-overlay">
-          <div class="preview-copy">
-            <div class="exercise-title">{{ exercise.exerciseName }}</div>
-            <div class="preview-stats">
-              <span class="stat-pill">{{ exercise.sets }} series</span>
-              <span class="stat-pill">{{ repsLabel(exercise) }}</span>
-              <span class="stat-pill">{{ weightLabel(exercise) }}</span>
+    <ng-container *ngIf="currentDayRoutines.length > 0; else noCurrentRoutines">
+      <article class="routine-card" *ngFor="let routine of currentDayRoutines">
+        <button class="routine-summary" type="button" (click)="toggleCurrentRoutine(routine.id)">
+          <div class="routine-card-head">
+            <div>
+              <p class="routine-days">{{ formatDays(routine.days) }}</p>
+              <h2>{{ routine.routineTemplateName }}</h2>
+            </div>
+            <div class="routine-card-meta">
+              <ion-badge color="success">Asignada</ion-badge>
+              <ion-icon [name]="isCurrentRoutineExpanded(routine.id) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
             </div>
           </div>
 
-          <div class="preview-footer">
-            <span class="activity-tag">{{ exercise.activityName }}</span>
-            <span class="machine-pill">{{ exercise.machineName }}</span>
-          </div>
+          <p class="routine-range">{{ routine.startDate }} a {{ routine.endDate }}</p>
+        </button>
 
-          <ion-button
-            *ngIf="exercise.videoUrl"
-            class="preview-video"
-            fill="clear"
-            size="small"
-            [href]="exercise.videoUrl"
-            target="_blank"
+        <div class="exercise-grid" *ngIf="isCurrentRoutineExpanded(routine.id)">
+          <article
+            class="exercise-preview"
+            *ngFor="let exercise of routine.exercises"
+            [style.background-image]="exerciseBackground(exercise)"
           >
-            <ion-icon slot="start" name="play-circle-outline"></ion-icon>
-            Ver video
-          </ion-button>
+            <div class="exercise-overlay">
+              <div class="preview-copy">
+                <div class="exercise-title">{{ exercise.exerciseName }}</div>
+                <div class="preview-stats">
+                  <span class="stat-pill">{{ exercise.sets }} series</span>
+                  <span class="stat-pill">{{ repsLabel(exercise) }}</span>
+                  <span class="stat-pill">{{ weightLabel(exercise) }}</span>
+                </div>
+              </div>
+
+              <div class="preview-footer">
+                <span class="activity-tag">{{ exercise.activityName }}</span>
+                <span class="machine-pill">{{ exercise.machineName }}</span>
+              </div>
+
+              <ion-button
+                *ngIf="exercise.videoUrl"
+                class="preview-video"
+                fill="clear"
+                size="small"
+                [href]="exercise.videoUrl"
+                target="_blank"
+              >
+                <ion-icon slot="start" name="play-circle-outline"></ion-icon>
+                Ver video
+              </ion-button>
+            </div>
+          </article>
         </div>
       </article>
-    </div>
+    </ng-container>
 
-    <ion-button
-      *ngIf="routine.exercises.length > 3"
-      fill="outline"
-      expand="block"
-      (click)="toggleRoutine(routine.id)"
-    >
-      {{ expandedRoutineId === routine.id ? 'Ver menos' : 'Ver todos los ejercicios' }}
-    </ion-button>
-  </article>
+    <ng-template #noCurrentRoutines>
+      <article class="empty-panel">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <p>No tenes rutinas asignadas para {{ selectedDateLabel() }}.</p>
+      </article>
+    </ng-template>
+  </section>
+
+  <ng-template #historyTab>
+    <ng-container *ngIf="historicalRoutines.length > 0; else noHistoricalRoutines">
+      <article class="routine-card" *ngFor="let routine of historicalRoutines">
+        <button class="routine-summary" type="button" (click)="toggleHistoricalRoutine(routine.id)">
+          <div class="routine-card-head">
+            <div>
+              <p class="routine-days">{{ formatDays(routine.days) }}</p>
+              <h2>{{ routine.routineTemplateName }}</h2>
+            </div>
+            <div class="routine-card-meta">
+              <ion-badge color="medium">Finalizada</ion-badge>
+              <ion-icon [name]="isHistoricalRoutineExpanded(routine.id) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+            </div>
+          </div>
+
+          <p class="routine-range">{{ routine.startDate }} a {{ routine.endDate }}</p>
+        </button>
+
+        <div class="exercise-grid" *ngIf="isHistoricalRoutineExpanded(routine.id)">
+          <article
+            class="exercise-preview"
+            *ngFor="let exercise of routine.exercises"
+            [style.background-image]="exerciseBackground(exercise)"
+          >
+            <div class="exercise-overlay">
+              <div class="preview-copy">
+                <div class="exercise-title">{{ exercise.exerciseName }}</div>
+                <div class="preview-stats">
+                  <span class="stat-pill">{{ exercise.sets }} series</span>
+                  <span class="stat-pill">{{ repsLabel(exercise) }}</span>
+                  <span class="stat-pill">{{ weightLabel(exercise) }}</span>
+                </div>
+              </div>
+
+              <div class="preview-footer">
+                <span class="activity-tag">{{ exercise.activityName }}</span>
+                <span class="machine-pill">{{ exercise.machineName }}</span>
+              </div>
+
+              <ion-button
+                *ngIf="exercise.videoUrl"
+                class="preview-video"
+                fill="clear"
+                size="small"
+                [href]="exercise.videoUrl"
+                target="_blank"
+              >
+                <ion-icon slot="start" name="play-circle-outline"></ion-icon>
+                Ver video
+              </ion-button>
+            </div>
+          </article>
+        </div>
+      </article>
+    </ng-container>
+
+    <ng-template #noHistoricalRoutines>
+      <article class="empty-panel">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <p>No hay rutinas historicas finalizadas todavia.</p>
+      </article>
+    </ng-template>
+  </ng-template>
 </section>
 
 <ng-template #loadingTpl>

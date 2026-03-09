@@ -76,73 +76,114 @@
   </div>
 
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-students-trend-chart [chart]="studentsTrendChart" [mode]="studentsTrendMode" (modeChange)="onStudentsTrendModeChange($event)"></app-students-trend-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('students-trend')" aria-label="Como se calcula Altas de alumnos">i</button>
+      <app-students-trend-chart [chart]="studentsTrendChart" [mode]="studentsTrendMode" (modeChange)="onStudentsTrendModeChange($event)"></app-students-trend-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-students-by-teacher-race-chart [chart]="studentsByTeacherChart"></app-students-by-teacher-race-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('students-by-teacher')" aria-label="Como se calcula Alumnos por profesor">i</button>
+      <app-students-by-teacher-race-chart [chart]="studentsByTeacherChart"></app-students-by-teacher-race-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-classes-by-activity-chart [chart]="classesByActivityChart"></app-classes-by-activity-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('classes-by-activity')" aria-label="Como se calcula Clases por actividad">i</button>
+      <app-classes-by-activity-chart [chart]="classesByActivityChart"></app-classes-by-activity-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-occupancy-by-activity-chart [chart]="occupancyByActivityChart"></app-occupancy-by-activity-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('occupancy-by-activity')" aria-label="Como se calcula Ocupacion por actividad">i</button>
+      <app-occupancy-by-activity-chart [chart]="occupancyByActivityChart"></app-occupancy-by-activity-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-payment-status-chart [chart]="paymentStatusChart"></app-payment-status-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('payment-status')" aria-label="Como se calcula Estado de pagos">i</button>
+      <app-payment-status-chart [chart]="paymentStatusChart"></app-payment-status-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-students-by-plan-chart [chart]="studentsByPlanChart"></app-students-by-plan-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('students-by-plan')" aria-label="Como se calcula Alumnos por plan">i</button>
+      <app-students-by-plan-chart [chart]="studentsByPlanChart"></app-students-by-plan-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-top-exercises-chart [chart]="topExercisesChart"></app-top-exercises-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('top-exercises')" aria-label="Como se calcula Top ejercicios">i</button>
+      <app-top-exercises-chart [chart]="topExercisesChart"></app-top-exercises-chart>
+    </div>
   </div>
   <div class="col-12 col-xl-6" *ngIf="!isLoadingSummary">
-    <app-top-machines-chart [chart]="topMachinesChart"></app-top-machines-chart>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('top-machines')" aria-label="Como se calcula Top maquinas">i</button>
+      <app-top-machines-chart [chart]="topMachinesChart"></app-top-machines-chart>
+    </div>
   </div>
 
   <div class="col-12">
-    <app-renewals-table
-      [plans]="plans"
-      [filters]="renewalsFilters"
-      [page]="renewalsPage"
-      [currentPage]="renewalsCurrentPage"
-      [pageSize]="renewalsPageSize"
-      [pageSizeOptions]="pageSizeOptions"
-      [isLoading]="isLoadingRenewals"
-      (filtersChange)="onRenewalsFiltersChange()"
-      (clearFilters)="clearRenewalsFilters()"
-      (pageChange)="goToRenewalsPage($event)"
-      (pageSizeChange)="onRenewalsPageSizeChange($event)"
-    ></app-renewals-table>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('renewals')" aria-label="Como se calcula Vencimientos de cuotas">i</button>
+      <app-renewals-table
+        [plans]="plans"
+        [filters]="renewalsFilters"
+        [page]="renewalsPage"
+        [currentPage]="renewalsCurrentPage"
+        [pageSize]="renewalsPageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        [isLoading]="isLoadingRenewals"
+        (filtersChange)="onRenewalsFiltersChange()"
+        (clearFilters)="clearRenewalsFilters()"
+        (pageChange)="goToRenewalsPage($event)"
+        (pageSizeChange)="onRenewalsPageSizeChange($event)"
+      ></app-renewals-table>
+    </div>
   </div>
 
   <div class="col-12">
-    <app-ranking-table
-      [filters]="rankingFilters"
-      [page]="rankingPage"
-      [currentPage]="rankingCurrentPage"
-      [pageSize]="rankingPageSize"
-      [pageSizeOptions]="pageSizeOptions"
-      [isLoading]="isLoadingRanking"
-      (filtersChange)="onRankingFiltersChange()"
-      (clearFilters)="clearRankingFilters()"
-      (pageChange)="goToRankingPage($event)"
-      (pageSizeChange)="onRankingPageSizeChange($event)"
-    ></app-ranking-table>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('ranking')" aria-label="Como se calcula Ranking de actividades">i</button>
+      <app-ranking-table
+        [filters]="rankingFilters"
+        [page]="rankingPage"
+        [currentPage]="rankingCurrentPage"
+        [pageSize]="rankingPageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        [isLoading]="isLoadingRanking"
+        (filtersChange)="onRankingFiltersChange()"
+        (clearFilters)="clearRankingFilters()"
+        (pageChange)="goToRankingPage($event)"
+        (pageSizeChange)="onRankingPageSizeChange($event)"
+      ></app-ranking-table>
+    </div>
   </div>
 
   <div class="col-12">
-    <app-overloads-table
-      [filters]="overloadsFilters"
-      [page]="overloadsPage"
-      [currentPage]="overloadsCurrentPage"
-      [pageSize]="overloadsPageSize"
-      [pageSizeOptions]="pageSizeOptions"
-      [isLoading]="isLoadingOverloads"
-      (filtersChange)="onOverloadsFiltersChange()"
-      (clearFilters)="clearOverloadsFilters()"
-      (pageChange)="goToOverloadsPage($event)"
-      (pageSizeChange)="onOverloadsPageSizeChange($event)"
-    ></app-overloads-table>
+    <div class="dashboard-info-shell">
+      <button class="dashboard-info-button" type="button" (click)="openInfo('overloads')" aria-label="Como se calcula Sobreasignacion de planes">i</button>
+      <app-overloads-table
+        [filters]="overloadsFilters"
+        [page]="overloadsPage"
+        [currentPage]="overloadsCurrentPage"
+        [pageSize]="overloadsPageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        [isLoading]="isLoadingOverloads"
+        (filtersChange)="onOverloadsFiltersChange()"
+        (clearFilters)="clearOverloadsFilters()"
+        (pageChange)="goToOverloadsPage($event)"
+        (pageSizeChange)="onOverloadsPageSizeChange($event)"
+      ></app-overloads-table>
+    </div>
   </div>
 </div>
+
+<app-info-popup
+  [visible]="activeInfo !== null"
+  [title]="activeInfo?.title ?? ''"
+  [summary]="activeInfo?.summary ?? ''"
+  [items]="activeInfo?.items ?? []"
+  (closed)="closeInfo()"
+></app-info-popup>

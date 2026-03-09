@@ -31,6 +31,13 @@ import { RankingTableComponent } from './tables/ranking-table/ranking-table.comp
 import { RenewalsTableComponent } from './tables/renewals-table/renewals-table.component';
 import { DashboardService } from '../../services/dashboard.service';
 import { PlansService } from '../../services/plans.service';
+import { InfoPopupComponent } from '../../popup/info-popup.component';
+
+type DashboardInfoContent = {
+  title: string;
+  summary: string;
+  items: string[];
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -49,7 +56,8 @@ import { PlansService } from '../../services/plans.service';
     TopMachinesChartComponent,
     RenewalsTableComponent,
     RankingTableComponent,
-    OverloadsTableComponent
+    OverloadsTableComponent,
+    InfoPopupComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
@@ -114,6 +122,110 @@ export class DashboardComponent implements OnInit {
   isLoadingOverloads = false;
 
   apiError: string | null = null;
+  activeInfoKey: string | null = null;
+
+  readonly dashboardInfo: Record<string, DashboardInfoContent> = {
+    'students-trend': {
+      title: 'Altas de alumnos',
+      summary: 'Te ayuda a ver si el gimnasio esta incorporando alumnos al ritmo esperado.',
+      items: [
+        'Cada punto muestra cuantos alumnos nuevos se sumaron en el periodo elegido.',
+        'Sirve para detectar meses fuertes, meses flojos y cambios en la tendencia de crecimiento.',
+        'Si el grafico baja, puede ser una senal para revisar promociones, captacion o retencion.'
+      ]
+    },
+    'students-by-teacher': {
+      title: 'Alumnos por profesor',
+      summary: 'Muestra como se reparte la demanda entre los profesores del gimnasio.',
+      items: [
+        'Permite ver que profesores concentran mas alumnos y cuales tienen menos movimiento.',
+        'Ayuda a equilibrar horarios, carga de trabajo y decisiones de agenda.',
+        'Tambien sirve para detectar si algun profesor esta absorbiendo demasiada demanda.'
+      ]
+    },
+    'classes-by-activity': {
+      title: 'Clases por actividad',
+      summary: 'Te muestra que actividades ocupan mas espacio en la programacion.',
+      items: [
+        'Cada barra representa cuantas clases hubo de cada actividad en el periodo.',
+        'Sirve para ver si la oferta esta alineada con lo que queres impulsar en el negocio.',
+        'Tambien ayuda a detectar actividades sobredimensionadas o poco representadas.'
+      ]
+    },
+    'occupancy-by-activity': {
+      title: 'Ocupacion por actividad',
+      summary: 'Te permite entender que actividades llenan mejor sus cupos.',
+      items: [
+        'Un porcentaje alto indica que esa actividad suele trabajar con buena demanda.',
+        'Un porcentaje bajo puede mostrar clases con espacio ocioso.',
+        'Es util para decidir si conviene abrir mas horarios, reducirlos o ajustar la capacidad.'
+      ]
+    },
+    'payment-status': {
+      title: 'Estado de pagos',
+      summary: 'Resume rapidamente como esta la salud de cobro de la base de alumnos.',
+      items: [
+        'Te muestra cuantos alumnos estan al dia y cuantos tienen deuda.',
+        'Sirve para anticipar riesgos de cobranza y necesidad de seguimiento.',
+        'Si aumenta la deuda, conviene revisar renovaciones, recordatorios y gestion comercial.'
+      ]
+    },
+    'students-by-plan': {
+      title: 'Alumnos por plan',
+      summary: 'Te ayuda a entender que planes son los mas elegidos por los alumnos.',
+      items: [
+        'Permite ver si la base se concentra en planes economicos, intermedios o premium.',
+        'Es clave para analizar mezcla comercial y oportunidades de mejora de ingresos.',
+        'Tambien ayuda a detectar planes poco atractivos o con bajo nivel de adopcion.'
+      ]
+    },
+    'top-exercises': {
+      title: 'Top ejercicios mas usados',
+      summary: 'Muestra que ejercicios aparecen con mas frecuencia en las rutinas del gimnasio.',
+      items: [
+        'Sirve para entender que tipo de trabajo se esta prescribiendo mas a los alumnos.',
+        'Ayuda a ver tendencias de entrenamiento dentro del gimnasio.',
+        'Tambien puede orientar compras, reemplazos o mejoras de equipamiento asociado.'
+      ]
+    },
+    'top-machines': {
+      title: 'Top maquinas mas usadas',
+      summary: 'Te muestra que maquinas aparecen mas en la planificacion de entrenamiento.',
+      items: [
+        'Sirve para detectar cuales son las maquinas con mayor demanda potencial.',
+        'Ayuda a priorizar mantenimiento, reemplazo o incorporacion de nuevos equipos.',
+        'Tambien permite ver si hay maquinas subutilizadas que no estan aportando valor.'
+      ]
+    },
+    renewals: {
+      title: 'Vencimientos de cuotas',
+      summary: 'Te muestra que alumnos tienen su cuota cerca de vencer o dentro del rango elegido.',
+      items: [
+        'Sirve para hacer seguimiento comercial antes de que el alumno quede fuera de termino.',
+        'Te ayuda a priorizar contactos, recordatorios y acciones de renovacion.',
+        'Mientras mas ordenada este esta tabla, mejor control tenes sobre los ingresos del mes.'
+      ]
+    },
+    ranking: {
+      title: 'Ranking de actividades',
+      summary: 'Compara las actividades segun volumen de clases, cantidad de anotados y nivel de ocupacion.',
+      items: [
+        'Clases te dice que actividades tuvieron mas presencia en la agenda.',
+        'Anotados muestra cuales mueven mas alumnos en total.',
+        'Ocupacion ayuda a ver cuales aprovechan mejor sus cupos disponibles.',
+        'En conjunto, sirve para decidir que actividades conviene sostener, expandir o revisar.'
+      ]
+    },
+    overloads: {
+      title: 'Sobreasignacion de planes',
+      summary: 'Marca alumnos que hoy tienen mas dias asignados de los que su plan permite.',
+      items: [
+        'Sirve para detectar desorden operativo o casos donde se esta regalando servicio sin control.',
+        'Ayuda a corregir asignaciones antes de que impacten en rentabilidad o en la experiencia del alumno.',
+        'Tambien permite identificar alumnos que deberian pasar a un plan superior.'
+      ]
+    }
+  };
 
   constructor(
     private readonly dashboardService: DashboardService,
@@ -256,6 +368,24 @@ export class DashboardComponent implements OnInit {
   get kpiColumnRight(): DashboardKpi[] {
     const midpoint = Math.ceil(this.regularKpis.length / 2);
     return this.regularKpis.slice(midpoint);
+  }
+
+  get activeInfo(): DashboardInfoContent | null {
+    if (this.activeInfoKey === null) {
+      return null;
+    }
+    return this.dashboardInfo[this.activeInfoKey] ?? null;
+  }
+
+  openInfo(key: string): void {
+    if (!this.dashboardInfo[key]) {
+      return;
+    }
+    this.activeInfoKey = key;
+  }
+
+  closeInfo(): void {
+    this.activeInfoKey = null;
   }
 
   private loadOptions(): void {

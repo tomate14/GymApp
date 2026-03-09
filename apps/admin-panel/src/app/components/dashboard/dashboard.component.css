@@ -20,6 +20,34 @@
   margin-top: 0.15rem;
 }
 
+.dashboard-info-shell {
+  position: relative;
+}
+
+.dashboard-info-button {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.88);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.dashboard-info-button:hover {
+  border-color: rgba(255, 95, 31, 0.48);
+  background: rgba(255, 95, 31, 0.18);
+}
+
 @media (max-width: 1199px) {
   .kpi-card-compact {
     min-height: auto;

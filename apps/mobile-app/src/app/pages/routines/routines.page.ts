@@ -1,16 +1,18 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { IonBadge, IonButton, IonCard, IonCardContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
+import { IonBadge, IonButton, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { playCircleOutline } from 'ionicons/icons';
-import { MobileRoutine } from '../../models/mobile.model';
+import { calendarOutline, chevronDownOutline, chevronUpOutline, playCircleOutline } from 'ionicons/icons';
+import { MobileRoutine, WeekDay } from '../../models/mobile.model';
 import { MobileAppService } from '../../services/mobile-app.service';
 import { resolveApiAssetUrl } from '../../utils/api.util';
+
+type RoutineTab = 'current' | 'history';
 
 @Component({
   selector: 'app-routines-page',
   standalone: true,
-  imports: [CommonModule, IonCard, IonCardContent, IonBadge, IonButton, IonIcon, IonSpinner],
+  imports: [CommonModule, IonBadge, IonButton, IonIcon, IonSpinner],
   templateUrl: './routines.page.html',
   styleUrl: './routines.page.css'
 })
@@ -18,7 +20,10 @@ export class RoutinesPageComponent implements OnInit {
   routines: MobileRoutine[] = [];
   errorMessage: string | null = null;
   isLoading = true;
-  expandedRoutineId: number | null = null;
+  activeTab: RoutineTab = 'current';
+  selectedDate = this.todayIsoDate();
+  expandedHistoricalRoutineIds = new Set<number>();
+  expandedCurrentRoutineIds = new Set<number>();
 
   private readonly previewImages: Array<{ keywords: string[]; url: string }> = [
     {
@@ -52,7 +57,7 @@ export class RoutinesPageComponent implements OnInit {
   ];
 
   constructor(private readonly mobileAppService: MobileAppService) {
-    addIcons({ playCircleOutline });
+    addIcons({ playCircleOutline, chevronDownOutline, chevronUpOutline, calendarOutline });
   }
 
   ngOnInit(): void {
@@ -68,8 +73,74 @@ export class RoutinesPageComponent implements OnInit {
     });
   }
 
-  toggleRoutine(id: number): void {
-    this.expandedRoutineId = this.expandedRoutineId === id ? null : id;
+  get historicalRoutines(): MobileRoutine[] {
+    const today = this.todayIsoDate();
+    return this.routines
+      .filter((routine) => routine.endDate < today)
+      .sort((current, next) => next.endDate.localeCompare(current.endDate));
+  }
+
+  get currentDayRoutines(): MobileRoutine[] {
+    const targetDate = this.selectedDate;
+    const targetDay = this.dayKeyFromIsoDate(targetDate);
+
+    return this.routines
+      .filter((routine) => routine.startDate <= targetDate && routine.endDate >= targetDate && routine.days.includes(targetDay))
+      .sort((current, next) => {
+        if (current.startDate !== next.startDate) {
+          return current.startDate.localeCompare(next.startDate);
+        }
+        return current.routineTemplateName.localeCompare(next.routineTemplateName);
+      });
+  }
+
+  setActiveTab(tab: RoutineTab): void {
+    this.activeTab = tab;
+  }
+
+  toggleHistoricalRoutine(id: number): void {
+    this.toggleExpanded(this.expandedHistoricalRoutineIds, id);
+  }
+
+  toggleCurrentRoutine(id: number): void {
+    this.toggleExpanded(this.expandedCurrentRoutineIds, id);
+  }
+
+  isHistoricalRoutineExpanded(id: number): boolean {
+    return this.expandedHistoricalRoutineIds.has(id);
+  }
+
+  isCurrentRoutineExpanded(id: number): boolean {
+    return this.expandedCurrentRoutineIds.has(id);
+  }
+
+  previousDate(): void {
+    if (!this.canGoToPreviousDate()) {
+      return;
+    }
+
+    const nextDate = new Date(`${this.selectedDate}T00:00:00`);
+    nextDate.setDate(nextDate.getDate() - 1);
+    this.selectedDate = this.formatLocalIsoDate(nextDate);
+  }
+
+  nextDate(): void {
+    const nextDate = new Date(`${this.selectedDate}T00:00:00`);
+    nextDate.setDate(nextDate.getDate() + 1);
+    this.selectedDate = this.formatLocalIsoDate(nextDate);
+  }
+
+  canGoToPreviousDate(): boolean {
+    return this.selectedDate > this.todayIsoDate();
+  }
+
+  selectedDateLabel(): string {
+    const date = new Date(`${this.selectedDate}T00:00:00`);
+    return new Intl.DateTimeFormat('es-AR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'short'
+    }).format(date);
   }
 
   formatDays(days: string[]): string {
@@ -117,10 +188,36 @@ export class RoutinesPageComponent implements OnInit {
     return `linear-gradient(90deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.64) 38%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.08) 100%), url('${imageUrl}')`;
   }
 
+  private toggleExpanded(target: Set<number>, routineId: number): void {
+    if (target.has(routineId)) {
+      target.delete(routineId);
+      return;
+    }
+
+    target.add(routineId);
+  }
+
+  private dayKeyFromIsoDate(value: string): WeekDay {
+    const date = new Date(`${value}T00:00:00`);
+    const dayMap: WeekDay[] = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    return dayMap[date.getDay()];
+  }
+
+  private todayIsoDate(): string {
+    return this.formatLocalIsoDate(new Date());
+  }
+
   private normalizeText(value: string): string {
     return value
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
+  }
+
+  private formatLocalIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
