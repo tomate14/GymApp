@@ -343,3 +343,30 @@ SELECT
 FROM routine_assignments ra
 JOIN routine_template_exercises rte ON rte.routine_template_id = ra.routine_template_id
 JOIN exercises e ON e.id = rte.exercise_id;
+
+INSERT INTO exercise_personal_records (user_id, exercise_id, max_weight, recorded_at) VALUES
+    (1001, 1, 60.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
+    (1001, 8, 24.0, DATE_SUB(CURDATE(), INTERVAL 12 DAY)),
+    (1002, 4, 130.0, DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
+    (1002, 3, 48.0, DATE_SUB(CURDATE(), INTERVAL 7 DAY)),
+    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 6 DAY)),
+    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 5 DAY));
+
+INSERT INTO exercise_personal_record_entries (user_id, exercise_id, weight, recorded_at) VALUES
+    (1001, 1, 45.0, DATE_SUB(CURDATE(), INTERVAL 45 DAY)),
+    (1001, 1, 52.5, DATE_SUB(CURDATE(), INTERVAL 30 DAY)),
+    (1001, 1, 57.5, DATE_SUB(CURDATE(), INTERVAL 22 DAY)),
+    (1001, 1, 60.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
+    (1001, 8, 16.0, DATE_SUB(CURDATE(), INTERVAL 26 DAY)),
+    (1001, 8, 20.0, DATE_SUB(CURDATE(), INTERVAL 19 DAY)),
+    (1001, 8, 24.0, DATE_SUB(CURDATE(), INTERVAL 12 DAY)),
+    (1002, 4, 100.0, DATE_SUB(CURDATE(), INTERVAL 28 DAY)),
+    (1002, 4, 115.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
+    (1002, 4, 130.0, DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
+    (1002, 3, 38.0, DATE_SUB(CURDATE(), INTERVAL 21 DAY)),
+    (1002, 3, 42.5, DATE_SUB(CURDATE(), INTERVAL 14 DAY)),
+    (1002, 3, 48.0, DATE_SUB(CURDATE(), INTERVAL 7 DAY)),
+    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 15 DAY)),
+    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 6 DAY)),
+    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 17 DAY)),
+    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 5 DAY));

@@ -1,0 +1,87 @@
+﻿<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
+  <article class="records-banner">
+    <p class="eyebrow">PR log</p>
+    <h1>Pesos maximos</h1>
+    <p class="subtitle">Todos los ejercicios que pasaron por tus rutinas activas o historicas. Agrega nuevas entradas y revisa tu evolucion.</p>
+  </article>
+
+  <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <ion-card class="record-list-card" *ngFor="let record of records" [class.expanded]="isExpanded(record)">
+    <ion-card-content>
+      <div class="record-row">
+        <button class="record-main" type="button" (click)="toggleRecord(record)">
+          <div class="record-copy">
+            <span>{{ record.activityName }}</span>
+            <h2>{{ record.exerciseName }}</h2>
+            <small>{{ formatWeight(record.maxWeight) }} · {{ formatDate(record.recordedAt) }}</small>
+          </div>
+          <div class="record-chevron">
+            <ion-icon [name]="isExpanded(record) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </div>
+        </button>
+
+        <ion-button class="record-add" fill="clear" size="small" (click)="toggleEntryForm(record, $event)">
+          <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="record-detail" *ngIf="isExpanded(record)">
+        <div class="detail-loading" *ngIf="record.detailLoading; else detailTpl">
+          <ion-spinner name="crescent"></ion-spinner>
+        </div>
+
+        <ng-template #detailTpl>
+          <div class="detail-summary" *ngIf="record.detail as detail">
+            <span class="summary-pill">Mejor marca: {{ formatWeight(detail.maxWeight) }}</span>
+            <span class="summary-pill">Ultimo PR: {{ formatDate(detail.recordedAt) }}</span>
+          </div>
+
+          <div class="entry-form" *ngIf="record.formOpen">
+            <ion-input
+              type="number"
+              label="Peso"
+              labelPlacement="stacked"
+              [(ngModel)]="record.draftWeight"
+            ></ion-input>
+
+            <ion-input
+              type="date"
+              label="Fecha"
+              labelPlacement="stacked"
+              [(ngModel)]="record.draftDate"
+            ></ion-input>
+
+            <ion-button expand="block" fill="solid" (click)="saveRecord(record)" [disabled]="record.saving">
+              {{ record.saving ? 'Guardando...' : 'Guardar entrada' }}
+            </ion-button>
+          </div>
+
+          <div class="history-block" *ngIf="record.detail as detail">
+            <div class="history-chart" echarts [options]="record.chartOptions" *ngIf="detail.history.length > 0"></div>
+
+            <div class="history-list" *ngIf="detail.history.length > 0; else noHistory">
+              <article class="history-row" *ngFor="let item of detail.history.slice().reverse()">
+                <div>
+                  <strong>{{ item.weight }} kg</strong>
+                  <span>{{ formatDate(item.recordedAt) }}</span>
+                </div>
+                <ion-icon name="analytics-outline"></ion-icon>
+              </article>
+            </div>
+
+            <ng-template #noHistory>
+              <p class="empty-detail">Todavia no hay entradas historicas para este ejercicio.</p>
+            </ng-template>
+          </div>
+        </ng-template>
+      </div>
+    </ion-card-content>
+  </ion-card>
+</section>
+
+<ng-template #loadingTpl>
+  <div class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+</ng-template>

@@ -1,0 +1,55 @@
+<ion-menu contentId="mobile-main" menuId="fitexa-mobile-menu" type="overlay">
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Fitexa</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-content class="menu-content">
+    <section class="menu-hero">
+      <p class="eyebrow">Mobile app</p>
+      <h2>Tu gimnasio en movimiento</h2>
+      <ion-badge color="light">Panel personal</ion-badge>
+    </section>
+
+    <ion-list lines="none" class="menu-list">
+      <ion-menu-toggle autoHide="true" *ngFor="let item of menuItems">
+        <ion-item
+          class="menu-item"
+          [routerLink]="item.path"
+          routerLinkActive="active-link"
+          [button]="true"
+          [detail]="false"
+        >
+          <ion-icon slot="start" [name]="item.icon"></ion-icon>
+          <ion-label>{{ item.label }}</ion-label>
+          <ion-icon slot="end" name="chevron-forward-outline"></ion-icon>
+        </ion-item>
+      </ion-menu-toggle>
+    </ion-list>
+
+    <div class="menu-footer">
+      <ion-button expand="block" fill="outline" color="light" (click)="logout()">
+        <ion-icon slot="start" name="log-out-outline"></ion-icon>
+        Cerrar sesion
+      </ion-button>
+    </div>
+  </ion-content>
+</ion-menu>
+
+<div class="shell-host" id="mobile-main">
+  <ion-header translucent="true">
+    <ion-toolbar>
+      <ion-buttons slot="start">
+        <ion-menu-button menu="fitexa-mobile-menu"></ion-menu-button>
+      </ion-buttons>
+      <ion-title>{{ sectionTitle }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-content [fullscreen]="true" class="shell-content">
+    <div class="shell-inner">
+      <router-outlet></router-outlet>
+    </div>
+  </ion-content>
+</div>

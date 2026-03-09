@@ -105,3 +105,20 @@ INSERT IGNORE INTO routine_assignment_exercises (
     (9, 4, 5, 'Plancha frontal', 4, 'DINAMICO', NULL, NULL, 30, 60, 0, 0),
     (10, 4, 7, 'Bird-dog controlado', 3, 'FIJO', 12, 0, NULL, NULL, NULL, NULL),
     (11, 4, 2, 'Burpee con salto', 3, 'DINAMICO', NULL, NULL, 8, 12, 0, 0);
+
+INSERT IGNORE INTO exercise_personal_records (id, user_id, exercise_id, max_weight, recorded_at) VALUES
+    (1, 2, 2, 0.0, '2026-02-14'),
+    (2, 4, 5, 0.0, '2026-02-20'),
+    (3, 6, 1, 72.5, '2026-02-27'),
+    (4, 7, 7, 0.0, '2026-03-01');
+
+INSERT IGNORE INTO exercise_personal_record_entries (id, user_id, exercise_id, weight, recorded_at) VALUES
+    (1, 2, 2, 0.0, '2026-01-20'),
+    (2, 2, 2, 0.0, '2026-02-14'),
+    (3, 4, 5, 0.0, '2026-02-05'),
+    (4, 4, 5, 0.0, '2026-02-20'),
+    (5, 6, 1, 55.0, '2026-01-25'),
+    (6, 6, 1, 65.0, '2026-02-10'),
+    (7, 6, 1, 72.5, '2026-02-27'),
+    (8, 7, 7, 0.0, '2026-02-16'),
+    (9, 7, 7, 0.0, '2026-03-01');

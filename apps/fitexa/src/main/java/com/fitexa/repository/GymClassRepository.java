@@ -12,6 +12,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface GymClassRepository extends JpaRepository<GymClassEntity, Long>, JpaSpecificationExecutor<GymClassEntity> {
+    @Query("""
+        select gc
+        from GymClassEntity gc
+        where :weekDay in elements(gc.weekDays)
+        """)
+    List<GymClassEntity> findByWeekDay(@Param("weekDay") WeekDay weekDay);
+
     long countByDate(LocalDate date);
 
     long countByDateBetween(LocalDate fromDate, LocalDate toDate);

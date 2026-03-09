@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssignmentEntity, Long> {
 
+    List<RoutineAssignmentEntity> findByUserIdOrderByStartDateDescIdDesc(Long userId);
+
     @Query("""
         select ra
         from RoutineAssignmentEntity ra

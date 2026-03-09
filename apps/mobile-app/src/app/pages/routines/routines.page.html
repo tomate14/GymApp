@@ -1,0 +1,74 @@
+﻿<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
+  <article class="routine-banner">
+    <p class="eyebrow">Training stack</p>
+    <h1>Rutinas activas e historicas</h1>
+    <p class="subtitle">Preview clara, visual y rapida para saber que toca entrenar hoy.</p>
+  </article>
+
+  <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <article class="routine-card" *ngFor="let routine of routines">
+    <div class="routine-card-head">
+      <div>
+        <p class="routine-days">{{ formatDays(routine.days) }}</p>
+        <h2>{{ routine.routineTemplateName }}</h2>
+      </div>
+      <ion-badge [color]="routine.status === 'Activa' ? 'success' : routine.status === 'Proxima' ? 'warning' : 'medium'">
+        {{ routine.status }}
+      </ion-badge>
+    </div>
+
+    <p class="routine-range">{{ routine.startDate }} a {{ routine.endDate }}</p>
+
+    <div class="exercise-grid">
+      <article
+        class="exercise-preview"
+        *ngFor="let exercise of routine.exercises | slice:0:(expandedRoutineId === routine.id ? routine.exercises.length : 3)"
+        [style.background-image]="exerciseBackground(exercise)"
+      >
+        <div class="exercise-overlay">
+          <div class="preview-copy">
+            <div class="exercise-title">{{ exercise.exerciseName }}</div>
+            <div class="preview-stats">
+              <span class="stat-pill">{{ exercise.sets }} series</span>
+              <span class="stat-pill">{{ repsLabel(exercise) }}</span>
+              <span class="stat-pill">{{ weightLabel(exercise) }}</span>
+            </div>
+          </div>
+
+          <div class="preview-footer">
+            <span class="activity-tag">{{ exercise.activityName }}</span>
+            <span class="machine-pill">{{ exercise.machineName }}</span>
+          </div>
+
+          <ion-button
+            *ngIf="exercise.videoUrl"
+            class="preview-video"
+            fill="clear"
+            size="small"
+            [href]="exercise.videoUrl"
+            target="_blank"
+          >
+            <ion-icon slot="start" name="play-circle-outline"></ion-icon>
+            Ver video
+          </ion-button>
+        </div>
+      </article>
+    </div>
+
+    <ion-button
+      *ngIf="routine.exercises.length > 3"
+      fill="outline"
+      expand="block"
+      (click)="toggleRoutine(routine.id)"
+    >
+      {{ expandedRoutineId === routine.id ? 'Ver menos' : 'Ver todos los ejercicios' }}
+    </ion-button>
+  </article>
+</section>
+
+<ng-template #loadingTpl>
+  <div class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+</ng-template>

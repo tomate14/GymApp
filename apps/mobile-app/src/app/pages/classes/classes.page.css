@@ -1,0 +1,80 @@
+.classes-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-end;
+  padding: 1.1rem;
+  border-radius: 1.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(255, 106, 45, 0.22), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(0, 223, 161, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(18, 21, 33, 0.96), rgba(12, 14, 24, 0.94));
+}
+
+.classes-banner h1,
+.eyebrow,
+.error-text {
+  margin: 0;
+}
+
+.classes-banner h1 {
+  margin-top: 0.2rem;
+  font-size: 1.5rem;
+  text-transform: capitalize;
+}
+
+.class-card {
+  margin: 0;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(255, 106, 45, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(18, 21, 33, 0.88), rgba(11, 13, 22, 0.96));
+  backdrop-filter: blur(18px);
+}
+
+.class-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.class-head span,
+.class-head p,
+.class-meta span,
+.error-text {
+  color: var(--text-soft);
+}
+
+.class-head h2,
+.class-head p {
+  margin: 0.16rem 0 0;
+}
+
+.class-head strong {
+  color: var(--accent-soft);
+  font-family: var(--font-display);
+}
+
+.class-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0.8rem 0 1rem;
+  font-size: 0.88rem;
+}
+
+.class-meta span {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.loading-state {
+  min-height: 50vh;
+  display: grid;
+  place-items: center;
+}

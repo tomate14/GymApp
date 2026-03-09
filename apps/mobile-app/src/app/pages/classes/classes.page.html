@@ -1,0 +1,46 @@
+<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
+  <article class="classes-banner">
+    <div>
+      <p class="eyebrow">Agenda diaria</p>
+      <h1>{{ formatSelectedDate() }}</h1>
+    </div>
+    <ion-button fill="solid" (click)="goToNextDay()">Siguiente dia</ion-button>
+  </article>
+
+  <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <ion-card class="class-card" *ngFor="let item of classes">
+    <ion-card-content>
+      <div class="class-head">
+        <div>
+          <span>{{ item.activityName }}</span>
+          <h2>{{ item.className }}</h2>
+          <p>{{ item.teacherName }}</p>
+        </div>
+        <strong>{{ scheduleLabel(item) }}</strong>
+      </div>
+
+      <div class="class-meta">
+        <span *ngIf="item.ownClass">Clase asignada a tu perfil docente</span>
+        <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
+        <span *ngIf="item.availableSpots === null">Capacidad libre</span>
+        <span>{{ item.enrolled }} inscriptos</span>
+      </div>
+
+      <ion-button
+        expand="block"
+        [fill]="item.subscribed ? 'outline' : 'solid'"
+        [disabled]="!item.canSubscribe"
+        (click)="subscribe(item)"
+      >
+        {{ subscriptionLabel(item) }}
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+</section>
+
+<ng-template #loadingTpl>
+  <div class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+</ng-template>

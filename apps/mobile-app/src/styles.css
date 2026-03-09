@@ -1,11 +1,30 @@
-﻿:root {
-  --bg: #040405;
-  --surface: #121216;
-  --surface-soft: #1a1a20;
-  --text: #f5f6f8;
-  --text-soft: #8f90a3;
-  --accent: #ff5f1f;
-  --accent-2: #00d6a2;
+@import "@ionic/angular/css/core.css";
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+@import "@ionic/angular/css/display.css";
+
+:root {
+  --bg: #070910;
+  --surface: #131826;
+  --surface-2: #1a2132;
+  --surface-3: #20293d;
+  --surface-glass: rgba(18, 22, 34, 0.78);
+  --text: #f6f7fb;
+  --text-soft: #98a2be;
+  --accent: #ff6a2d;
+  --accent-soft: #ffb48d;
+  --accent-2: #00dfa1;
+  --danger: #ff6868;
+  --stroke: rgba(255, 255, 255, 0.08);
+  --shadow-elevated: 0 24px 80px rgba(0, 0, 0, 0.34);
+  --font-body: "Manrope", sans-serif;
+  --font-display: "Sora", sans-serif;
 }
 
 html,
@@ -13,10 +32,170 @@ body,
 ion-app,
 ion-content {
   margin: 0;
-  font-family: 'Rajdhani', sans-serif;
+  min-height: 100%;
+  color: var(--text);
+  font-family: var(--font-body);
   background:
-    radial-gradient(circle at 18% 10%, rgba(255, 95, 31, 0.22), transparent 35%),
-    radial-gradient(circle at 84% 0%, rgba(0, 214, 162, 0.15), transparent 30%),
-    var(--bg);
+    radial-gradient(circle at top left, rgba(255, 106, 45, 0.24), transparent 24%),
+    radial-gradient(circle at top right, rgba(0, 223, 161, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 120%, rgba(64, 94, 255, 0.1), transparent 28%),
+    linear-gradient(180deg, #04060d, #09101a 42%, #070910);
+}
+
+body {
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28), transparent 70%);
+}
+
+ion-content {
+  --background: transparent;
+}
+
+ion-card,
+ion-item {
+  color: var(--text);
+}
+
+ion-toolbar,
+ion-title,
+ion-label,
+ion-item,
+ion-badge,
+ion-button,
+ion-input,
+ion-card,
+ion-card-subtitle,
+ion-card-title {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ion-title,
+ion-card-title {
+  color: var(--text);
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+ion-card-subtitle {
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+ion-badge {
+  --color: rgba(255, 255, 255, 0.96);
+  padding: 0.42rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+}
+
+ion-badge[color="light"],
+ion-badge[color="medium"],
+ion-badge[color="tertiary"] {
+  --background: rgba(255, 255, 255, 0.12);
+  --color: rgba(255, 255, 255, 0.94);
+}
+
+ion-badge[color="success"] {
+  --background: linear-gradient(90deg, rgba(0, 223, 161, 0.9), rgba(0, 184, 138, 0.92));
+  --color: #07110d;
+  border-color: rgba(0, 223, 161, 0.28);
+}
+
+ion-badge[color="warning"] {
+  --background: linear-gradient(90deg, #ff7b00, #ffa500);
+  --color: #fff7eb;
+  border-color: rgba(255, 165, 0, 0.28);
+}
+
+ion-badge[color="danger"] {
+  --background: linear-gradient(90deg, #ff6868, #ff8c74);
+  --color: #fff4f4;
+  border-color: rgba(255, 104, 104, 0.28);
+}
+
+ion-button {
+  --border-radius: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+ion-button[fill="solid"] {
+  --background: linear-gradient(135deg, #ff6a2d, #ff8f42);
+  --color: #11141d;
+}
+
+ion-button[fill="outline"] {
+  --border-color: rgba(255, 255, 255, 0.14);
+  --color: var(--text);
+}
+
+ion-input {
+  --color: var(--text);
+  --placeholder-color: #8f98b3;
+  --highlight-color-focused: var(--accent);
+  --border-color: var(--stroke);
+  --background: rgba(255, 255, 255, 0.035);
+  --padding-start: 0.9rem;
+  --padding-end: 0.9rem;
+  --border-radius: 1.1rem;
+  min-height: 56px;
+}
+
+ion-icon,
+button ion-icon,
+ion-button ion-icon,
+ion-menu-button,
+ion-menu-button::part(icon),
+ion-back-button,
+ion-back-button::part(icon) {
+  color: var(--text);
+}
+
+ion-card {
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(16px);
+}
+
+.page-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.eyebrow {
+  color: var(--accent-soft);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: rgba(255, 106, 45, 0.3);
   color: var(--text);
 }

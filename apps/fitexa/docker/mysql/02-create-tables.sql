@@ -90,6 +90,27 @@ CREATE TABLE gym_class_subscriptions (
     CONSTRAINT uq_gym_class_subscriptions_class_user UNIQUE (gym_class_id, user_id)
 );
 
+CREATE TABLE exercise_personal_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    exercise_id BIGINT NOT NULL,
+    max_weight DOUBLE NOT NULL,
+    recorded_at DATE NOT NULL,
+    CONSTRAINT fk_exercise_personal_records_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_exercise_personal_records_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    CONSTRAINT uq_exercise_personal_records_user_exercise UNIQUE (user_id, exercise_id)
+);
+
+CREATE TABLE exercise_personal_record_entries (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    exercise_id BIGINT NOT NULL,
+    weight DOUBLE NOT NULL,
+    recorded_at DATE NOT NULL,
+    CONSTRAINT fk_exercise_personal_record_entries_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_exercise_personal_record_entries_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+);
+
 CREATE TABLE routine_templates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(180) NOT NULL,

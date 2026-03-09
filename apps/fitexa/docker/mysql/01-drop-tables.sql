@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS routine_assignment_days;
 DROP TABLE IF EXISTS routine_assignments;
 DROP TABLE IF EXISTS routine_template_exercises;
 DROP TABLE IF EXISTS routine_templates;
+DROP TABLE IF EXISTS exercise_personal_record_entries;
+DROP TABLE IF EXISTS exercise_personal_records;
 DROP TABLE IF EXISTS gym_class_subscriptions;
 DROP TABLE IF EXISTS user_payment_movements;
 DROP TABLE IF EXISTS gym_class_days;

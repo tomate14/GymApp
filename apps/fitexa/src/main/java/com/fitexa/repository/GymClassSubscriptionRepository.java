@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSubscriptionEntity, Long> {
     long countByGymClassId(Long gymClassId);
+    boolean existsByGymClassIdAndUserId(Long gymClassId, Long userId);
+    List<GymClassSubscriptionEntity> findByUserId(Long userId);
 
     @Query("""
         select concat(t.firstName, ' ', t.lastName) as teacherName,

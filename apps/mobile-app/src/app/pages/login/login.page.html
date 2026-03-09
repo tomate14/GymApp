@@ -1,0 +1,52 @@
+<ion-content [fullscreen]="true" class="login-screen">
+  <div class="login-layout">
+    <section class="hero-panel">
+      <p class="eyebrow">Fitexa</p>
+      <h1>Entrena. Registra. Evoluciona.</h1>
+      <p class="subtitle">
+        Accede a tus rutinas, tus marcas personales y tu agenda de clases desde una sola app.
+      </p>
+      <div class="feature-strip">
+        <span>Rutinas activas</span>
+        <span>PR tracking</span>
+        <span>Clases del dia</span>
+      </div>
+    </section>
+
+    <ion-card class="login-card">
+      <ion-card-content>
+        <form class="login-form" (ngSubmit)="submit()">
+          <div class="input-shell">
+            <ion-icon name="mail-outline"></ion-icon>
+            <ion-input
+              type="email"
+              label="Email"
+              labelPlacement="stacked"
+              [(ngModel)]="email"
+              name="email"
+            ></ion-input>
+          </div>
+
+          <div class="input-shell">
+            <ion-icon name="key-outline"></ion-icon>
+            <ion-input
+              type="password"
+              label="Password"
+              labelPlacement="stacked"
+              [(ngModel)]="password"
+              name="password"
+            ></ion-input>
+          </div>
+
+          <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+          <ion-button expand="block" type="submit" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Ingresando...' : 'Ingresar' }}
+          </ion-button>
+
+          <p class="hint">Usuarios nuevos: la password inicial coincide con el email.</p>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

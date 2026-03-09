@@ -1,0 +1,45 @@
+﻿<section class="page-stack" *ngIf="!isLoading; else loadingTpl">
+  <article class="payments-banner">
+    <p class="eyebrow">Payments</p>
+    <h1>Historial de pagos</h1>
+    <p class="subtitle">Tus movimientos registrados, con acceso rapido al comprobante en PDF.</p>
+  </article>
+
+  <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <ion-card class="payment-card" *ngFor="let payment of payments; else noPayments">
+    <ion-card-content>
+      <div class="payment-head">
+        <div>
+          <span class="payment-label">{{ payment.planName }}</span>
+          <h2>{{ payment.detail }}</h2>
+          <p>{{ formatDate(payment.paidAt) }}</p>
+        </div>
+        <strong>{{ formatAmount(payment.amount) }}</strong>
+      </div>
+
+      <div class="payment-meta">
+        <span class="meta-pill"><ion-icon name="receipt-outline"></ion-icon> Movimiento #{{ payment.id }}</span>
+        <span class="meta-pill"><ion-icon name="card-outline"></ion-icon> Pago confirmado</span>
+      </div>
+
+      <ion-button expand="block" fill="outline" (click)="downloadReceipt(payment)" [disabled]="payment.downloading">
+        <ion-icon slot="start" name="download-outline"></ion-icon>
+        {{ payment.downloading ? 'Descargando...' : 'Descargar PDF' }}
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <ng-template #noPayments>
+    <article class="empty-state-card">
+      <h2>Sin pagos registrados</h2>
+      <p>Todavia no hay movimientos cargados para tu usuario.</p>
+    </article>
+  </ng-template>
+</section>
+
+<ng-template #loadingTpl>
+  <div class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+</ng-template>

@@ -1,0 +1,98 @@
+﻿<section class="page-stack" *ngIf="!isLoading && profile; else loadingTpl">
+  <article class="profile-hero">
+    <div class="profile-avatar-shell">
+      <div class="avatar-glow"></div>
+      <img class="profile-avatar" [src]="profilePhotoUrl(profile)" [alt]="'Foto de ' + profile.firstName + ' ' + profile.lastName" />
+      <div class="avatar-fallback">{{ initials(profile) }}</div>
+    </div>
+
+    <div class="hero-copy">
+      <p class="eyebrow">Mi perfil</p>
+      <h1>{{ profile.firstName }} {{ profile.lastName }}</h1>
+      <p class="subtitle">{{ profile.email }}</p>
+
+      <div class="badge-row">
+        <ion-badge [color]="profile.paymentStatus === 'al-dia' ? 'success' : 'danger'">
+          {{ paymentLabel(profile) }}
+        </ion-badge>
+        <ion-badge color="tertiary">{{ userTypeLabel(profile) }}</ion-badge>
+      </div>
+    </div>
+  </article>
+
+  <section class="profile-grid">
+    <ion-card class="info-card primary-card">
+      <ion-card-content>
+        <div class="card-head">
+          <div>
+            <div class="card-kicker">Datos personales</div>
+            <h2>Contacto y ficha</h2>
+          </div>
+          <div class="card-actions">
+            <ion-button *ngIf="!isEditing" fill="outline" size="small" (click)="startEditing()">Editar</ion-button>
+          </div>
+        </div>
+
+        <div class="detail-grid" *ngIf="!isEditing; else editTpl">
+          <article class="detail-tile">
+            <span>Telefono</span>
+            <strong>{{ profile.phone }}</strong>
+          </article>
+          <article class="detail-tile">
+            <span>Direccion</span>
+            <strong>{{ profile.address }}</strong>
+          </article>
+          <article class="detail-tile">
+            <span>Nacimiento</span>
+            <strong>{{ formatDate(profile.birthDate) }}</strong>
+          </article>
+          <article class="detail-tile">
+            <span>Renovacion</span>
+            <strong>{{ formatDate(profile.renewalDate) }}</strong>
+          </article>
+        </div>
+
+        <ng-template #editTpl>
+          <form class="edit-form" (ngSubmit)="saveProfile()">
+            <ion-input label="Nombre" labelPlacement="stacked" [(ngModel)]="draft.firstName" name="firstName"></ion-input>
+            <ion-input label="Apellido" labelPlacement="stacked" [(ngModel)]="draft.lastName" name="lastName"></ion-input>
+            <ion-input label="Telefono" labelPlacement="stacked" [(ngModel)]="draft.phone" name="phone"></ion-input>
+            <ion-input label="Direccion" labelPlacement="stacked" [(ngModel)]="draft.address" name="address"></ion-input>
+            <ion-input type="date" label="Nacimiento" labelPlacement="stacked" [(ngModel)]="draft.birthDate" name="birthDate"></ion-input>
+
+            <div class="form-actions">
+              <ion-button expand="block" fill="solid" type="submit" [disabled]="isSaving">
+                {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
+              </ion-button>
+              <ion-button expand="block" fill="outline" type="button" (click)="cancelEditing()">Cancelar</ion-button>
+            </div>
+          </form>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="info-card plan-card">
+      <ion-card-content>
+        <div class="card-kicker">Plan actual</div>
+        <h2>{{ profile.planName ?? 'Sin plan asignado' }}</h2>
+
+        <div class="plan-stack" *ngIf="profile.planPrice !== null; else noPlan">
+          <div class="plan-price">${{ profile.planPrice }}</div>
+          <p class="plan-caption">Valor mensual vigente para tu membresia.</p>
+        </div>
+
+        <ng-template #noPlan>
+          <p class="muted-copy">Tu cuenta no tiene un plan asociado actualmente.</p>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+  <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+</section>
+
+<ng-template #loadingTpl>
+  <div class="loading-state" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+</ng-template>

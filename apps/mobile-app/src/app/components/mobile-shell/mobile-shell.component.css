@@ -1,0 +1,98 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: var(--font-body);
+}
+
+ion-toolbar {
+  --background: rgba(7, 10, 18, 0.76);
+  --color: var(--text);
+  --border-color: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(22px);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+ion-title,
+.menu-hero h2 {
+  font-family: var(--font-display);
+}
+
+.menu-hero,
+.menu-item,
+.menu-item ion-label,
+.menu-footer ion-button,
+.menu-hero ion-badge {
+  font-family: var(--font-body);
+}
+
+.menu-item::part(native) {
+  font-family: var(--font-body);
+}
+
+.menu-content {
+  --background:
+    radial-gradient(circle at top left, rgba(255, 106, 45, 0.24), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(0, 223, 161, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(8, 10, 18, 0.98), rgba(12, 16, 26, 0.96));
+}
+
+.menu-hero {
+  margin: 0.9rem 0.9rem 0.6rem;
+  padding: 1.1rem 1rem 1rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at top right, rgba(255, 106, 45, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+.menu-hero h2 {
+  margin: 0.2rem 0 0.45rem;
+  font-size: 1.55rem;
+  line-height: 1.02;
+  font-family: var(--font-display);
+}
+
+.menu-list {
+  padding: 0.4rem 0.7rem;
+  background: transparent;
+}
+
+.menu-item {
+  --background: rgba(255, 255, 255, 0.04);
+  --color: var(--text);
+  --border-radius: 1.15rem;
+  margin-bottom: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+}
+
+.menu-item.active-link {
+  --background: linear-gradient(135deg, rgba(255, 106, 45, 0.22), rgba(255, 143, 66, 0.12));
+  border-color: rgba(255, 106, 45, 0.34);
+  box-shadow: 0 12px 30px rgba(255, 106, 45, 0.12);
+}
+
+.menu-item ion-icon {
+  color: var(--text);
+}
+
+.menu-item ion-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.menu-footer {
+  padding: 1rem 0.9rem 1.3rem;
+}
+
+.shell-host,
+.shell-content {
+  --background: transparent;
+}
+
+.shell-inner {
+  padding: calc(env(safe-area-inset-top) + 0.75rem) 0.9rem 1rem;
+  min-height: 100%;
+}
