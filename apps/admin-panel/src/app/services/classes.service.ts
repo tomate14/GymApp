@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import {
+  GymClassAttendance,
+  GymClassAttendanceUpdateItem
+} from '../class/gym-class-attendance.model';
 import { PageResponse } from '../class/page.model';
 import { GymClass, GymClassDraft, WeekDay } from '../class/gym-class.model';
 import { API_BASE_URL } from '../utils/api.util';
@@ -28,6 +32,23 @@ type GymClassApiRequest = {
   allDay: boolean;
   startTime: string | null;
   endTime: string | null;
+};
+
+type GymClassAttendanceStudentApiDto = {
+  subscriptionId: number;
+  studentId: number;
+  studentName: string;
+  dni: string;
+  phone: string;
+  attendancePresent: boolean | null;
+  attendanceMarkedAt: string | null;
+};
+
+type GymClassAttendanceApiDto = {
+  classId: number;
+  className: string;
+  targetDate: string;
+  students: GymClassAttendanceStudentApiDto[];
 };
 
 type PageApiDto<T> = {
@@ -113,6 +134,20 @@ export class ClassesService {
     );
   }
 
+  getAttendance(classId: number, date: string): Observable<GymClassAttendance> {
+    const params = new HttpParams().set('date', date);
+    return this.http
+      .get<GymClassAttendanceApiDto>(`${this.endpoint}/${classId}/attendance`, { params })
+      .pipe(map((response) => this.mapAttendanceFromApi(response)));
+  }
+
+  updateAttendance(classId: number, date: string, students: GymClassAttendanceUpdateItem[]): Observable<GymClassAttendance> {
+    const params = new HttpParams().set('date', date);
+    return this.http
+      .put<GymClassAttendanceApiDto>(`${this.endpoint}/${classId}/attendance`, { students }, { params })
+      .pipe(map((response) => this.mapAttendanceFromApi(response)));
+  }
+
   clearTeacherReferences(userId: number): void {
     this.classes = this.classes.map((item) => (item.teacherId === userId ? { ...item, teacherId: null } : item));
   }
@@ -174,6 +209,23 @@ export class ClassesService {
       size: Number(dto.size),
       totalElements: Number(dto.totalElements),
       totalPages: Number(dto.totalPages)
+    };
+  }
+
+  private mapAttendanceFromApi(dto: GymClassAttendanceApiDto): GymClassAttendance {
+    return {
+      classId: Number(dto.classId),
+      className: dto.className,
+      targetDate: dto.targetDate,
+      students: dto.students.map((item) => ({
+        subscriptionId: Number(item.subscriptionId),
+        studentId: Number(item.studentId),
+        studentName: item.studentName,
+        dni: item.dni,
+        phone: item.phone,
+        attendancePresent: item.attendancePresent,
+        attendanceMarkedAt: item.attendanceMarkedAt
+      }))
     };
   }
 }

@@ -12,6 +12,20 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
     long countByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
     boolean existsByGymClassIdAndUserIdAndTargetDate(Long gymClassId, Long userId, LocalDate targetDate);
     List<GymClassSubscriptionEntity> findByUserIdAndTargetDate(Long userId, LocalDate targetDate);
+    List<GymClassSubscriptionEntity> findByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
+
+    @Query("""
+        select s
+        from GymClassSubscriptionEntity s
+        join fetch s.user u
+        where s.gymClass.id = :gymClassId
+          and s.targetDate = :targetDate
+        order by u.lastName asc, u.firstName asc
+        """)
+    List<GymClassSubscriptionEntity> findDetailedByGymClassIdAndTargetDate(
+        @Param("gymClassId") Long gymClassId,
+        @Param("targetDate") LocalDate targetDate
+    );
 
     @Query("""
         select s.gymClass.id as gymClassId,

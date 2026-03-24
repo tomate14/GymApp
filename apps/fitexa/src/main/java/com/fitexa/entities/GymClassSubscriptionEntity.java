@@ -50,4 +50,10 @@ public class GymClassSubscriptionEntity {
 
     @Column(nullable = false)
     private LocalDateTime subscribedAt;
+
+    @Column
+    private Boolean attendancePresent;
+
+    @Column
+    private LocalDateTime attendanceMarkedAt;
 }

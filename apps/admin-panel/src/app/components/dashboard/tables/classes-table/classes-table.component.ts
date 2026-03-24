@@ -3,16 +3,22 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { FormsModule } from '@angular/forms';
 import { Activity } from '../../../../class/activity.model';
 import {
+  GymClassAttendance,
+  GymClassAttendanceUpdateItem
+} from '../../../../class/gym-class-attendance.model';
+import {
   DashboardClassRow,
   DashboardClassesFilters,
   DashboardPageResponse
 } from '../../../../class/dashboard.model';
 import { User } from '../../../../class/user.model';
+import { ClassAttendancePopupComponent } from '../../../../popups/class-attendance-popup/class-attendance-popup.component';
+import { ClassesService } from '../../../../services/classes.service';
 
 @Component({
   selector: 'app-classes-table',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClassAttendancePopupComponent],
   templateUrl: './classes-table.component.html',
   styleUrl: './classes-table.component.css'
 })
@@ -41,12 +47,20 @@ export class ClassesTableComponent implements OnChanges {
   weekDays: Array<{ isoDate: string; shortLabel: string; dayNumber: number }> = [];
   allDayCells: Array<{ classes: DashboardClassRow[] }> = [];
   calendarRows: Array<{ time: string; cells: Array<{ classes: DashboardClassRow[] }> }> = [];
+  attendancePopupVisible = false;
+  selectedAttendanceClass: DashboardClassRow | null = null;
+  attendanceData: GymClassAttendance | null = null;
+  attendanceError: string | null = null;
+  isLoadingAttendance = false;
+  isSavingAttendance = false;
   private expandedEventKeys = new Set<string>();
 
   @Output() readonly filtersChange = new EventEmitter<void>();
   @Output() readonly clearFilters = new EventEmitter<void>();
   @Output() readonly previousWeek = new EventEmitter<void>();
   @Output() readonly nextWeek = new EventEmitter<void>();
+
+  constructor(private readonly classesService: ClassesService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['page'] || changes['weekStart']) {
@@ -113,6 +127,52 @@ export class ClassesTableComponent implements OnChanges {
 
   isExpanded(item: DashboardClassRow): boolean {
     return this.expandedEventKeys.has(this.eventKey(item));
+  }
+
+  openAttendance(item: DashboardClassRow, event: Event): void {
+    event.stopPropagation();
+    this.selectedAttendanceClass = item;
+    this.attendancePopupVisible = true;
+    this.attendanceError = null;
+    this.attendanceData = null;
+    this.isLoadingAttendance = true;
+    this.classesService.getAttendance(item.classId, item.date).subscribe({
+      next: (response) => {
+        this.attendanceData = response;
+        this.isLoadingAttendance = false;
+      },
+      error: () => {
+        this.attendanceError = 'No se pudo obtener la asistencia de esta clase.';
+        this.isLoadingAttendance = false;
+      }
+    });
+  }
+
+  closeAttendancePopup(): void {
+    this.attendancePopupVisible = false;
+    this.selectedAttendanceClass = null;
+    this.attendanceData = null;
+    this.attendanceError = null;
+    this.isLoadingAttendance = false;
+    this.isSavingAttendance = false;
+  }
+
+  saveAttendance(students: GymClassAttendanceUpdateItem[]): void {
+    if (this.selectedAttendanceClass === null) {
+      return;
+    }
+    this.isSavingAttendance = true;
+    this.attendanceError = null;
+    this.classesService.updateAttendance(this.selectedAttendanceClass.classId, this.selectedAttendanceClass.date, students).subscribe({
+      next: (response) => {
+        this.attendanceData = response;
+        this.isSavingAttendance = false;
+      },
+      error: () => {
+        this.attendanceError = 'No se pudo guardar la asistencia de esta clase.';
+        this.isSavingAttendance = false;
+      }
+    });
   }
 
   private rebuildCalendar(): void {

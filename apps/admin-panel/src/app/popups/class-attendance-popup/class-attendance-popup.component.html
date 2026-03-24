@@ -1,0 +1,54 @@
+<div class="popup-overlay" *ngIf="visible" (click)="closed.emit()"></div>
+
+<section class="popup-window card border-light-subtle bg-black text-light" *ngIf="visible" role="dialog" aria-modal="true">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div>
+        <h5 class="card-title mb-0">{{ attendance?.className }}</h5>
+        <small class="text-secondary">Asistencia del {{ attendance?.targetDate | date: 'dd/MM/yyyy' }}</small>
+      </div>
+      <button class="btn btn-sm btn-outline-light" type="button" (click)="closed.emit()">Cerrar</button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-3" *ngIf="isLoading">
+      <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+      <small class="text-secondary">Cargando alumnos suscriptos...</small>
+    </div>
+
+    <div class="alert alert-danger py-2 px-3 mb-3" role="alert" *ngIf="error !== null">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!isLoading && attendance !== null && editableStudents.length > 0; else emptyState">
+      <div class="students-list">
+        <label class="student-row" *ngFor="let student of editableStudents">
+          <div class="student-copy">
+            <strong>{{ student.studentName }}</strong>
+            <small>DNI {{ student.dni }} · {{ student.phone }}</small>
+          </div>
+          <div class="form-check form-switch attendance-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'attendance-' + student.subscriptionId"
+              [(ngModel)]="student.present"
+            />
+            <span class="attendance-label">{{ student.present ? 'Presente' : 'Ausente' }}</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-sm btn-outline-light" type="button" [disabled]="isSaving" (click)="closed.emit()">Cancelar</button>
+        <button class="btn btn-sm btn-primary" type="button" [disabled]="isSaving" (click)="save()">
+          <span class="spinner-border spinner-border-sm me-2" *ngIf="isSaving" aria-hidden="true"></span>
+          Guardar asistencia
+        </button>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <p class="empty-state mb-0" *ngIf="!isLoading && error === null">No hay alumnos suscriptos a esta clase en la fecha seleccionada.</p>
+    </ng-template>
+  </div>
+</section>

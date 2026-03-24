@@ -58,23 +58,28 @@
           <th class="time-col">Todo el dia</th>
           <td *ngFor="let cell of allDayCells">
             <div class="slot-events slot-events-all-day" *ngIf="cell.classes.length > 0; else emptyAllDaySlot">
-              <button
+              <div
                 class="calendar-event"
                 [class.calendar-event-expanded]="isExpanded(item)"
                 *ngFor="let item of cell.classes"
-                type="button"
-                (click)="toggleEvent(item)"
               >
-                <h3 class="event-title">{{ item.className }}</h3>
-                <small class="event-meta">{{ item.teacherName }}</small>
+                <button class="calendar-event-toggle" type="button" (click)="toggleEvent(item)">
+                  <h3 class="event-title">{{ item.className }}</h3>
+                  <small class="event-meta">{{ item.teacherName }}</small>
+                  <ng-container *ngIf="isExpanded(item)">
+                    <small class="event-meta">{{ item.activityName }}</small>
+                    <small class="event-meta">{{ scheduleLine(item) }}</small>
+                    <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
+                      {{ item.occupancyPercent | number: '1.0-0' }}%
+                    </span>
+                  </ng-container>
+                </button>
                 <ng-container *ngIf="isExpanded(item)">
-                  <small class="event-meta">{{ item.activityName }}</small>
-                  <small class="event-meta">{{ scheduleLine(item) }}</small>
-                  <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
-                    {{ item.occupancyPercent | number: '1.0-0' }}%
-                  </span>
+                  <button class="btn btn-sm btn-outline-light attendance-button" type="button" (click)="openAttendance(item, $event)">
+                    Tomar asistencia
+                  </button>
                 </ng-container>
-              </button>
+              </div>
             </div>
             <ng-template #emptyAllDaySlot>
               <span class="empty-slot">-</span>
@@ -86,23 +91,28 @@
           <th class="time-col">{{ row.time }}</th>
           <td *ngFor="let cell of row.cells">
             <div class="slot-events" *ngIf="cell.classes.length > 0; else emptySlot">
-              <button
+              <div
                 class="calendar-event"
                 [class.calendar-event-expanded]="isExpanded(item)"
                 *ngFor="let item of cell.classes"
-                type="button"
-                (click)="toggleEvent(item)"
               >
-                <h3 class="event-title">{{ item.className }}</h3>
-                <small class="event-meta">{{ item.teacherName }}</small>
+                <button class="calendar-event-toggle" type="button" (click)="toggleEvent(item)">
+                  <h3 class="event-title">{{ item.className }}</h3>
+                  <small class="event-meta">{{ item.teacherName }}</small>
+                  <ng-container *ngIf="isExpanded(item)">
+                    <small class="event-meta">{{ item.activityName }}</small>
+                    <small class="event-meta">{{ scheduleLine(item) }}</small>
+                    <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
+                      {{ item.occupancyPercent | number: '1.0-0' }}%
+                    </span>
+                  </ng-container>
+                </button>
                 <ng-container *ngIf="isExpanded(item)">
-                  <small class="event-meta">{{ item.activityName }}</small>
-                  <small class="event-meta">{{ scheduleLine(item) }}</small>
-                  <span class="occupancy-chip" [ngClass]="occupancyClass(item)">
-                    {{ item.occupancyPercent | number: '1.0-0' }}%
-                  </span>
+                  <button class="btn btn-sm btn-outline-light attendance-button" type="button" (click)="openAttendance(item, $event)">
+                    Tomar asistencia
+                  </button>
                 </ng-container>
-              </button>
+              </div>
             </div>
             <ng-template #emptySlot>
               <span class="empty-slot">-</span>
@@ -116,3 +126,13 @@
     Sin clases programadas para esta semana.
   </p>
 </section>
+
+<app-class-attendance-popup
+  [visible]="attendancePopupVisible"
+  [attendance]="attendanceData"
+  [isLoading]="isLoadingAttendance"
+  [isSaving]="isSavingAttendance"
+  [error]="attendanceError"
+  (closed)="closeAttendancePopup()"
+  (saved)="saveAttendance($event)"
+></app-class-attendance-popup>

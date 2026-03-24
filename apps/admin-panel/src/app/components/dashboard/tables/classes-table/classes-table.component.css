@@ -69,14 +69,13 @@
 }
 
 .calendar-event {
-  appearance: none;
   background: rgba(255, 95, 31, 0.14);
   border: 1px solid rgba(255, 138, 0, 0.3);
   border-radius: 0.7rem;
-  cursor: pointer;
-  display: block;
-  padding: 0.45rem 0.5rem;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.45rem 0.5rem 0.5rem;
   transition: border-color 0.15s ease, background 0.15s ease;
   width: 100%;
 }
@@ -85,9 +84,27 @@
   border-color: rgba(255, 188, 112, 0.55);
 }
 
+.calendar-event-toggle {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
 .calendar-event-expanded {
   background: rgba(255, 95, 31, 0.22);
   border-color: rgba(255, 173, 92, 0.55);
+}
+
+.attendance-button {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  padding: 0.25rem 0.55rem;
 }
 
 .all-day-row th,

@@ -1,10 +1,13 @@
 package com.fitexa.controler;
 
+import com.fitexa.dtos.GymClassAttendanceResponseDto;
+import com.fitexa.dtos.GymClassAttendanceUpdateRequestDto;
 import com.fitexa.dtos.GymClassRequestDto;
 import com.fitexa.dtos.GymClassResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.GymClassService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,6 +47,23 @@ public class GymClassControler {
     @GetMapping("/{id}")
     public GymClassResponseDto findById(@PathVariable Long id) {
         return gymClassService.findById(id);
+    }
+
+    @GetMapping("/{id}/attendance")
+    public GymClassAttendanceResponseDto getAttendance(
+        @PathVariable Long id,
+        @RequestParam(name = "date") LocalDate date
+    ) {
+        return gymClassService.getAttendance(id, date);
+    }
+
+    @PutMapping("/{id}/attendance")
+    public GymClassAttendanceResponseDto updateAttendance(
+        @PathVariable Long id,
+        @RequestParam(name = "date") LocalDate date,
+        @Valid @RequestBody GymClassAttendanceUpdateRequestDto request
+    ) {
+        return gymClassService.updateAttendance(id, date, request);
     }
 
     @PostMapping

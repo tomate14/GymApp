@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS gym_class_subscriptions (
     user_id BIGINT NOT NULL,
     target_date DATE NOT NULL,
     subscribed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    attendance_present TINYINT(1) NULL,
+    attendance_marked_at DATETIME NULL,
     CONSTRAINT fk_class_subscriptions_class FOREIGN KEY (gym_class_id) REFERENCES gym_classes(id) ON DELETE CASCADE,
     CONSTRAINT fk_class_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT uq_gym_class_subscriptions_class_user_date UNIQUE (gym_class_id, user_id, target_date)

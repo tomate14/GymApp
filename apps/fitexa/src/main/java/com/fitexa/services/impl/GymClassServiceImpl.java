@@ -1,10 +1,15 @@
 package com.fitexa.services.impl;
 
+import com.fitexa.dtos.GymClassAttendanceResponseDto;
+import com.fitexa.dtos.GymClassAttendanceStudentDto;
+import com.fitexa.dtos.GymClassAttendanceUpdateItemDto;
+import com.fitexa.dtos.GymClassAttendanceUpdateRequestDto;
 import com.fitexa.dtos.GymClassRequestDto;
 import com.fitexa.dtos.GymClassResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.ActivityEntity;
 import com.fitexa.entities.GymClassEntity;
+import com.fitexa.entities.GymClassSubscriptionEntity;
 import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
 import com.fitexa.entities.WeekDay;
@@ -12,12 +17,16 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.GymClassRepository;
+import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.GymClassService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,6 +44,7 @@ public class GymClassServiceImpl implements GymClassService {
     private final GymClassRepository gymClassRepository;
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
+    private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -72,6 +82,56 @@ public class GymClassServiceImpl implements GymClassService {
     @Transactional(readOnly = true)
     public GymClassResponseDto findById(Long id) {
         return toDto(findEntity(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GymClassAttendanceResponseDto getAttendance(Long id, LocalDate targetDate) {
+        GymClassEntity gymClass = findEntity(id);
+        LocalDate effectiveDate = targetDate == null ? LocalDate.now() : targetDate;
+        List<GymClassAttendanceStudentDto> students = gymClassSubscriptionRepository
+            .findDetailedByGymClassIdAndTargetDate(id, effectiveDate)
+            .stream()
+            .map(this::toAttendanceStudentDto)
+            .toList();
+
+        return GymClassAttendanceResponseDto.builder()
+            .classId(gymClass.getId())
+            .className(gymClass.getClassName())
+            .targetDate(effectiveDate)
+            .students(students)
+            .build();
+    }
+
+    @Override
+    @Transactional
+    public GymClassAttendanceResponseDto updateAttendance(Long id, LocalDate targetDate, GymClassAttendanceUpdateRequestDto request) {
+        GymClassEntity gymClass = findEntity(id);
+        LocalDate effectiveDate = targetDate == null ? LocalDate.now() : targetDate;
+        List<GymClassSubscriptionEntity> subscriptions = gymClassSubscriptionRepository.findDetailedByGymClassIdAndTargetDate(id, effectiveDate);
+        Map<Long, GymClassSubscriptionEntity> subscriptionsById = new LinkedHashMap<>();
+        for (GymClassSubscriptionEntity subscription : subscriptions) {
+            subscriptionsById.put(subscription.getId(), subscription);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (GymClassAttendanceUpdateItemDto item : request.getStudents()) {
+            GymClassSubscriptionEntity subscription = subscriptionsById.get(item.getSubscriptionId());
+            if (subscription == null) {
+                throw new BusinessValidationException("La asistencia incluye alumnos que no pertenecen a esta clase o fecha.");
+            }
+            subscription.setAttendancePresent(item.getAttendancePresent());
+            subscription.setAttendanceMarkedAt(now);
+        }
+
+        gymClassSubscriptionRepository.saveAll(subscriptions);
+
+        return GymClassAttendanceResponseDto.builder()
+            .classId(gymClass.getId())
+            .className(gymClass.getClassName())
+            .targetDate(effectiveDate)
+            .students(subscriptions.stream().map(this::toAttendanceStudentDto).toList())
+            .build();
     }
 
     @Override
@@ -163,6 +223,19 @@ public class GymClassServiceImpl implements GymClassService {
             .startTime(entity.getStartTime())
             .endTime(entity.getEndTime())
             .weekDays(entity.getWeekDays() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(entity.getWeekDays()))
+            .build();
+    }
+
+    private GymClassAttendanceStudentDto toAttendanceStudentDto(GymClassSubscriptionEntity entity) {
+        UserEntity user = entity.getUser();
+        return GymClassAttendanceStudentDto.builder()
+            .subscriptionId(entity.getId())
+            .studentId(user.getId())
+            .studentName(user.getFirstName() + " " + user.getLastName())
+            .dni(user.getDni())
+            .phone(user.getPhone())
+            .attendancePresent(entity.getAttendancePresent())
+            .attendanceMarkedAt(entity.getAttendanceMarkedAt())
             .build();
     }
 
