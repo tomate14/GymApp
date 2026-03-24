@@ -1,3 +1,5 @@
+-- Resetea la base completa, recrea todas las tablas e inserta los datos mockeados.
+
 CREATE DATABASE IF NOT EXISTS fitexa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE fitexa;
 
@@ -19,6 +21,7 @@ DROP TABLE IF EXISTS activities;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS plans;
 SET FOREIGN_KEY_CHECKS = 1;
+-- Crea todas las tablas del backend Fitexa sin insertar datos.
 
 CREATE TABLE plans (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -106,10 +109,11 @@ CREATE TABLE gym_class_subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     gym_class_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
+    target_date DATE NOT NULL,
     subscribed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_class_subscriptions_class FOREIGN KEY (gym_class_id) REFERENCES gym_classes(id) ON DELETE CASCADE,
     CONSTRAINT fk_class_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT uq_gym_class_subscriptions_class_user UNIQUE (gym_class_id, user_id)
+    CONSTRAINT uq_gym_class_subscriptions_class_user_date UNIQUE (gym_class_id, user_id, target_date)
 );
 
 CREATE TABLE exercise_personal_records (
@@ -184,111 +188,50 @@ CREATE TABLE routine_assignment_exercises (
 
 CREATE INDEX idx_ra_user_dates ON routine_assignments(user_id, start_date, end_date);
 
+
 INSERT INTO plans (id, name, price, max_days_per_week, active) VALUES
     (1, '2 veces por semana', 22000.00, 2, 1),
     (2, '3 veces por semana', 29000.00, 3, 1),
-    (3, 'Libre', 36000.00, 7, 1),
-    (4, 'Pase diario', 9000.00, 1, 1);
+    (3, 'Libre', 36000.00, 7, 1);
 
 INSERT INTO users (
-    id, first_name, last_name, dni, address, phone, email, password, must_change_password, birth_date,
-    user_type, plan_id, registration_date, renewal_date, payment_status
+    id, first_name, last_name, dni, address, phone, email, password, must_change_password,
+    birth_date, user_type, plan_id, registration_date, renewal_date, payment_status
 ) VALUES
-    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1992-09-05', 'PROFESOR', NULL, '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), 'AL_DIA'),
-    (2, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1987-04-14', 'PROFESOR', NULL, '2025-02-10', DATE_ADD(CURDATE(), INTERVAL 25 DAY), 'AL_DIA'),
-    (3, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1990-06-25', 'PROFESOR', NULL, '2025-03-01', DATE_ADD(CURDATE(), INTERVAL 18 DAY), 'AL_DIA'),
-    (4, 'Nicolas', 'Vega', '30124577', 'Cordoba 522', '3415339981', 'nicolas.vega@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1988-11-17', 'PROFESOR', NULL, '2025-02-18', DATE_ADD(CURDATE(), INTERVAL 22 DAY), 'AL_DIA'),
-    (5, 'Carla', 'Ibanez', '31977551', 'Roca 310', '3415099877', 'carla.ibanez@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1991-08-30', 'PROFESOR', NULL, '2025-04-08', DATE_ADD(CURDATE(), INTERVAL 27 DAY), 'AL_DIA'),
-    (6, 'Pablo', 'Rossi', '28766331', 'Mendoza 640', '3415448877', 'pablo.rossi@fitexa.com', '$2a$10$GRDVjNYFypwgb6c/rAstpe9Vp4EOJKnaaLFqxRKxi5ZhDFze6TudW', 1, '1986-02-18', 'PROFESOR', NULL, '2025-01-28', DATE_ADD(CURDATE(), INTERVAL 19 DAY), 'AL_DIA');
+    (1, 'Lucia', 'Gimenez', '32450987', 'Belgrano 145', '3415011002', 'lucia.gimenez@fitexa.com', '$2a$10$YbErXCYxoUpeUBp5slGG8.lMA7nAznLCGND/EEnO8WkkRspqlKOSy', 0, '1992-09-05', 'PROFESOR', NULL, '2025-02-10', '2026-03-20', 'AL_DIA'),
+    (2, 'Diego', 'Ferrero', '29877441', 'San Luis 932', '3416120044', 'diego.ferrero@fitexa.com', '$2a$10$5tIHmy6asaOU6cnupwJ/aupfW505xKJ9XoVpFwBwO9v5NGAb13lWO', 0, '1987-04-14', 'PROFESOR', NULL, '2025-02-20', '2026-03-22', 'AL_DIA'),
+    (3, 'Agustina', 'Ruiz', '31244876', 'Mitre 1880', '3415772200', 'agustina.ruiz@fitexa.com', '$2a$10$lz5wUNfCASVvXHRGj5vUK.BJyZMMzHcNvYN9.e0GP3sHnTCOx/mm6', 0, '1990-06-25', 'PROFESOR', NULL, '2025-03-05', '2026-03-25', 'AL_DIA'),
+    (4, 'Nicolas', 'Vega', '30124577', 'Cordoba 522', '3415339981', 'nicolas.vega@fitexa.com', '$2a$10$PjWtYrSZ3P69Ab5ajOZ4.uzE0nof6knfiRZkFuONYfROkNRnTqKka', 0, '1988-11-17', 'PROFESOR', NULL, '2025-03-18', '2026-03-24', 'AL_DIA'),
+    (5, 'Carla', 'Ibanez', '31977551', 'Roca 310', '3415099877', 'carla.ibanez@fitexa.com', '$2a$10$uryjiK.ddiJOV57t5rdjwOucAcSo6ubpMQBjEnGl6TCwSjeV6hR.a', 0, '1991-08-30', 'PROFESOR', NULL, '2025-03-28', '2026-03-28', 'AL_DIA'),
+    (1001, 'Maxi', 'Roselli', '33555111', 'Oroño 250', '3416001001', 'maxiroselli@gmail.com', '$2a$10$SpeYBueseIfgAt3OugKhDek8kUYP.5SV0/lqMxT0/kynvMGRAEP2W', 0, '1992-11-07', 'ALUMNO', 3, '2025-04-12', '2026-03-18', 'AL_DIA'),
+    (1002, 'Ana', 'Lopez', '35444222', 'Italia 455', '3416001002', 'ana.lopez@gmail.com', '$2a$10$3kBbzCelX87g/62NuScCMeg1/caXEx5ys3PCO10Y65S0bdadcu/7S', 0, '1995-03-09', 'ALUMNO', 1, '2025-04-29', '2026-03-11', 'AL_DIA'),
+    (1003, 'Bruno', 'Diaz', '36666333', 'Mendoza 640', '3416001003', 'bruno.diaz@gmail.com', '$2a$10$jk7pBQwd8E/zWjZyri0UiOzY8TYxPNdJBtO9gyuw0Z9fWGoBIi6ru', 0, '1993-08-22', 'ALUMNO', 2, '2025-05-15', '2026-03-07', 'ADEUDA'),
+    (1004, 'Sofia', 'Perez', '37777444', 'Brown 210', '3416001004', 'sofia.perez@gmail.com', '$2a$10$SeybWAyBHgE8.CZelTt9huQoLX4SA/OavZfC6Jon7oNzx6ab8mp2S', 0, '1998-01-14', 'ALUMNO', 1, '2025-06-03', '2026-03-14', 'AL_DIA'),
+    (1005, 'Laura', 'Gomez', '38888555', 'Mitre 920', '3416001005', 'laura.gomez@gmail.com', '$2a$10$mkU.AH9tU0qjpq.sjqbeluAe0HKzNVzltg0tYcgjMTbpf1X63AWTy', 0, '1991-05-02', 'ALUMNO', 2, '2025-06-27', '2026-03-05', 'ADEUDA'),
+    (1006, 'Martin', 'Suarez', '39999666', 'Cordoba 1100', '3416001006', 'martin.suarez@gmail.com', '$2a$10$.iNuNO25C.E.3fjUwj0ytONPjk4QzCjCuglJSDQoPQIE2E3cR0pqa', 0, '1989-09-17', 'ALUMNO', 3, '2025-07-11', '2026-03-20', 'AL_DIA'),
+    (1007, 'Julieta', 'Fernandez', '40111777', 'San Juan 744', '3416001007', 'julieta.fernandez@gmail.com', '$2a$10$LfkVhRWaL0m5w7U5IJ6ume8I8cwDcmjw7Bv4GQZIDoUfSuV6xT8C2', 0, '1997-04-25', 'ALUMNO', 1, '2025-08-02', '2026-03-10', 'AL_DIA'),
+    (1008, 'Tomas', 'Romero', '41222888', 'Catamarca 190', '3416001008', 'tomas.romero@gmail.com', '$2a$10$M/sr65hmxGzio7QyR7koru7PwK1VeX/9R/CdYQ/O.VXyO6f7dJ1zy', 0, '1994-12-11', 'ALUMNO', 2, '2025-08-21', '2026-03-08', 'ADEUDA'),
+    (1009, 'Camila', 'Moreno', '42333999', '3 de Febrero 80', '3416001009', 'camila.moreno@gmail.com', '$2a$10$dpoPAXVD54POca2FwxNsCeQWJ8KMkDhwK7HRVBcTMVNE4btp5FUDq', 0, '1996-06-18', 'ALUMNO', 3, '2025-09-12', '2026-03-16', 'AL_DIA'),
+    (1010, 'Facundo', 'Acosta', '43444111', 'Santa Fe 515', '3416001010', 'facundo.acosta@gmail.com', '$2a$10$E/XhN9dBcs68xUonah4Ks.nlSKA5IrLoNTHYQA2OEHWZPShknYGZy', 0, '1990-10-30', 'ALUMNO', 1, '2025-10-01', '2026-03-13', 'AL_DIA');
 
-INSERT INTO users (
-    id, first_name, last_name, dni, address, phone, email, password, must_change_password, birth_date,
-    user_type, plan_id, registration_date, renewal_date, payment_status
-)
-SELECT
-    1000 + seq.n AS id,
-    ELT(((seq.n - 1) % 25) + 1,
-        'Mateo', 'Sofia', 'Tomas', 'Valentina', 'Benjamin',
-        'Camila', 'Thiago', 'Martina', 'Franco', 'Julieta',
-        'Santino', 'Mora', 'Facundo', 'Catalina', 'Bautista',
-        'Olivia', 'Joaquin', 'Lola', 'Ignacio', 'Abril',
-        'Lautaro', 'Violeta', 'Bruno', 'Renata', 'Emiliano'
-    ) AS first_name,
-    ELT(((seq.n - 1) % 20) + 1,
-        'Gonzalez', 'Rodriguez', 'Fernandez', 'Lopez', 'Martinez',
-        'Perez', 'Gomez', 'Diaz', 'Sanchez', 'Romero',
-        'Alvarez', 'Torres', 'Ruiz', 'Silva', 'Flores',
-        'Acosta', 'Suarez', 'Molina', 'Castro', 'Ramos'
-    ) AS last_name,
-    CAST(43000000 + seq.n * 17 AS CHAR) AS dni,
-    CONCAT('Av. Entrenamiento ', 100 + seq.n) AS address,
-    CONCAT('341', LPAD(5000000 + seq.n * 37, 7, '0')) AS phone,
-    CONCAT('alumno', seq.n, '@fitexa.com') AS email,
-    '$2a$10$sfG.Eo9Wv7Mc5WpGzIMKBuNXtVWx0UyQmVgogMwfSJFTY1fdl3uYy' AS password,
-    1 AS must_change_password,
-    DATE_ADD('1988-01-01', INTERVAL seq.n * 137 DAY) AS birth_date,
-    'ALUMNO' AS user_type,
-    CASE
-        WHEN MOD(seq.n, 13) = 0 THEN NULL
-        WHEN MOD(seq.n, 6) IN (1, 2) THEN 1
-        WHEN MOD(seq.n, 6) IN (3, 4) THEN 2
-        ELSE 3
-    END AS plan_id,
-    DATE_ADD('2025-01-03', INTERVAL seq.n * 7 DAY) AS registration_date,
-    CASE
-        WHEN MOD(seq.n, 5) = 0 THEN DATE_SUB(CURDATE(), INTERVAL MOD(seq.n, 12) + 1 DAY)
-        WHEN MOD(seq.n, 7) = 0 THEN DATE_ADD(CURDATE(), INTERVAL 1 DAY)
-        ELSE DATE_ADD(CURDATE(), INTERVAL MOD(seq.n, 20) + 5 DAY)
-    END AS renewal_date,
-    CASE
-        WHEN MOD(seq.n, 5) = 0 THEN 'ADEUDA'
-        ELSE 'AL_DIA'
-    END AS payment_status
-FROM (
-    SELECT (t.n * 10 + o.n) + 1 AS n
-    FROM (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL
-        SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
-    ) o
-    CROSS JOIN (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
-    ) t
-    WHERE (t.n * 10 + o.n) + 1 <= 50
-) seq;
-
-INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
-SELECT
-    u.id,
-    u.plan_id,
-    CASE u.plan_id
-        WHEN 1 THEN 22000.00
-        WHEN 2 THEN 29000.00
-        WHEN 3 THEN 36000.00
-        ELSE 9000.00
-    END AS amount,
-    'Renovacion de cuota' AS detail,
-    DATE_SUB(NOW(), INTERVAL (5 + MOD(u.id, 40)) DAY) AS paid_at
-FROM users u
-WHERE u.user_type = 'ALUMNO'
-  AND u.plan_id IS NOT NULL
-  AND MOD(u.id, 2) = 0;
-
-INSERT INTO user_payment_movements (user_id, plan_id, amount, detail, paid_at)
-SELECT
-    u.id,
-    u.plan_id,
-    CASE u.plan_id
-        WHEN 1 THEN 22000.00
-        WHEN 2 THEN 29000.00
-        WHEN 3 THEN 36000.00
-        ELSE 9000.00
-    END AS amount,
-    'Renovacion de cuota' AS detail,
-    DATE_SUB(NOW(), INTERVAL (45 + MOD(u.id, 70)) DAY) AS paid_at
-FROM users u
-WHERE u.user_type = 'ALUMNO'
-  AND u.plan_id IS NOT NULL
-  AND MOD(u.id, 5) = 0;
+INSERT INTO user_payment_movements (id, user_id, plan_id, amount, detail, paid_at) VALUES
+    (1, 1001, 3, 36000.00, 'Renovacion de cuota', '2026-01-18 09:15:00'),
+    (2, 1001, 3, 36000.00, 'Renovacion de cuota', '2026-02-18 09:20:00'),
+    (3, 1002, 1, 22000.00, 'Renovacion de cuota', '2026-01-12 18:10:00'),
+    (4, 1002, 1, 22000.00, 'Renovacion de cuota', '2026-02-12 18:15:00'),
+    (5, 1003, 2, 29000.00, 'Renovacion de cuota', '2026-01-07 08:30:00'),
+    (6, 1004, 1, 22000.00, 'Renovacion de cuota', '2026-01-14 19:00:00'),
+    (7, 1004, 1, 22000.00, 'Renovacion de cuota', '2026-02-14 19:05:00'),
+    (8, 1005, 2, 29000.00, 'Renovacion de cuota', '2026-01-05 10:00:00'),
+    (9, 1006, 3, 36000.00, 'Renovacion de cuota', '2026-01-20 07:40:00'),
+    (10, 1006, 3, 36000.00, 'Renovacion de cuota', '2026-02-20 07:45:00'),
+    (11, 1007, 1, 22000.00, 'Renovacion de cuota', '2026-01-10 12:05:00'),
+    (12, 1007, 1, 22000.00, 'Renovacion de cuota', '2026-02-10 12:10:00'),
+    (13, 1008, 2, 29000.00, 'Renovacion de cuota', '2026-01-08 16:25:00'),
+    (14, 1009, 3, 36000.00, 'Renovacion de cuota', '2026-01-16 09:50:00'),
+    (15, 1009, 3, 36000.00, 'Renovacion de cuota', '2026-02-16 09:55:00'),
+    (16, 1010, 1, 22000.00, 'Renovacion de cuota', '2026-01-13 17:30:00'),
+    (17, 1010, 1, 22000.00, 'Renovacion de cuota', '2026-02-13 17:35:00');
 
 INSERT INTO activities (id, name, description) VALUES
     (1, 'Musculacion', 'Sala libre con seguimiento mensual'),
@@ -339,143 +282,135 @@ INSERT INTO exercises (id, name, activity_id, machine_id, video_url) VALUES
     (24, 'Estiramiento isquios', 8, NULL, 'https://www.youtube.com/watch?v=mY7a1KQxD2w');
 
 INSERT INTO routine_templates (id, name, created_at) VALUES
-    (1, 'Hipertrofia inicial', DATE_SUB(CURDATE(), INTERVAL 160 DAY)),
-    (2, 'Resistencia metabolica', DATE_SUB(CURDATE(), INTERVAL 150 DAY)),
-    (3, 'Fuerza tren inferior', DATE_SUB(CURDATE(), INTERVAL 145 DAY)),
-    (4, 'Movilidad y core', DATE_SUB(CURDATE(), INTERVAL 130 DAY)),
-    (5, 'Acondicionamiento general', DATE_SUB(CURDATE(), INTERVAL 120 DAY)),
-    (6, 'Cross training base', DATE_SUB(CURDATE(), INTERVAL 110 DAY)),
-    (7, 'Spinning performance', DATE_SUB(CURDATE(), INTERVAL 100 DAY)),
-    (8, 'Core y estabilidad', DATE_SUB(CURDATE(), INTERVAL 90 DAY)),
-    (9, 'Fuerza torso', DATE_SUB(CURDATE(), INTERVAL 80 DAY)),
-    (10, 'Movilidad premium', DATE_SUB(CURDATE(), INTERVAL 70 DAY));
+    (1, 'Hipertrofia inicial', '2025-12-10'),
+    (2, 'Resistencia metabolica', '2025-12-18'),
+    (3, 'Fuerza tren inferior', '2025-12-26'),
+    (4, 'Movilidad y core', '2026-01-05'),
+    (5, 'Acondicionamiento general', '2026-01-12'),
+    (6, 'Spinning performance', '2026-01-20');
 
 INSERT INTO routine_template_exercises (routine_template_id, exercise_id) VALUES
     (1, 1), (1, 8), (1, 9), (1, 20),
-    (2, 2), (2, 13), (2, 14), (2, 15),
+    (2, 2), (2, 13), (2, 15), (2, 16),
     (3, 4), (3, 10), (3, 19), (3, 3),
     (4, 5), (4, 7), (4, 23), (4, 24),
     (5, 3), (5, 11), (5, 12), (5, 18),
-    (6, 2), (6, 14), (6, 16), (6, 17),
-    (7, 6), (7, 21), (7, 11),
-    (8, 5), (8, 7), (8, 11), (8, 23),
-    (9, 8), (9, 9), (9, 20), (9, 18),
-    (10, 22), (10, 23), (10, 24), (10, 7);
+    (6, 6), (6, 21), (6, 11), (6, 5);
 
--- Escenario semanal realista para el calendario:
--- 20 clases totales por semana y maximo 2 clases por franja horaria.
 INSERT INTO gym_classes (id, class_name, activity_id, max_capacity, enrolled, teacher_id, date, all_day, start_time, end_time) VALUES
-    (1, 'Musculacion Morning', 1, NULL, 0, NULL, '2026-03-02', 1, NULL, NULL),
-    (2, 'Crossfit Morning', 2, 18, 0, 1, '2026-03-02', 0, '08:00:00', '09:00:00'),
-    (3, 'Pilates Suelo', 3, 20, 0, 3, '2026-03-03', 0, '09:30:00', '10:30:00'),
-    (4, 'Yoga Flow', 6, 22, 0, 5, '2026-03-03', 0, '09:30:00', '10:30:00'),
-    (5, 'Spinning Power', 4, 18, 0, 5, '2026-03-02', 0, '19:00:00', '20:00:00'),
-    (6, 'Funcional Express', 5, 16, 0, 3, '2026-03-03', 0, '07:15:00', '08:00:00'),
-    (7, 'HIIT Mediodia', 7, 14, 0, 2, '2026-03-04', 0, '12:30:00', '13:15:00'),
-    (8, 'Stretching Recovery', 8, 25, 0, 5, '2026-03-07', 1, NULL, NULL),
-    (9, 'Core y Movilidad', 8, 20, 0, 6, '2026-03-05', 0, '20:00:00', '20:45:00'),
-    (10, 'Box Funcional', 5, 18, 0, 4, '2026-03-06', 0, '19:00:00', '20:00:00'),
-    (11, 'Musculacion Intermedio', 1, NULL, 0, NULL, '2026-03-03', 0, '18:00:00', '19:00:00'),
-    (12, 'Crossfit Evening', 2, 16, 0, 1, '2026-03-03', 0, '18:00:00', '19:00:00');
+    (1, 'Crossfit Morning', 2, 6, 0, 1, '2026-02-09', 0, '08:00:00', '09:00:00'),
+    (2, 'Pilates Suelo', 3, 5, 0, 3, '2026-02-10', 0, '09:30:00', '10:30:00'),
+    (3, 'Yoga Flow', 6, 6, 0, 5, '2026-02-10', 0, '09:30:00', '10:30:00'),
+    (4, 'Spinning Power', 4, 5, 0, 5, '2026-02-09', 0, '19:00:00', '20:00:00'),
+    (5, 'Funcional Express', 5, 4, 0, 3, '2026-02-10', 0, '07:15:00', '08:00:00'),
+    (6, 'HIIT Mediodia', 7, 4, 0, 2, '2026-02-11', 0, '12:30:00', '13:15:00'),
+    (7, 'Core y Movilidad', 8, 5, 0, 2, '2026-02-12', 0, '20:00:00', '20:45:00'),
+    (8, 'Box Funcional', 5, 5, 0, 4, '2026-02-13', 0, '19:00:00', '20:00:00'),
+    (9, 'Musculacion Intermedio', 1, 8, 0, 1, '2026-02-10', 0, '18:00:00', '19:00:00'),
+    (10, 'Crossfit Evening', 2, 6, 0, 2, '2026-02-10', 0, '18:00:00', '19:00:00'),
+    (11, 'Stretching Recovery', 8, 8, 0, 4, '2026-02-14', 1, NULL, NULL),
+    (12, 'Musculacion Open', 1, NULL, 0, NULL, '2026-02-09', 1, NULL, NULL);
 
 INSERT INTO gym_class_days (gym_class_id, day) VALUES
     (1, 'LUNES'), (1, 'MIERCOLES'),
-    (2, 'LUNES'), (2, 'MIERCOLES'),
+    (2, 'MARTES'), (2, 'JUEVES'),
     (3, 'MARTES'), (3, 'JUEVES'),
-    (4, 'MARTES'), (4, 'JUEVES'),
-    (5, 'LUNES'), (5, 'VIERNES'),
-    (6, 'MARTES'), (6, 'VIERNES'),
-    (7, 'MIERCOLES'),
-    (8, 'SABADO'),
-    (9, 'JUEVES'),
-    (10, 'VIERNES'),
-    (11, 'MARTES'), (11, 'JUEVES'),
-    (12, 'MARTES'), (12, 'JUEVES');
+    (4, 'LUNES'), (4, 'VIERNES'),
+    (5, 'MARTES'), (5, 'VIERNES'),
+    (6, 'MIERCOLES'),
+    (7, 'JUEVES'),
+    (8, 'VIERNES'),
+    (9, 'MARTES'), (9, 'JUEVES'),
+    (10, 'MARTES'), (10, 'JUEVES'),
+    (11, 'SABADO'),
+    (12, 'LUNES'), (12, 'MIERCOLES'), (12, 'VIERNES');
 
-CREATE TEMPORARY TABLE tmp_class_candidates AS
+CREATE TEMPORARY TABLE tmp_weeks (
+    monday_date DATE NOT NULL PRIMARY KEY
+);
+
+INSERT INTO tmp_weeks (monday_date) VALUES
+    ('2026-02-09'),
+    ('2026-02-16'),
+    ('2026-02-23'),
+    ('2026-03-02'),
+    ('2026-03-09');
+
+CREATE TEMPORARY TABLE tmp_subscription_patterns (
+    user_id BIGINT NOT NULL,
+    gym_class_id BIGINT NOT NULL,
+    day_offset INT NOT NULL
+);
+
+INSERT INTO tmp_subscription_patterns (user_id, gym_class_id, day_offset) VALUES
+    (1001, 1, 0), (1001, 2, 1), (1001, 8, 4), (1001, 11, 5),
+    (1002, 4, 0), (1002, 3, 3),
+    (1003, 5, 1), (1003, 6, 2), (1003, 8, 4),
+    (1004, 2, 1), (1004, 4, 4),
+    (1005, 1, 0), (1005, 7, 3), (1005, 11, 5),
+    (1006, 10, 1), (1006, 3, 3), (1006, 8, 4),
+    (1007, 5, 1), (1007, 9, 3),
+    (1008, 4, 0), (1008, 2, 1), (1008, 10, 3),
+    (1009, 1, 0), (1009, 6, 2), (1009, 7, 3), (1009, 8, 4),
+    (1010, 3, 1), (1010, 5, 4);
+
+INSERT INTO gym_class_subscriptions (gym_class_id, user_id, target_date, subscribed_at)
 SELECT
-    gc.id AS gym_class_id,
-    u.id AS user_id,
-    ROW_NUMBER() OVER (
-        PARTITION BY gc.id
-        ORDER BY MOD((u.id * 31) + (gc.id * 17), 10007)
-    ) AS rn,
-    CASE
-        WHEN gc.max_capacity IS NULL THEN 22 + MOD(gc.id, 12)
-        ELSE GREATEST(6, FLOOR(gc.max_capacity * (0.55 + (MOD(gc.id, 35) / 100))))
-    END AS target
-FROM gym_classes gc
-JOIN users u ON u.user_type = 'ALUMNO';
+    p.gym_class_id,
+    p.user_id,
+    DATE_ADD(w.monday_date, INTERVAL p.day_offset DAY) AS target_date,
+    TIMESTAMP(DATE_ADD(w.monday_date, INTERVAL p.day_offset DAY), COALESCE(gc.start_time, '08:00:00')) - INTERVAL 2 DAY AS subscribed_at
+FROM tmp_subscription_patterns p
+JOIN tmp_weeks w ON 1 = 1
+JOIN gym_classes gc ON gc.id = p.gym_class_id
+WHERE DATE_ADD(w.monday_date, INTERVAL p.day_offset DAY) <= '2026-03-09';
 
-INSERT INTO gym_class_subscriptions (gym_class_id, user_id, subscribed_at)
-SELECT
-    c.gym_class_id,
-    c.user_id,
-    TIMESTAMP(gc.date, COALESCE(gc.start_time, '08:00:00')) - INTERVAL (1 + MOD(c.user_id + c.gym_class_id, 9)) DAY
-FROM tmp_class_candidates c
-JOIN gym_classes gc ON gc.id = c.gym_class_id
-WHERE c.rn <= c.target;
-
-DROP TEMPORARY TABLE tmp_class_candidates;
+DROP TEMPORARY TABLE tmp_subscription_patterns;
+DROP TEMPORARY TABLE tmp_weeks;
 
 UPDATE gym_classes gc
 SET enrolled = (
     SELECT COUNT(*)
     FROM gym_class_subscriptions gcs
     WHERE gcs.gym_class_id = gc.id
+      AND gcs.target_date = gc.date
 );
 
-CREATE TEMPORARY TABLE tmp_students AS
-SELECT
-    u.id,
-    ROW_NUMBER() OVER (ORDER BY u.id) AS rn
-FROM users u
-WHERE u.user_type = 'ALUMNO';
+INSERT INTO routine_assignments (id, user_id, routine_template_id, start_date, end_date) VALUES
+    (1, 1001, 1, '2026-02-10', '2026-03-31'),
+    (2, 1002, 2, '2026-02-17', '2026-03-28'),
+    (3, 1003, 3, '2026-02-12', '2026-03-26'),
+    (4, 1004, 4, '2026-02-18', '2026-03-30'),
+    (5, 1005, 5, '2026-02-15', '2026-03-27'),
+    (6, 1006, 1, '2026-02-20', '2026-03-31'),
+    (7, 1007, 2, '2026-02-14', '2026-03-29'),
+    (8, 1008, 3, '2026-02-21', '2026-03-30'),
+    (9, 1009, 4, '2026-02-11', '2026-03-31'),
+    (10, 1010, 5, '2026-02-16', '2026-03-25'),
+    (101, 1001, 6, '2025-12-01', '2026-01-31'),
+    (102, 1003, 2, '2025-11-10', '2026-02-05'),
+    (103, 1005, 4, '2025-12-15', '2026-02-12'),
+    (104, 1008, 1, '2025-11-20', '2026-02-15'),
+    (201, 1002, 5, '2026-04-01', '2026-05-10'),
+    (202, 1006, 6, '2026-04-05', '2026-05-20');
 
-INSERT INTO routine_assignments (id, user_id, routine_template_id, start_date, end_date)
-SELECT
-    ts.rn AS id,
-    ts.id AS user_id,
-    1 + MOD(ts.rn - 1, 10) AS routine_template_id,
-    DATE_SUB(CURDATE(), INTERVAL (10 + MOD(ts.rn, 20)) DAY) AS start_date,
-    DATE_ADD(CURDATE(), INTERVAL (20 + MOD(ts.rn, 40)) DAY) AS end_date
-FROM tmp_students ts
-WHERE ts.rn <= 35;
-
-INSERT INTO routine_assignments (id, user_id, routine_template_id, start_date, end_date)
-SELECT
-    100 + ts.rn AS id,
-    ts.id AS user_id,
-    1 + MOD(ts.rn + 2, 10) AS routine_template_id,
-    DATE_SUB(CURDATE(), INTERVAL (120 + MOD(ts.rn, 60)) DAY) AS start_date,
-    DATE_SUB(CURDATE(), INTERVAL (10 + MOD(ts.rn, 30)) DAY) AS end_date
-FROM tmp_students ts
-WHERE ts.rn BETWEEN 20 AND 50;
-
-INSERT INTO routine_assignments (id, user_id, routine_template_id, start_date, end_date)
-SELECT
-    200 + ts.rn AS id,
-    ts.id AS user_id,
-    1 + MOD(ts.rn + 4, 10) AS routine_template_id,
-    DATE_ADD(CURDATE(), INTERVAL (7 + MOD(ts.rn, 25)) DAY) AS start_date,
-    DATE_ADD(CURDATE(), INTERVAL (45 + MOD(ts.rn, 45)) DAY) AS end_date
-FROM tmp_students ts
-WHERE ts.rn <= 15;
-
-DROP TEMPORARY TABLE tmp_students;
-
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'LUNES' FROM routine_assignments;
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'MIERCOLES' FROM routine_assignments WHERE MOD(id, 2) = 0;
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'VIERNES' FROM routine_assignments WHERE MOD(id, 3) = 0;
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'MARTES' FROM routine_assignments WHERE MOD(id, 4) = 0;
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'JUEVES' FROM routine_assignments WHERE MOD(id, 5) = 0;
-INSERT INTO routine_assignment_days (routine_assignment_id, day)
-SELECT id, 'SABADO' FROM routine_assignments WHERE MOD(id, 7) = 0;
+INSERT INTO routine_assignment_days (routine_assignment_id, day) VALUES
+    (1, 'LUNES'), (1, 'MIERCOLES'), (1, 'VIERNES'),
+    (2, 'MARTES'), (2, 'JUEVES'),
+    (3, 'LUNES'), (3, 'MIERCOLES'), (3, 'VIERNES'),
+    (4, 'MARTES'), (4, 'JUEVES'), (4, 'SABADO'),
+    (5, 'LUNES'), (5, 'MIERCOLES'), (5, 'VIERNES'),
+    (6, 'MARTES'), (6, 'JUEVES'), (6, 'SABADO'),
+    (7, 'LUNES'), (7, 'MIERCOLES'),
+    (8, 'MARTES'), (8, 'JUEVES'), (8, 'SABADO'),
+    (9, 'LUNES'), (9, 'MIERCOLES'), (9, 'VIERNES'),
+    (10, 'MARTES'), (10, 'JUEVES'), (10, 'VIERNES'),
+    (101, 'MARTES'), (101, 'JUEVES'),
+    (102, 'LUNES'), (102, 'MIERCOLES'),
+    (103, 'MARTES'), (103, 'JUEVES'),
+    (104, 'LUNES'), (104, 'MIERCOLES'), (104, 'VIERNES'),
+    (201, 'LUNES'), (201, 'MIERCOLES'), (201, 'VIERNES'),
+    (202, 'MARTES'), (202, 'JUEVES');
 
 INSERT INTO routine_assignment_exercises (
     assignment_id, exercise_id, exercise_name, sets, prescription_mode,
@@ -485,45 +420,24 @@ SELECT
     ra.id AS assignment_id,
     e.id AS exercise_id,
     e.name AS exercise_name,
-    3 + MOD(ra.id + e.id, 3) AS sets,
-    CASE
-        WHEN MOD(ra.id + e.id, 2) = 0 THEN 'FIJO'
-        ELSE 'DINAMICO'
-    END AS prescription_mode,
-    CASE
-        WHEN MOD(ra.id + e.id, 2) = 0 THEN 8 + MOD(ra.id + e.id, 8)
-        ELSE NULL
-    END AS reps,
+    3 + MOD(ra.id + e.id, 2) AS sets,
+    CASE WHEN MOD(ra.id + e.id, 2) = 0 THEN 'FIJO' ELSE 'DINAMICO' END AS prescription_mode,
+    CASE WHEN MOD(ra.id + e.id, 2) = 0 THEN 8 + MOD(ra.id + e.id, 6) ELSE NULL END AS reps,
     CASE
         WHEN MOD(ra.id + e.id, 2) = 0 THEN
-            CASE
-                WHEN e.machine_id IS NULL THEN 0
-                ELSE 15 + MOD((ra.id * e.id), 45)
-            END
+            CASE WHEN e.machine_id IS NULL THEN 0 ELSE 20 + MOD(ra.id * e.id, 35) END
         ELSE NULL
     END AS weight,
-    CASE
-        WHEN MOD(ra.id + e.id, 2) = 1 THEN 8 + MOD(ra.id + e.id, 6)
-        ELSE NULL
-    END AS min_reps,
-    CASE
-        WHEN MOD(ra.id + e.id, 2) = 1 THEN 12 + MOD(ra.id + e.id, 8)
-        ELSE NULL
-    END AS max_reps,
+    CASE WHEN MOD(ra.id + e.id, 2) = 1 THEN 8 + MOD(ra.id + e.id, 4) ELSE NULL END AS min_reps,
+    CASE WHEN MOD(ra.id + e.id, 2) = 1 THEN 12 + MOD(ra.id + e.id, 5) ELSE NULL END AS max_reps,
     CASE
         WHEN MOD(ra.id + e.id, 2) = 1 THEN
-            CASE
-                WHEN e.machine_id IS NULL THEN 0
-                ELSE 10 + MOD((ra.id + e.id), 25)
-            END
+            CASE WHEN e.machine_id IS NULL THEN 0 ELSE 10 + MOD(ra.id + e.id, 15) END
         ELSE NULL
     END AS min_weight,
     CASE
         WHEN MOD(ra.id + e.id, 2) = 1 THEN
-            CASE
-                WHEN e.machine_id IS NULL THEN 0
-                ELSE 25 + MOD((ra.id + e.id), 35)
-            END
+            CASE WHEN e.machine_id IS NULL THEN 0 ELSE 25 + MOD(ra.id + e.id, 20) END
         ELSE NULL
     END AS max_weight
 FROM routine_assignments ra
@@ -531,28 +445,37 @@ JOIN routine_template_exercises rte ON rte.routine_template_id = ra.routine_temp
 JOIN exercises e ON e.id = rte.exercise_id;
 
 INSERT INTO exercise_personal_records (user_id, exercise_id, max_weight, recorded_at) VALUES
-    (1001, 1, 60.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
-    (1001, 8, 24.0, DATE_SUB(CURDATE(), INTERVAL 12 DAY)),
-    (1002, 4, 130.0, DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
-    (1002, 3, 48.0, DATE_SUB(CURDATE(), INTERVAL 7 DAY)),
-    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 6 DAY)),
-    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 5 DAY));
+    (1001, 1, 85.0, '2026-02-28'),
+    (1001, 8, 32.5, '2026-03-04'),
+    (1001, 9, 55.0, '2026-03-01'),
+    (1003, 4, 150.0, '2026-02-24'),
+    (1003, 3, 52.5, '2026-02-27'),
+    (1006, 6, 0.0, '2026-02-26'),
+    (1006, 21, 0.0, '2026-03-03'),
+    (1010, 5, 0.0, '2026-03-02');
 
 INSERT INTO exercise_personal_record_entries (user_id, exercise_id, weight, recorded_at) VALUES
-    (1001, 1, 45.0, DATE_SUB(CURDATE(), INTERVAL 45 DAY)),
-    (1001, 1, 52.5, DATE_SUB(CURDATE(), INTERVAL 30 DAY)),
-    (1001, 1, 57.5, DATE_SUB(CURDATE(), INTERVAL 22 DAY)),
-    (1001, 1, 60.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
-    (1001, 8, 16.0, DATE_SUB(CURDATE(), INTERVAL 26 DAY)),
-    (1001, 8, 20.0, DATE_SUB(CURDATE(), INTERVAL 19 DAY)),
-    (1001, 8, 24.0, DATE_SUB(CURDATE(), INTERVAL 12 DAY)),
-    (1002, 4, 100.0, DATE_SUB(CURDATE(), INTERVAL 28 DAY)),
-    (1002, 4, 115.0, DATE_SUB(CURDATE(), INTERVAL 18 DAY)),
-    (1002, 4, 130.0, DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
-    (1002, 3, 38.0, DATE_SUB(CURDATE(), INTERVAL 21 DAY)),
-    (1002, 3, 42.5, DATE_SUB(CURDATE(), INTERVAL 14 DAY)),
-    (1002, 3, 48.0, DATE_SUB(CURDATE(), INTERVAL 7 DAY)),
-    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 15 DAY)),
-    (1003, 2, 0.0, DATE_SUB(CURDATE(), INTERVAL 6 DAY)),
-    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 17 DAY)),
-    (1004, 6, 0.0, DATE_SUB(CURDATE(), INTERVAL 5 DAY));
+    (1001, 1, 70.0, '2026-01-31'),
+    (1001, 1, 77.5, '2026-02-14'),
+    (1001, 1, 82.5, '2026-02-21'),
+    (1001, 1, 85.0, '2026-02-28'),
+    (1001, 8, 24.0, '2026-02-07'),
+    (1001, 8, 28.0, '2026-02-20'),
+    (1001, 8, 32.5, '2026-03-04'),
+    (1001, 9, 45.0, '2026-02-08'),
+    (1001, 9, 50.0, '2026-02-22'),
+    (1001, 9, 55.0, '2026-03-01'),
+    (1003, 4, 120.0, '2026-01-28'),
+    (1003, 4, 135.0, '2026-02-10'),
+    (1003, 4, 150.0, '2026-02-24'),
+    (1003, 3, 40.0, '2026-02-01'),
+    (1003, 3, 47.5, '2026-02-16'),
+    (1003, 3, 52.5, '2026-02-27'),
+    (1006, 6, 0.0, '2026-02-05'),
+    (1006, 6, 0.0, '2026-02-26'),
+    (1006, 21, 0.0, '2026-02-12'),
+    (1006, 21, 0.0, '2026-03-03'),
+    (1010, 5, 0.0, '2026-02-09'),
+    (1010, 5, 0.0, '2026-03-02');
+
+

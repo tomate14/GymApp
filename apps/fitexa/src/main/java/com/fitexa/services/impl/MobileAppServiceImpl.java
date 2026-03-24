@@ -225,7 +225,7 @@ public class MobileAppServiceImpl implements MobileAppService {
         UserEntity user = authenticatedUserService.getCurrentUser();
         LocalDate targetDate = normalizeTargetDate(date);
         WeekDay targetWeekDay = toWeekDay(targetDate);
-        Set<Long> subscribedIds = gymClassSubscriptionRepository.findByUserId(user.getId()).stream()
+        Set<Long> subscribedIds = gymClassSubscriptionRepository.findByUserIdAndTargetDate(user.getId(), targetDate).stream()
             .map(item -> item.getGymClass().getId())
             .collect(java.util.stream.Collectors.toSet());
 
@@ -256,11 +256,11 @@ public class MobileAppServiceImpl implements MobileAppService {
         if (!gymClass.getWeekDays().contains(targetWeekDay)) {
             throw new BusinessValidationException("La clase no se dicta el dia seleccionado.");
         }
-        if (gymClassSubscriptionRepository.existsByGymClassIdAndUserId(classId, user.getId())) {
+        if (gymClassSubscriptionRepository.existsByGymClassIdAndUserIdAndTargetDate(classId, user.getId(), targetDate)) {
             throw new BusinessValidationException("Ya estas suscripto a esta clase.");
         }
 
-        long enrolledCount = gymClassSubscriptionRepository.countByGymClassId(classId);
+        long enrolledCount = gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(classId, targetDate);
         if (gymClass.getMaxCapacity() != null && gymClass.getMaxCapacity() > 0 && enrolledCount >= gymClass.getMaxCapacity()) {
             throw new BusinessValidationException("La clase ya no tiene cupos disponibles.");
         }
@@ -269,11 +269,11 @@ public class MobileAppServiceImpl implements MobileAppService {
             GymClassSubscriptionEntity.builder()
                 .gymClass(gymClass)
                 .user(user)
+                .targetDate(targetDate)
                 .subscribedAt(LocalDateTime.now())
                 .build()
         );
 
-        gymClass.setEnrolled(Math.toIntExact(gymClassSubscriptionRepository.countByGymClassId(classId)));
         return toMobileClassDto(gymClass, targetDate, true);
     }
 
@@ -352,7 +352,7 @@ public class MobileAppServiceImpl implements MobileAppService {
 
     private MobileGymClassResponseDto toMobileClassDto(GymClassEntity item, LocalDate targetDate, boolean subscribed) {
         UserEntity user = authenticatedUserService.getCurrentUser();
-        int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassId(item.getId()));
+        int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(item.getId(), targetDate));
         Integer availableSpots = item.getMaxCapacity() == null ? null : Math.max(item.getMaxCapacity() - enrolled, 0);
         boolean ownClass = item.getTeacher() != null && item.getTeacher().getId().equals(user.getId());
         boolean canSubscribe = !subscribed && !ownClass && (availableSpots == null || availableSpots > 0);

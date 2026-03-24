@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +21,10 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "gym_class_subscriptions",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uq_gym_class_subscriptions_class_user", columnNames = {"gym_class_id", "user_id"})
+        @UniqueConstraint(
+            name = "uq_gym_class_subscriptions_class_user_date",
+            columnNames = {"gym_class_id", "user_id", "target_date"}
+        )
     }
 )
 @Data
@@ -40,6 +44,9 @@ public class GymClassSubscriptionEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+
+    @Column(nullable = false)
+    private LocalDate targetDate;
 
     @Column(nullable = false)
     private LocalDateTime subscribedAt;

@@ -12,7 +12,6 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.GymClassRepository;
-import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.GymClassService;
 import java.time.LocalDate;
@@ -34,7 +33,6 @@ public class GymClassServiceImpl implements GymClassService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final GymClassRepository gymClassRepository;
-    private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
 
@@ -169,16 +167,7 @@ public class GymClassServiceImpl implements GymClassService {
     }
 
     private int resolveEnrolledCount(GymClassEntity entity) {
-        if (entity.getId() == null) {
-            return 0;
-        }
-
-        long subscribedCount = gymClassSubscriptionRepository.countByGymClassId(entity.getId());
-        if (subscribedCount == 0L) {
-            return entity.getEnrolled() == null ? 0 : entity.getEnrolled();
-        }
-
-        return Math.toIntExact(subscribedCount);
+        return entity.getEnrolled() == null ? 0 : entity.getEnrolled();
     }
 
     private <T> DashboardPageResponseDto<T> toPageResponse(Page<T> page) {

@@ -12,9 +12,6 @@ services:
     volumes:
       - fitexa_mysql_data:/var/lib/mysql
       - ./apps/fitexa/docker/mysql/reset-and-seed.sql:/docker-entrypoint-initdb.d/00-reset-and-seed.sql:ro
-      - ./apps/fitexa/docker/mysql/01-drop-tables.sql:/docker-entrypoint-initdb.d/01-drop-tables.sql:ro
-      - ./apps/fitexa/docker/mysql/02-create-tables.sql:/docker-entrypoint-initdb.d/02-create-tables.sql:ro
-      - ./apps/fitexa/docker/mysql/03-insert-mock-data.sql:/docker-entrypoint-initdb.d/03-insert-mock-data.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
       interval: 10s

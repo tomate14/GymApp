@@ -1,6 +1,7 @@
 package com.fitexa.repository;
 
 import com.fitexa.entities.GymClassSubscriptionEntity;
+import java.util.Collection;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,9 +9,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSubscriptionEntity, Long> {
-    long countByGymClassId(Long gymClassId);
-    boolean existsByGymClassIdAndUserId(Long gymClassId, Long userId);
-    List<GymClassSubscriptionEntity> findByUserId(Long userId);
+    long countByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
+    boolean existsByGymClassIdAndUserIdAndTargetDate(Long gymClassId, Long userId, LocalDate targetDate);
+    List<GymClassSubscriptionEntity> findByUserIdAndTargetDate(Long userId, LocalDate targetDate);
+
+    @Query("""
+        select s.gymClass.id as gymClassId,
+               s.targetDate as targetDate,
+               count(s.id) as subscribedCount
+        from GymClassSubscriptionEntity s
+        where s.gymClass.id in :gymClassIds
+          and s.targetDate >= :fromDate
+          and s.targetDate <= :toDate
+        group by s.gymClass.id, s.targetDate
+        """)
+    List<DashboardClassSubscriptionCountProjection> countSubscriptionsByGymClassIdsAndTargetDateBetween(
+        @Param("gymClassIds") Collection<Long> gymClassIds,
+        @Param("fromDate") LocalDate fromDate,
+        @Param("toDate") LocalDate toDate
+    );
 
     @Query("""
         select concat(t.firstName, ' ', t.lastName) as teacherName,
@@ -19,8 +36,8 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         join s.gymClass gc
         join gc.teacher t
         where s.user.userType = com.fitexa.entities.UserType.ALUMNO
-          and (:fromDate is null or gc.date >= :fromDate)
-          and (:toDate is null or gc.date <= :toDate)
+          and (:fromDate is null or s.targetDate >= :fromDate)
+          and (:toDate is null or s.targetDate <= :toDate)
         group by t.id, t.firstName, t.lastName
         order by count(distinct s.user.id) desc
         """)
