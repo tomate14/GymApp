@@ -6,6 +6,7 @@ import com.fitexa.dtos.GymClassRequestDto;
 import com.fitexa.dtos.GymClassResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.GymClassService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/classes")
 @RequiredArgsConstructor
+@Tag(name = "Clases", description = "Gestion de clases, agenda y asistencia.")
 public class GymClassControler {
 
     private final GymClassService gymClassService;

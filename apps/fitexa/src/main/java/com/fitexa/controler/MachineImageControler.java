@@ -1,6 +1,7 @@
 package com.fitexa.controler;
 
 import com.fitexa.services.MachinePhotoStorageService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/public/machines/images")
 @RequiredArgsConstructor
+@Tag(name = "Imagenes Publicas", description = "Acceso publico a imagenes de maquinas.")
 public class MachineImageControler {
 
     private final MachinePhotoStorageService machinePhotoStorageService;

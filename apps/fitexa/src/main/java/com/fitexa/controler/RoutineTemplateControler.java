@@ -4,6 +4,7 @@ import com.fitexa.dtos.RoutineTemplateRequestDto;
 import com.fitexa.dtos.RoutineTemplateResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.RoutineTemplateService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/routine-templates")
 @RequiredArgsConstructor
+@Tag(name = "Plantillas de Rutina", description = "Creacion y mantenimiento de rutinas reutilizables.")
 public class RoutineTemplateControler {
 
     private final RoutineTemplateService routineTemplateService;

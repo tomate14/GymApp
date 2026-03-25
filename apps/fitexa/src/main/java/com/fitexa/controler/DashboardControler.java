@@ -8,6 +8,7 @@ import com.fitexa.dtos.DashboardPlanOverloadRowDto;
 import com.fitexa.dtos.DashboardRenewalRowDto;
 import com.fitexa.dtos.DashboardSummaryResponseDto;
 import com.fitexa.services.DashboardService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor
+@Tag(name = "Dashboard", description = "Metricas, graficos y tablas del panel ejecutivo.")
 public class DashboardControler {
 
     private final DashboardService dashboardService;

@@ -25,6 +25,14 @@ logging:
   level:
     org.hibernate.SQL: debug
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 fitexa:
   storage:
     machine-images-dir: ${MACHINE_IMAGES_DIR:/app/data/machine-images}

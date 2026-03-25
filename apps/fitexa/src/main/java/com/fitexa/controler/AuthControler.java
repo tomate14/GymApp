@@ -5,6 +5,7 @@ import com.fitexa.dtos.AuthChangePasswordResponseDto;
 import com.fitexa.dtos.AuthLoginRequestDto;
 import com.fitexa.dtos.AuthLoginResponseDto;
 import com.fitexa.services.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Autenticacion", description = "Servicios de login y cambio de contrasena.")
 public class AuthControler {
 
     private final AuthService authService;

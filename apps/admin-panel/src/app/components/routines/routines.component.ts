@@ -21,6 +21,7 @@ import { User } from '../../class/user.model';
 import { SearchableSelectComponent } from '../searchable-select/searchable-select.component';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { CustomRoutinePopupComponent } from '../../popups/custom-routine-popup/custom-routine-popup.component';
+import { RoutineAssignmentDetailPopupComponent } from '../../popups/routine-assignment-detail-popup/routine-assignment-detail-popup.component';
 import { ExercisesService } from '../../services/exercises.service';
 import { PlansService } from '../../services/plans.service';
 import {
@@ -42,10 +43,19 @@ type AssignmentFilters = {
   templateId: number | 0;
 };
 
+type RoutineManagerTab = 'template' | 'assignment';
+
 @Component({
   selector: 'app-routines',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmPopupComponent, SearchableSelectComponent, CustomRoutinePopupComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmPopupComponent,
+    SearchableSelectComponent,
+    CustomRoutinePopupComponent,
+    RoutineAssignmentDetailPopupComponent
+  ],
   templateUrl: './routines.component.html',
   styleUrl: './routines.component.css'
 })
@@ -81,6 +91,8 @@ export class RoutinesComponent implements OnInit {
   showCustomRoutinePopup = false;
   historyStudentId: number | null = null;
   customRoutineSelectedExerciseIds: number[] = [];
+  historyDetailAssignment: RoutineAssignment | null = null;
+  activeManagerTab: RoutineManagerTab = 'template';
 
   deleteTemplateCandidate: RoutineTemplate | null = null;
   deleteAssignmentCandidate: RoutineAssignment | null = null;
@@ -120,6 +132,28 @@ export class RoutinesComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
     this.templateDraft.createdAt = this.todayIsoDate();
+  }
+
+  get isTemplateTabActive(): boolean {
+    return this.activeManagerTab === 'template';
+  }
+
+  get isAssignmentTabActive(): boolean {
+    return this.activeManagerTab === 'assignment';
+  }
+
+  get activeManagerTitle(): string {
+    return this.isTemplateTabActive
+      ? (this.editingTemplateId === null ? 'Crear plantilla de rutina' : 'Modificar plantilla de rutina')
+      : (this.editingAssignmentId === null ? 'Asignar rutina a alumno' : 'Modificar asignacion');
+  }
+
+  get activeManagerButtonLabel(): string {
+    return this.isActiveManagerFormVisible ? 'Ocultar formulario' : 'Mostrar formulario';
+  }
+
+  get isActiveManagerFormVisible(): boolean {
+    return this.isTemplateTabActive ? this.showTemplateForm : this.showAssignmentForm;
   }
 
   get filteredTemplates(): RoutineTemplate[] {
@@ -172,11 +206,15 @@ export class RoutinesComponent implements OnInit {
       .sort((current, next) => next.startDate.localeCompare(current.startDate));
   }
 
-  toggleTemplateForm(): void {
-    this.showTemplateForm = !this.showTemplateForm;
+  setActiveManagerTab(tab: RoutineManagerTab): void {
+    this.activeManagerTab = tab;
   }
 
-  toggleAssignmentForm(): void {
+  toggleActiveManagerForm(): void {
+    if (this.isTemplateTabActive) {
+      this.showTemplateForm = !this.showTemplateForm;
+      return;
+    }
     this.showAssignmentForm = !this.showAssignmentForm;
   }
 
@@ -244,6 +282,7 @@ export class RoutinesComponent implements OnInit {
   }
 
   editTemplate(template: RoutineTemplate): void {
+    this.activeManagerTab = 'template';
     this.showTemplateForm = true;
     this.editingTemplateId = template.id;
     this.templateDraft = {
@@ -295,6 +334,19 @@ export class RoutinesComponent implements OnInit {
 
   closeSelectedStudentHistory(): void {
     this.historyStudentId = null;
+    this.historyDetailAssignment = null;
+  }
+
+  openHistoryAssignmentDetail(assignment: RoutineAssignment): void {
+    this.historyDetailAssignment = {
+      ...assignment,
+      days: [...assignment.days],
+      exercisePlans: assignment.exercisePlans.map((item) => ({ ...item }))
+    };
+  }
+
+  closeHistoryAssignmentDetail(): void {
+    this.historyDetailAssignment = null;
   }
 
   openCustomRoutinePopup(): void {
@@ -370,6 +422,7 @@ export class RoutinesComponent implements OnInit {
   }
 
   editAssignment(assignment: RoutineAssignment): void {
+    this.activeManagerTab = 'assignment';
     this.showAssignmentForm = true;
     this.editingAssignmentId = assignment.id;
     this.assignmentDraft = {
@@ -392,6 +445,7 @@ export class RoutinesComponent implements OnInit {
     this.editingAssignmentId = null;
     this.assignmentDraft = createEmptyRoutineAssignmentDraft();
     this.historyStudentId = null;
+    this.historyDetailAssignment = null;
     this.showCustomRoutinePopup = false;
     this.customRoutineSelectedExerciseIds = [];
   }

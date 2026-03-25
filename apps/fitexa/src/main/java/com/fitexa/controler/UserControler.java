@@ -4,6 +4,7 @@ import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Tag(name = "Usuarios", description = "Administracion de alumnos y profesores.")
 public class UserControler {
 
     private final UserService userService;

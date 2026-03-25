@@ -4,6 +4,7 @@ import com.fitexa.dtos.PlanRequestDto;
 import com.fitexa.dtos.PlanResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.PlanService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/plans")
 @RequiredArgsConstructor
+@Tag(name = "Planes", description = "ABM de planes comerciales del gimnasio.")
 public class PlanControler {
 
     private final PlanService planService;

@@ -1,0 +1,53 @@
+<div class="detail-popup-backdrop" *ngIf="visible" (click)="close()">
+  <section class="detail-popup-card" *ngIf="assignment !== null" (click)="$event.stopPropagation()">
+    <div class="detail-popup-header">
+      <div>
+        <p class="detail-popup-brand mb-1">FITEXA</p>
+        <h2 class="detail-popup-title mb-1">Plan de entrenamiento personalizado</h2>
+        <small class="text-secondary">Asignacion #{{ assignment.id }}</small>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-light" (click)="close()">Cerrar</button>
+    </div>
+
+    <div class="detail-popup-summary">
+      <article class="summary-card">
+        <small class="summary-label">Alumno</small>
+        <strong>{{ studentName }}</strong>
+        <small class="summary-label mt-3">Rutina</small>
+        <span>{{ routineName }}</span>
+      </article>
+
+      <article class="summary-card">
+        <small class="summary-label">Vigencia</small>
+        <strong>{{ assignment.startDate }} a {{ assignment.endDate }}</strong>
+        <small class="summary-label mt-3">Dias</small>
+        <span>{{ daysLabel(assignment.days) }}</span>
+      </article>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ejercicio</th>
+            <th>Series</th>
+            <th>Modo</th>
+            <th>Repeticiones</th>
+            <th>Peso (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of assignment.exercisePlans; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ item.exerciseName }}</td>
+            <td>{{ item.sets }}</td>
+            <td>{{ modeLabel(item.prescriptionMode) }}</td>
+            <td>{{ repsLabel(item) }}</td>
+            <td>{{ weightLabel(item) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

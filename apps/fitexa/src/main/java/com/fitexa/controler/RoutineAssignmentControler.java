@@ -6,6 +6,7 @@ import com.fitexa.dtos.RoutineAssignmentSaveResultDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.RoutineAssignmentPdfService;
 import com.fitexa.services.RoutineAssignmentService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/routine-assignments")
 @RequiredArgsConstructor
+@Tag(name = "Asignaciones de Rutina", description = "Asignacion de rutinas a alumnos y generacion de PDF.")
 public class RoutineAssignmentControler {
 
     private final RoutineAssignmentService routineAssignmentService;

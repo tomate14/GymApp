@@ -4,6 +4,7 @@ import com.fitexa.dtos.ExerciseRequestDto;
 import com.fitexa.dtos.ExerciseResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.ExerciseService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/exercises")
 @RequiredArgsConstructor
+@Tag(name = "Ejercicios", description = "ABM de ejercicios y sus relaciones con actividades y maquinas.")
 public class ExerciseControler {
 
     private final ExerciseService exerciseService;

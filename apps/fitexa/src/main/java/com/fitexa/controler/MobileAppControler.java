@@ -9,6 +9,7 @@ import com.fitexa.dtos.mobile.MobileProfileResponseDto;
 import com.fitexa.dtos.mobile.MobileProfileUpdateRequestDto;
 import com.fitexa.dtos.mobile.MobileRoutineResponseDto;
 import com.fitexa.services.MobileAppService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/mobile")
 @RequiredArgsConstructor
+@Tag(name = "Mobile App", description = "Servicios consumidos por la aplicacion mobile del alumno.")
 public class MobileAppControler {
 
     private final MobileAppService mobileAppService;

@@ -1,14 +1,36 @@
 <div class="row g-3">
-  <div class="col-12 col-xxl-6">
+  <div class="col-12">
     <section class="admin-card">
-      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-        <h2 class="section-title mb-0">{{ editingTemplateId === null ? 'Crear plantilla de rutina' : 'Modificar plantilla de rutina' }}</h2>
-        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleTemplateForm()">
-          {{ showTemplateForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h2 class="section-title mb-1">{{ activeManagerTitle }}</h2>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-brand]="isTemplateTabActive"
+              [class.btn-outline-light]="!isTemplateTabActive"
+              (click)="setActiveManagerTab('template')"
+            >
+              Plantilla de rutina
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-brand]="isAssignmentTabActive"
+              [class.btn-outline-light]="!isAssignmentTabActive"
+              (click)="setActiveManagerTab('assignment')"
+            >
+              Asignar a alumno
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleActiveManagerForm()">
+          {{ activeManagerButtonLabel }}
         </button>
       </div>
 
-      <form class="row g-2" (ngSubmit)="saveTemplate()" *ngIf="showTemplateForm">
+      <form class="row g-2" (ngSubmit)="saveTemplate()" *ngIf="isTemplateTabActive && showTemplateForm">
         <div class="col-12 col-md-6">
           <label class="form-label form-label-sm">Nombre de rutina</label>
           <input class="form-control form-control-sm" type="text" name="templateName" [(ngModel)]="templateDraft.name" required />
@@ -60,19 +82,8 @@
           </button>
         </div>
       </form>
-    </section>
-  </div>
 
-  <div class="col-12 col-xxl-6">
-    <section class="admin-card">
-      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-        <h2 class="section-title mb-0">{{ editingAssignmentId === null ? 'Asignar rutina a alumno' : 'Modificar asignacion' }}</h2>
-        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleAssignmentForm()">
-          {{ showAssignmentForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
-        </button>
-      </div>
-
-      <form class="row g-2" (ngSubmit)="saveAssignment()" *ngIf="showAssignmentForm">
+      <form class="row g-2" (ngSubmit)="saveAssignment()" *ngIf="isAssignmentTabActive && showAssignmentForm">
         <div class="col-12 col-md-6">
           <label class="form-label form-label-sm">Alumno</label>
           <app-searchable-select
@@ -162,19 +173,24 @@
                     <th>Dias</th>
                     <th>Inicio</th>
                     <th>Fin</th>
-                    <th class="text-end">PDF</th>
+                    <th class="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let assignment of selectedStudentHistory">
+                  <tr class="history-row-clickable" *ngFor="let assignment of selectedStudentHistory" (click)="openHistoryAssignmentDetail(assignment)">
                     <td>{{ assignmentRoutineName(assignment) }}</td>
                     <td>{{ assignmentDaysLabel(assignment) }}</td>
                     <td>{{ assignment.startDate }}</td>
                     <td>{{ assignment.endDate }}</td>
                     <td class="text-end">
-                      <button class="btn btn-sm btn-outline-warning" type="button" (click)="downloadAssignmentPdf(assignment)">
-                        PDF
-                      </button>
+                      <div class="d-inline-flex gap-2 justify-content-end">
+                        <button class="btn btn-sm btn-outline-light" type="button" (click)="openHistoryAssignmentDetail(assignment); $event.stopPropagation()">
+                          Ver detalle
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" type="button" (click)="downloadAssignmentPdf(assignment); $event.stopPropagation()">
+                          PDF
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -539,6 +555,14 @@
   (closed)="closeCustomRoutinePopup()"
   (confirmed)="applyCustomRoutineSelection($event)"
 ></app-custom-routine-popup>
+
+<app-routine-assignment-detail-popup
+  [visible]="historyDetailAssignment !== null"
+  [assignment]="historyDetailAssignment"
+  [studentName]="historyDetailAssignment ? studentName(historyDetailAssignment.userId) : '-'"
+  [routineName]="historyDetailAssignment ? assignmentRoutineName(historyDetailAssignment) : '-'"
+  (closed)="closeHistoryAssignmentDetail()"
+></app-routine-assignment-detail-popup>
 
 
 

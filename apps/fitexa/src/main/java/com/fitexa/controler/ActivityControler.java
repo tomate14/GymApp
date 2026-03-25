@@ -4,6 +4,7 @@ import com.fitexa.dtos.ActivityRequestDto;
 import com.fitexa.dtos.ActivityResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.ActivityService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/activities")
 @RequiredArgsConstructor
+@Tag(name = "Actividades", description = "ABM de actividades del gimnasio.")
 public class ActivityControler {
 
     private final ActivityService activityService;

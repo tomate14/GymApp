@@ -3,6 +3,7 @@ package com.fitexa.controler;
 import com.fitexa.dtos.MachineResponseDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.MachineService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/machines")
 @RequiredArgsConstructor
+@Tag(name = "Maquinas", description = "ABM de maquinas e imagenes asociadas.")
 public class MachineControler {
 
     private final MachineService machineService;
