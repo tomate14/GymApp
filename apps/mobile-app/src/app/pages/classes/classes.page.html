@@ -4,39 +4,85 @@
       <p class="eyebrow">Agenda diaria</p>
       <h1>{{ formatSelectedDate() }}</h1>
     </div>
-    <ion-button fill="solid" (click)="goToNextDay()">Siguiente dia</ion-button>
+    <div class="day-nav">
+      <ion-button fill="outline" [disabled]="!canGoToPreviousDay()" (click)="goToPreviousDay()">Anterior</ion-button>
+      <ion-button fill="solid" (click)="goToNextDay()">Siguiente dia</ion-button>
+    </div>
   </article>
 
   <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-  <ion-card class="class-card" *ngFor="let item of classes">
-    <ion-card-content>
-      <div class="class-head">
-        <div>
-          <span>{{ item.activityName }}</span>
-          <h2>{{ item.className }}</h2>
-          <p>{{ item.teacherName }}</p>
+  <div class="class-tabs">
+    <button class="class-tab" [class.class-tab-active]="activeTab === 'mine'" type="button" (click)="selectTab('mine')">
+      Mis clases
+      <span>{{ myClasses.length }}</span>
+    </button>
+    <button class="class-tab" [class.class-tab-active]="activeTab === 'available'" type="button" (click)="selectTab('available')">
+      Disponibles
+      <span>{{ availableClasses.length }}</span>
+    </button>
+  </div>
+
+  <ng-container *ngIf="activeTab === 'mine'">
+    <ion-card class="class-card" *ngFor="let item of myClasses">
+      <ion-card-content>
+        <div class="class-head">
+          <div>
+            <span>{{ item.activityName }}</span>
+            <h2>{{ item.className }}</h2>
+            <p>{{ item.teacherName }}</p>
+          </div>
+          <strong>{{ scheduleLabel(item) }}</strong>
         </div>
-        <strong>{{ scheduleLabel(item) }}</strong>
-      </div>
 
-      <div class="class-meta">
-        <span *ngIf="item.ownClass">Clase asignada a tu perfil docente</span>
-        <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
-        <span *ngIf="item.availableSpots === null">Capacidad libre</span>
-        <span>{{ item.enrolled }} inscriptos</span>
-      </div>
+        <div class="class-meta">
+          <span class="meta-pill meta-pill-mine">Reservada</span>
+          <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
+          <span *ngIf="item.availableSpots === null">Capacidad libre</span>
+          <span>{{ item.enrolled }} inscriptos</span>
+        </div>
 
-      <ion-button
-        expand="block"
-        [fill]="item.subscribed ? 'outline' : 'solid'"
-        [disabled]="!item.canSubscribe"
-        (click)="subscribe(item)"
-      >
-        {{ subscriptionLabel(item) }}
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+        <p class="class-note">Ya tenes tu lugar reservado para esta clase.</p>
+      </ion-card-content>
+    </ion-card>
+
+    <p class="empty-state" *ngIf="myClasses.length === 0">No tenes clases reservadas para este dia.</p>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab === 'available'">
+    <ion-card class="class-card" *ngFor="let item of availableClasses">
+      <ion-card-content>
+        <div class="class-head">
+          <div>
+            <span>{{ item.activityName }}</span>
+            <h2>{{ item.className }}</h2>
+            <p>{{ item.teacherName }}</p>
+          </div>
+          <strong>{{ scheduleLabel(item) }}</strong>
+        </div>
+
+        <div class="class-meta">
+          <span *ngIf="item.ownClass">Clase asignada a tu perfil docente</span>
+          <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
+          <span *ngIf="item.availableSpots === null">Capacidad libre</span>
+          <span>{{ item.enrolled }} inscriptos</span>
+        </div>
+
+        <p class="class-note" *ngIf="item.restrictionReason && !item.subscribed">{{ item.restrictionReason }}</p>
+
+        <ion-button
+          expand="block"
+          [fill]="item.canSubscribe ? 'solid' : 'outline'"
+          [disabled]="!item.canSubscribe"
+          (click)="subscribe(item)"
+        >
+          {{ subscriptionLabel(item) }}
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <p class="empty-state" *ngIf="availableClasses.length === 0">No hay otras clases para explorar en este dia.</p>
+  </ng-container>
 </section>
 
 <ng-template #loadingTpl>

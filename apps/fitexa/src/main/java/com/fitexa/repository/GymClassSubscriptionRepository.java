@@ -12,6 +12,7 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
     long countByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
     boolean existsByGymClassIdAndUserIdAndTargetDate(Long gymClassId, Long userId, LocalDate targetDate);
     List<GymClassSubscriptionEntity> findByUserIdAndTargetDate(Long userId, LocalDate targetDate);
+    List<GymClassSubscriptionEntity> findByUserIdAndTargetDateBetween(Long userId, LocalDate fromDate, LocalDate toDate);
     List<GymClassSubscriptionEntity> findByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
 
     @Query("""
@@ -25,6 +26,23 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
     List<GymClassSubscriptionEntity> findDetailedByGymClassIdAndTargetDate(
         @Param("gymClassId") Long gymClassId,
         @Param("targetDate") LocalDate targetDate
+    );
+
+    @Query("""
+        select s.gymClass.id as gymClassId,
+               s.targetDate as targetDate,
+               count(s.id) as attendanceCount
+        from GymClassSubscriptionEntity s
+        where s.gymClass.id in :gymClassIds
+          and s.targetDate >= :fromDate
+          and s.targetDate <= :toDate
+          and s.attendancePresent = true
+        group by s.gymClass.id, s.targetDate
+        """)
+    List<DashboardClassAttendanceCountProjection> countAttendanceByGymClassIdsAndTargetDateBetween(
+        @Param("gymClassIds") Collection<Long> gymClassIds,
+        @Param("fromDate") LocalDate fromDate,
+        @Param("toDate") LocalDate toDate
     );
 
     @Query("""

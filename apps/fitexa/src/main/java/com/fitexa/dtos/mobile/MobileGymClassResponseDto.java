@@ -22,4 +22,5 @@ public class MobileGymClassResponseDto {
     private boolean subscribed;
     private boolean ownClass;
     private boolean canSubscribe;
+    private String restrictionReason;
 }

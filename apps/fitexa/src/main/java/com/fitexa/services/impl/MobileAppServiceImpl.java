@@ -230,7 +230,7 @@ public class MobileAppServiceImpl implements MobileAppService {
             .collect(java.util.stream.Collectors.toSet());
 
         return gymClassRepository.findByWeekDay(targetWeekDay).stream()
-            .map(item -> toMobileClassDto(item, targetDate, subscribedIds.contains(item.getId())))
+            .map(item -> toMobileClassDto(item, user, targetDate, subscribedIds.contains(item.getId())))
             .sorted(
                 Comparator.comparing((MobileGymClassResponseDto item) -> !Boolean.TRUE.equals(item.getAllDay()))
                     .thenComparing(item -> item.getStartTime() == null ? java.time.LocalTime.MIN : item.getStartTime())
@@ -260,6 +260,12 @@ public class MobileAppServiceImpl implements MobileAppService {
             throw new BusinessValidationException("Ya estas suscripto a esta clase.");
         }
 
+        if (hasClassStarted(gymClass, targetDate)) {
+            throw new BusinessValidationException("La clase ya comenzo.");
+        }
+
+        validatePlanRestrictions(user, targetDate);
+
         long enrolledCount = gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(classId, targetDate);
         if (gymClass.getMaxCapacity() != null && gymClass.getMaxCapacity() > 0 && enrolledCount >= gymClass.getMaxCapacity()) {
             throw new BusinessValidationException("La clase ya no tiene cupos disponibles.");
@@ -274,7 +280,7 @@ public class MobileAppServiceImpl implements MobileAppService {
                 .build()
         );
 
-        return toMobileClassDto(gymClass, targetDate, true);
+        return toMobileClassDto(gymClass, user, targetDate, true);
     }
 
     private MobileRoutineResponseDto toRoutineDto(RoutineAssignmentEntity entity, LocalDate today) {
@@ -350,12 +356,86 @@ public class MobileAppServiceImpl implements MobileAppService {
         return date;
     }
 
-    private MobileGymClassResponseDto toMobileClassDto(GymClassEntity item, LocalDate targetDate, boolean subscribed) {
-        UserEntity user = authenticatedUserService.getCurrentUser();
+    private void validatePlanRestrictions(UserEntity user, LocalDate targetDate) {
+        String restrictionReason = resolvePlanRestriction(user, targetDate);
+        if (restrictionReason != null) {
+            throw new BusinessValidationException(restrictionReason);
+        }
+    }
+
+    private String resolveSubscriptionRestriction(
+        GymClassEntity gymClass,
+        UserEntity user,
+        LocalDate targetDate,
+        boolean subscribed,
+        boolean ownClass,
+        Integer availableSpots
+    ) {
+        if (subscribed) {
+            return "Ya estas suscripto";
+        }
+        if (ownClass) {
+            return "La dictas vos";
+        }
+        if (availableSpots != null && availableSpots == 0) {
+            return "Sin cupos";
+        }
+        if (hasClassStarted(gymClass, targetDate)) {
+            return "La clase ya comenzo";
+        }
+        return resolvePlanRestriction(user, targetDate);
+    }
+
+    private String resolvePlanRestriction(UserEntity user, LocalDate targetDate) {
+        if (user.getUserType() != com.fitexa.entities.UserType.ALUMNO || user.getPlan() == null) {
+            return null;
+        }
+        if (isFreePlan(user)) {
+            return null;
+        }
+
+        List<GymClassSubscriptionEntity> sameDaySubscriptions = gymClassSubscriptionRepository.findByUserIdAndTargetDate(user.getId(), targetDate);
+        if (!sameDaySubscriptions.isEmpty()) {
+            return "Tu plan permite una sola actividad por dia.";
+        }
+
+        LocalDate weekStart = targetDate.minusDays(targetDate.getDayOfWeek().getValue() - 1L);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        long weeklySubscriptions = gymClassSubscriptionRepository.findByUserIdAndTargetDateBetween(user.getId(), weekStart, weekEnd).size();
+        if (user.getPlan().getMaxDaysPerWeek() != null && weeklySubscriptions >= user.getPlan().getMaxDaysPerWeek()) {
+            return "Ya alcanzaste el limite semanal de tu plan.";
+        }
+
+        return null;
+    }
+
+    private boolean isFreePlan(UserEntity user) {
+        if (user.getPlan() == null || user.getPlan().getName() == null) {
+            return false;
+        }
+        return "libre".equalsIgnoreCase(user.getPlan().getName().trim());
+    }
+
+    private boolean hasClassStarted(GymClassEntity gymClass, LocalDate targetDate) {
+        LocalDate today = LocalDate.now();
+        if (!targetDate.isEqual(today)) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(gymClass.getAllDay())) {
+            return true;
+        }
+        if (gymClass.getStartTime() == null) {
+            return false;
+        }
+        return !gymClass.getStartTime().isAfter(java.time.LocalTime.now());
+    }
+
+    private MobileGymClassResponseDto toMobileClassDto(GymClassEntity item, UserEntity user, LocalDate targetDate, boolean subscribed) {
         int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(item.getId(), targetDate));
         Integer availableSpots = item.getMaxCapacity() == null ? null : Math.max(item.getMaxCapacity() - enrolled, 0);
         boolean ownClass = item.getTeacher() != null && item.getTeacher().getId().equals(user.getId());
-        boolean canSubscribe = !subscribed && !ownClass && (availableSpots == null || availableSpots > 0);
+        String restrictionReason = resolveSubscriptionRestriction(item, user, targetDate, subscribed, ownClass, availableSpots);
+        boolean canSubscribe = restrictionReason == null;
 
         return MobileGymClassResponseDto.builder()
             .id(item.getId())
@@ -372,6 +452,7 @@ public class MobileAppServiceImpl implements MobileAppService {
             .subscribed(subscribed)
             .ownClass(ownClass)
             .canSubscribe(canSubscribe)
+            .restrictionReason(restrictionReason)
             .build();
     }
 

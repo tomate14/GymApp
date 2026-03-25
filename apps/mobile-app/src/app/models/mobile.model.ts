@@ -104,4 +104,5 @@ export type MobileGymClass = {
   subscribed: boolean;
   ownClass: boolean;
   canSubscribe: boolean;
+  restrictionReason: string | null;
 };

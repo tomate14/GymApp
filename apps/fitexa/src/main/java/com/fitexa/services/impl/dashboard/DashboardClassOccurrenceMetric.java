@@ -19,6 +19,7 @@ public class DashboardClassOccurrenceMetric {
     LocalTime startTime;
     LocalTime endTime;
     int enrolled;
+    int attendees;
     Integer maxCapacity;
     double occupancyPercent;
 

@@ -13,6 +13,7 @@ import { MobileAppService } from '../../services/mobile-app.service';
 })
 export class ClassesPageComponent implements OnInit {
   classes: MobileGymClass[] = [];
+  activeTab: 'mine' | 'available' = 'mine';
   selectedDate = new Date().toISOString().slice(0, 10);
   errorMessage: string | null = null;
   isLoading = true;
@@ -28,6 +29,22 @@ export class ClassesPageComponent implements OnInit {
     next.setDate(next.getDate() + 1);
     this.selectedDate = next.toISOString().slice(0, 10);
     this.loadClasses();
+  }
+
+  goToPreviousDay(): void {
+    const current = new Date(`${this.selectedDate}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    current.setDate(current.getDate() - 1);
+    if (current < today) {
+      return;
+    }
+    this.selectedDate = current.toISOString().slice(0, 10);
+    this.loadClasses();
+  }
+
+  selectTab(tab: 'mine' | 'available'): void {
+    this.activeTab = tab;
   }
 
   subscribe(item: MobileGymClass): void {
@@ -69,6 +86,39 @@ export class ClassesPageComponent implements OnInit {
       return 'Sin cupos';
     }
     return 'Suscribirme';
+  }
+
+  get myClasses(): MobileGymClass[] {
+    return this.classes.filter((item) => item.subscribed);
+  }
+
+  get availableClasses(): MobileGymClass[] {
+    return this.classes.filter((item) => !item.subscribed && !this.hasStarted(item));
+  }
+
+  canGoToPreviousDay(): boolean {
+    const current = new Date(`${this.selectedDate}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return current > today;
+  }
+
+  private hasStarted(item: MobileGymClass): boolean {
+    const now = new Date();
+    const selected = new Date(`${this.selectedDate}T00:00:00`);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (selected.getTime() !== today.getTime()) {
+      return false;
+    }
+    if (item.allDay) {
+      return true;
+    }
+    if (!item.startTime) {
+      return false;
+    }
+    const [hours, minutes] = item.startTime.slice(0, 5).split(':').map(Number);
+    const classStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+    return classStart <= now;
   }
 
   private loadClasses(): void {

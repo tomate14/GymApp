@@ -2,6 +2,7 @@ package com.fitexa.services.impl.dashboard;
 
 import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.WeekDay;
+import com.fitexa.repository.DashboardClassAttendanceCountProjection;
 import com.fitexa.repository.DashboardClassSubscriptionCountProjection;
 import com.fitexa.repository.GymClassRepository;
 import com.fitexa.repository.GymClassSubscriptionRepository;
@@ -54,10 +55,11 @@ public class DashboardClassMetricsService {
         }
 
         Map<String, Integer> subscriptionsByClassAndDate = loadSubscriptions(classes, fromDate, toDate);
+        Map<String, Integer> attendanceByClassAndDate = loadAttendance(classes, fromDate, toDate);
         List<DashboardClassOccurrenceMetric> occurrences = new ArrayList<>();
 
         for (GymClassEntity gymClass : classes) {
-            occurrences.addAll(buildOccurrencesForClass(gymClass, fromDate, toDate, subscriptionsByClassAndDate));
+            occurrences.addAll(buildOccurrencesForClass(gymClass, fromDate, toDate, subscriptionsByClassAndDate, attendanceByClassAndDate));
         }
 
         occurrences.sort(
@@ -70,10 +72,7 @@ public class DashboardClassMetricsService {
     }
 
     private Map<String, Integer> loadSubscriptions(List<GymClassEntity> classes, LocalDate fromDate, LocalDate toDate) {
-        List<Long> classIds = classes.stream()
-            .map(GymClassEntity::getId)
-            .filter(java.util.Objects::nonNull)
-            .toList();
+        List<Long> classIds = classIds(classes);
 
         if (classIds.isEmpty()) {
             return Map.of();
@@ -87,11 +86,34 @@ public class DashboardClassMetricsService {
         return counts;
     }
 
+    private Map<String, Integer> loadAttendance(List<GymClassEntity> classes, LocalDate fromDate, LocalDate toDate) {
+        List<Long> classIds = classIds(classes);
+
+        if (classIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Integer> counts = new HashMap<>();
+        for (DashboardClassAttendanceCountProjection item :
+            gymClassSubscriptionRepository.countAttendanceByGymClassIdsAndTargetDateBetween(classIds, fromDate, toDate)) {
+            counts.put(key(item.getGymClassId(), item.getTargetDate()), item.getAttendanceCount().intValue());
+        }
+        return counts;
+    }
+
+    private List<Long> classIds(List<GymClassEntity> classes) {
+        return classes.stream()
+            .map(GymClassEntity::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    }
+
     private List<DashboardClassOccurrenceMetric> buildOccurrencesForClass(
         GymClassEntity gymClass,
         LocalDate fromDate,
         LocalDate toDate,
-        Map<String, Integer> subscriptionsByClassAndDate
+        Map<String, Integer> subscriptionsByClassAndDate,
+        Map<String, Integer> attendanceByClassAndDate
     ) {
         List<DashboardClassOccurrenceMetric> occurrences = new ArrayList<>();
         LocalDate activeFrom = gymClass.getDate() == null || gymClass.getDate().isBefore(fromDate) ? fromDate : gymClass.getDate();
@@ -102,7 +124,7 @@ public class DashboardClassMetricsService {
         Set<WeekDay> weekDays = resolveWeekDays(gymClass);
         if (weekDays.isEmpty()) {
             if (gymClass.getDate() != null && !gymClass.getDate().isBefore(fromDate) && !gymClass.getDate().isAfter(toDate)) {
-                occurrences.add(toOccurrence(gymClass, gymClass.getDate(), subscriptionsByClassAndDate));
+                occurrences.add(toOccurrence(gymClass, gymClass.getDate(), subscriptionsByClassAndDate, attendanceByClassAndDate));
             }
             return occurrences;
         }
@@ -110,7 +132,7 @@ public class DashboardClassMetricsService {
         LocalDate cursor = activeFrom;
         while (!cursor.isAfter(toDate)) {
             if (weekDays.contains(toWeekDay(cursor))) {
-                occurrences.add(toOccurrence(gymClass, cursor, subscriptionsByClassAndDate));
+                occurrences.add(toOccurrence(gymClass, cursor, subscriptionsByClassAndDate, attendanceByClassAndDate));
             }
             cursor = cursor.plusDays(1);
         }
@@ -121,13 +143,15 @@ public class DashboardClassMetricsService {
     private DashboardClassOccurrenceMetric toOccurrence(
         GymClassEntity gymClass,
         LocalDate date,
-        Map<String, Integer> subscriptionsByClassAndDate
+        Map<String, Integer> subscriptionsByClassAndDate,
+        Map<String, Integer> attendanceByClassAndDate
     ) {
         int enrolled = subscriptionsByClassAndDate.getOrDefault(key(gymClass.getId(), date), 0);
+        int attendees = attendanceByClassAndDate.getOrDefault(key(gymClass.getId(), date), 0);
         Integer maxCapacity = gymClass.getMaxCapacity();
         double occupancyPercent = maxCapacity == null || maxCapacity <= 0
             ? 0d
-            : (enrolled * 100.0) / maxCapacity;
+            : (attendees * 100.0) / maxCapacity;
         boolean allDay = Boolean.TRUE.equals(gymClass.getAllDay());
         LocalTime safeStartTime = allDay ? null : (gymClass.getStartTime() == null ? LocalTime.NOON : gymClass.getStartTime());
         LocalTime safeEndTime = allDay ? null : (gymClass.getEndTime() == null ? safeStartTime.plusHours(1) : gymClass.getEndTime());
@@ -143,6 +167,7 @@ public class DashboardClassMetricsService {
             .startTime(safeStartTime)
             .endTime(safeEndTime)
             .enrolled(enrolled)
+            .attendees(attendees)
             .maxCapacity(maxCapacity)
             .occupancyPercent(occupancyPercent)
             .build();
