@@ -16,21 +16,39 @@ import { buildVerticalBarWithTrendOption, getChartSeries } from '../../../../uti
 export class StudentsTrendChartComponent implements OnChanges {
   @Input() chart: DashboardChart | null = null;
   @Input() mode: DashboardStudentsTrendMode = 'month';
+  @Input() fromDate = '';
+  @Input() toDate = '';
   @Output() readonly modeChange = new EventEmitter<DashboardStudentsTrendMode>();
+  @Output() readonly dateRangeApply = new EventEmitter<{ fromDate: string; toDate: string }>();
 
   options: EChartsOption = {};
   selectedMode: DashboardStudentsTrendMode = 'month';
+  selectedFromDate = '';
+  selectedToDate = '';
   hasData = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['mode']) {
       this.selectedMode = this.mode;
     }
+    if (changes['fromDate']) {
+      this.selectedFromDate = this.fromDate;
+    }
+    if (changes['toDate']) {
+      this.selectedToDate = this.toDate;
+    }
     this.refreshOptions();
   }
 
   emitModeChange(mode: DashboardStudentsTrendMode): void {
     this.modeChange.emit(mode);
+  }
+
+  applyDateRange(): void {
+    this.dateRangeApply.emit({
+      fromDate: this.selectedFromDate,
+      toDate: this.selectedToDate
+    });
   }
 
   private refreshOptions(): void {

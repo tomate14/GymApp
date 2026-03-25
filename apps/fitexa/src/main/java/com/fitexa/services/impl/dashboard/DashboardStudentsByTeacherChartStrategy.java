@@ -5,6 +5,7 @@ import com.fitexa.dtos.DashboardChartPointDto;
 import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,10 +23,9 @@ public class DashboardStudentsByTeacherChartStrategy implements DashboardChartSt
 
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
-        List<DashboardChartPointDto> points = gymClassSubscriptionRepository.countStudentsByTeacherInRange(
-                context.getFromDate(),
-                context.getToDate()
-            ).stream()
+        LocalDate referenceDate = LocalDate.now();
+        List<DashboardChartPointDto> points = gymClassSubscriptionRepository.countActiveStudentsByTeacher(referenceDate)
+            .stream()
             .map(item -> DashboardChartPointDto.builder()
                 .label(item.getTeacherName())
                 .value(item.getStudentsCount().doubleValue())

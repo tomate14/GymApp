@@ -27,12 +27,12 @@ public class DashboardPaymentStatusChartStrategy implements DashboardChartStrate
 
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
+        java.time.LocalDate referenceDate = java.time.LocalDate.now();
         Map<PaymentStatus, Long> countByStatus = new LinkedHashMap<>();
         Arrays.stream(PaymentStatus.values()).forEach(status -> countByStatus.put(status, 0L));
-        userRepository.countUsersByPaymentStatusInRegistrationRange(
+        userRepository.countUsersByPaymentStatusUpToDate(
             UserType.ALUMNO,
-            context.getFromDate(),
-            context.getToDate()
+            referenceDate
         ).forEach(item ->
             countByStatus.put((PaymentStatus) item[0], ((Number) item[1]).longValue())
         );

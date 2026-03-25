@@ -14,6 +14,7 @@ import {
   DashboardRenewalRow,
   DashboardSummary,
   DashboardSummaryFilters,
+  DashboardStudentsTrendFilters,
   DashboardStudentsTrendMode
 } from '../../class/dashboard.model';
 import { Plan } from '../../class/plan.model';
@@ -83,6 +84,10 @@ export class DashboardComponent implements OnInit {
     fromDate: this.oneMonthAgoIsoDate(),
     toDate: this.todayIsoDate()
   };
+  studentsTrendFilters: DashboardStudentsTrendFilters = {
+    fromDate: this.oneMonthAgoIsoDate(),
+    toDate: this.todayIsoDate()
+  };
   studentsTrendMode: DashboardStudentsTrendMode = 'month';
 
   renewalsFilters: DashboardRenewalsFilters = {
@@ -125,39 +130,120 @@ export class DashboardComponent implements OnInit {
   activeInfoKey: string | null = null;
 
   readonly dashboardInfo: Record<string, DashboardInfoContent> = {
+    'students-total': {
+      title: 'Alumnos totales',
+      summary: 'Muestra la cantidad total de alumnos cargados hoy en el sistema.',
+      items: [
+        'Incluye toda la base actual de alumnos, sin importar cuando se hayan dado de alta.',
+        'Sirve para tener una referencia rapida del tamano actual del gimnasio.',
+        'No depende del rango de fechas seleccionado.'
+      ]
+    },
+    'students-new-period': {
+      title: 'Altas de alumnos',
+      summary: 'Muestra cuantos alumnos nuevos ingresaron en el rango de fechas elegido.',
+      items: [
+        'Cuenta alumnos cuya fecha de alta cae dentro del periodo seleccionado.',
+        'Sirve para medir captacion y crecimiento en ese tramo de tiempo.',
+        'Si el numero baja, conviene revisar acciones comerciales y seguimiento de prospectos.'
+      ]
+    },
+    teachers: {
+      title: 'Profesores con clases',
+      summary: 'Muestra cuantos profesores tuvieron al menos una clase dentro del periodo seleccionado.',
+      items: [
+        'No cuenta profesores por fecha de alta, sino profesores que realmente dictaron clases en ese rango.',
+        'Sirve para ver cuanta dotacion docente estuvo activa en la agenda.',
+        'Ayuda a interpretar mejor la carga operativa del gimnasio en el periodo.'
+      ]
+    },
+    'payment-ok': {
+      title: 'Cuotas al dia',
+      summary: 'Muestra cuantos alumnos quedaron al dia con una renovacion cobrada dentro del periodo elegido.',
+      items: [
+        'Se toma la renovacion registrada como pago dentro del periodo, no la fecha de alta del alumno.',
+        'Solo cuenta alumnos que quedaron al dia y tienen un cobro de renovacion en ese rango.',
+        'Sirve para medir cuantas cuotas se regularizaron efectivamente en ese tramo.'
+      ]
+    },
+    'renewals-next': {
+      title: 'Vencimientos en periodo',
+      summary: 'Muestra cuantos alumnos tienen vencimiento de cuota dentro del rango elegido.',
+      items: [
+        'Sirve para anticipar contactos, recordatorios y acciones de renovacion.',
+        'Ayuda a ordenar la gestion de cobranzas antes de que la cuota quede vencida.',
+        'Mientras mas controlado este este numero, mejor previsibilidad tenes sobre los ingresos.'
+      ]
+    },
+    'classes-today': {
+      title: 'Clases en periodo',
+      summary: 'Muestra cuantas clases se dictaron dentro del rango de fechas seleccionado.',
+      items: [
+        'Cuenta ocurrencias reales de clase dentro del periodo, no solo la ficha base de cada actividad.',
+        'Sirve para ver el volumen operativo real del gimnasio en ese tramo.',
+        'Ayuda a relacionar agenda, asistencia y uso del equipo docente.'
+      ]
+    },
+    occupancy: {
+      title: 'Ocupacion promedio',
+      summary: 'Muestra que porcentaje promedio del cupo se lleno con asistentes reales en el periodo.',
+      items: [
+        'Se calcula usando alumnos marcados como presentes sobre el cupo de cada clase.',
+        'No se basa solo en inscriptos, sino en asistencia real.',
+        'Sirve para detectar si la agenda esta bien aprovechada o si hay capacidad ociosa.'
+      ]
+    },
+    'active-routines': {
+      title: 'Rutinas en periodo',
+      summary: 'Muestra cuantas rutinas tuvieron vigencia dentro del rango elegido.',
+      items: [
+        'Cuenta rutinas cuya fecha se cruza con el periodo seleccionado.',
+        'Sirve para dimensionar el trabajo operativo de planificacion y seguimiento.',
+        'No depende de si la rutina empezo exactamente en ese rango, sino de si estuvo vigente.'
+      ]
+    },
+    revenue: {
+      title: 'Ingresos por renovaciones',
+      summary: 'Muestra el monto cobrado por renovaciones registradas dentro del periodo elegido.',
+      items: [
+        'Se toma el comprobante de pago registrado al renovar la cuota.',
+        'No usa la fecha de alta del alumno ni una estimacion teorica del plan.',
+        'Sirve para ver cuanto dinero ingreso realmente por renovaciones en ese tramo.'
+      ]
+    },
     'students-trend': {
       title: 'Altas de alumnos',
-      summary: 'Te ayuda a ver si el gimnasio esta incorporando alumnos al ritmo esperado.',
+      summary: 'Te ayuda a ver en que momentos entran mas alumnos nuevos al gimnasio.',
       items: [
-        'Cada punto muestra cuantos alumnos nuevos se sumaron en el periodo elegido.',
-        'Sirve para detectar meses fuertes, meses flojos y cambios en la tendencia de crecimiento.',
-        'Si el grafico baja, puede ser una senal para revisar promociones, captacion o retencion.'
+        'Cada barra muestra cuantas altas de alumnos hubo dentro del rango que elegiste para este grafico.',
+        'Podes mirarlo por mes o por ano para comparar etapas de crecimiento.',
+        'Sirve para detectar temporadas fuertes, meses flojos y momentos donde conviene reforzar acciones comerciales.'
       ]
     },
     'students-by-teacher': {
       title: 'Alumnos por profesor',
-      summary: 'Muestra como se reparte la demanda entre los profesores del gimnasio.',
+      summary: 'Muestra cuantos alumnos con plan activo hoy tienen clases asociadas a cada profesor.',
       items: [
-        'Permite ver que profesores concentran mas alumnos y cuales tienen menos movimiento.',
-        'Ayuda a equilibrar horarios, carga de trabajo y decisiones de agenda.',
-        'Tambien sirve para detectar si algun profesor esta absorbiendo demasiada demanda.'
+        'Permite ver que profesores concentran mas alumnos activos y cuales hoy tienen menor carga.',
+        'Ayuda a equilibrar horarios, demanda y organizacion del equipo docente.',
+        'Sirve tambien para detectar rapidamente si algun profesor esta quedando sobrecargado o subutilizado.'
       ]
     },
     'classes-by-activity': {
       title: 'Clases por actividad',
-      summary: 'Te muestra que actividades ocupan mas espacio en la programacion.',
+      summary: 'Te muestra que actividades ocuparon mas espacio en la agenda general del gimnasio.',
       items: [
-        'Cada barra representa cuantas clases hubo de cada actividad en el periodo.',
-        'Sirve para ver si la oferta esta alineada con lo que queres impulsar en el negocio.',
-        'Tambien ayuda a detectar actividades sobredimensionadas o poco representadas.'
+        'Cada barra representa cuantas clases se dictaron por actividad desde el inicio de uso del sistema hasta hoy.',
+        'Sirve para ver si la oferta real acompana lo que queres impulsar en el negocio.',
+        'Tambien ayuda a detectar actividades demasiado presentes o con poca participacion en la agenda.'
       ]
     },
     'occupancy-by-activity': {
       title: 'Ocupacion por actividad',
-      summary: 'Te permite entender que actividades llenan mejor sus cupos.',
+      summary: 'Te permite entender que actividades convierten mejor sus cupos en asistentes reales.',
       items: [
-        'Un porcentaje alto indica que esa actividad suele trabajar con buena demanda.',
-        'Un porcentaje bajo puede mostrar clases con espacio ocioso.',
+        'Un porcentaje alto indica que esa actividad suele tener buena asistencia real respecto de su cupo.',
+        'Un porcentaje bajo puede mostrar clases con espacio ocioso o baja presencia de alumnos.',
         'Es util para decidir si conviene abrir mas horarios, reducirlos o ajustar la capacidad.'
       ]
     },
@@ -165,18 +251,18 @@ export class DashboardComponent implements OnInit {
       title: 'Estado de pagos',
       summary: 'Resume rapidamente como esta la salud de cobro de la base de alumnos.',
       items: [
-        'Te muestra cuantos alumnos estan al dia y cuantos tienen deuda.',
-        'Sirve para anticipar riesgos de cobranza y necesidad de seguimiento.',
-        'Si aumenta la deuda, conviene revisar renovaciones, recordatorios y gestion comercial.'
+        'Te muestra el total actual de alumnos al dia y alumnos con deuda.',
+        'Sirve para tener una foto general de cobranzas desde que usas la aplicacion hasta hoy.',
+        'Si aumenta la deuda, conviene revisar renovaciones, recordatorios y seguimiento comercial.'
       ]
     },
     'students-by-plan': {
       title: 'Alumnos por plan',
-      summary: 'Te ayuda a entender que planes son los mas elegidos por los alumnos.',
+      summary: 'Te ayuda a entender como se reparte hoy la base de alumnos con planes activos.',
       items: [
-        'Permite ver si la base se concentra en planes economicos, intermedios o premium.',
+        'Permite ver que planes activos concentran mas alumnos hoy.',
         'Es clave para analizar mezcla comercial y oportunidades de mejora de ingresos.',
-        'Tambien ayuda a detectar planes poco atractivos o con bajo nivel de adopcion.'
+        'Tambien ayuda a detectar planes poco elegidos o con bajo nivel de adopcion real.'
       ]
     },
     'top-exercises': {
@@ -243,7 +329,15 @@ export class DashboardComponent implements OnInit {
 
   onStudentsTrendModeChange(mode: DashboardStudentsTrendMode): void {
     this.studentsTrendMode = mode;
-    this.loadSummary();
+    this.loadStudentsTrendChart();
+  }
+
+  onStudentsTrendDateRangeApply(range: DashboardStudentsTrendFilters): void {
+    this.studentsTrendFilters = {
+      fromDate: range.fromDate,
+      toDate: range.toDate
+    };
+    this.loadStudentsTrendChart();
   }
 
   alertClass(alert: DashboardAlert): string {
@@ -401,8 +495,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardService
       .getSummary({
         fromDate: this.summaryFilters.fromDate || undefined,
-        toDate: this.summaryFilters.toDate || undefined,
-        studentsTrendMode: this.studentsTrendMode
+        toDate: this.summaryFilters.toDate || undefined
       })
       .subscribe({
         next: (summary) => {
@@ -410,7 +503,6 @@ export class DashboardComponent implements OnInit {
           this.kpis = summary.kpis;
           this.alerts = summary.alerts;
           this.charts = summary.charts;
-          this.studentsTrendChart = this.findChart('students-trend');
           this.classesByActivityChart = this.findChart('classes-by-activity');
           this.occupancyByActivityChart = this.findChart('occupancy-by-activity');
           this.studentsByTeacherChart = this.findChart('students-by-teacher');
@@ -423,6 +515,23 @@ export class DashboardComponent implements OnInit {
         error: () => {
           this.apiError = 'No se pudieron obtener datos del dashboard.';
           this.isLoadingSummary = false;
+        }
+      });
+  }
+
+  private loadStudentsTrendChart(): void {
+    this.dashboardService
+      .getStudentsTrendChart({
+        fromDate: this.studentsTrendFilters.fromDate || undefined,
+        toDate: this.studentsTrendFilters.toDate || undefined,
+        studentsTrendMode: this.studentsTrendMode
+      })
+      .subscribe({
+        next: (chart) => {
+          this.studentsTrendChart = chart;
+        },
+        error: () => {
+          this.apiError = 'No se pudo obtener el grafico de altas de alumnos.';
         }
       });
   }
@@ -541,6 +650,7 @@ export class DashboardComponent implements OnInit {
     this.rankingCurrentPage = 1;
     this.overloadsCurrentPage = 1;
     this.loadSummary();
+    this.loadStudentsTrendChart();
     this.loadRenewals();
     this.loadRanking();
     this.loadOverloads();

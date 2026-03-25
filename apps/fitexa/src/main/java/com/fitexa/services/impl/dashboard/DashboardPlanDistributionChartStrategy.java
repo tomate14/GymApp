@@ -2,10 +2,12 @@ package com.fitexa.services.impl.dashboard;
 
 import com.fitexa.dtos.DashboardChartDto;
 import com.fitexa.dtos.DashboardChartPointDto;
+import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.UserType;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,10 +25,11 @@ public class DashboardPlanDistributionChartStrategy implements DashboardChartStr
 
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
-        List<DashboardChartPointDto> points = userRepository.countUsersByPlanInRegistrationRange(
+        LocalDate referenceDate = LocalDate.now();
+        List<DashboardChartPointDto> points = userRepository.countActiveUsersByPlan(
                 UserType.ALUMNO,
-                context.getFromDate(),
-                context.getToDate()
+                PaymentStatus.AL_DIA,
+                referenceDate
             ).stream()
             .map(item -> DashboardChartPointDto.builder()
                 .label(String.valueOf(item[1]))

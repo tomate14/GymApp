@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   DashboardActivityRankingRow,
+  DashboardChart,
   DashboardClassRow,
   DashboardPageResponse,
   DashboardPlanOverloadRow,
@@ -69,6 +70,14 @@ export class DashboardService {
     params = this.appendIfPresent(params, 'toDate', filters.toDate);
     params = this.appendIfPresent(params, 'studentsTrendMode', filters.studentsTrendMode);
     return this.http.get<DashboardSummary>(`${this.endpoint}/summary`, { params });
+  }
+
+  getStudentsTrendChart(filters: SummaryFilters = {}): Observable<DashboardChart> {
+    let params = new HttpParams();
+    params = this.appendIfPresent(params, 'fromDate', filters.fromDate);
+    params = this.appendIfPresent(params, 'toDate', filters.toDate);
+    params = this.appendIfPresent(params, 'studentsTrendMode', filters.studentsTrendMode);
+    return this.http.get<DashboardChart>(`${this.endpoint}/students-trend`, { params });
   }
 
   getRenewals(filters: RenewalsFilters): Observable<DashboardPageResponse<DashboardRenewalRow>> {

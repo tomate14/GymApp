@@ -5,6 +5,11 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
+.kpi-card-with-info {
+  position: relative;
+  padding-right: 2.7rem;
+}
+
 .kpi-value {
   font-size: 1.55rem;
   line-height: 1.1;

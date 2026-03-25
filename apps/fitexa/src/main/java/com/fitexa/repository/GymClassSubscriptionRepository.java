@@ -77,4 +77,23 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
+
+    @Query("""
+        select concat(t.firstName, ' ', t.lastName) as teacherName,
+               count(distinct s.user.id) as studentsCount
+        from GymClassSubscriptionEntity s
+        join s.gymClass gc
+        join gc.teacher t
+        join s.user u
+        where u.userType = com.fitexa.entities.UserType.ALUMNO
+          and u.paymentStatus = com.fitexa.entities.PaymentStatus.AL_DIA
+          and u.renewalDate >= :referenceDate
+          and u.registrationDate <= :referenceDate
+          and s.targetDate <= :referenceDate
+        group by t.id, t.firstName, t.lastName
+        order by count(distinct s.user.id) desc
+        """)
+    List<DashboardStudentsByTeacherProjection> countActiveStudentsByTeacher(
+        @Param("referenceDate") LocalDate referenceDate
+    );
 }

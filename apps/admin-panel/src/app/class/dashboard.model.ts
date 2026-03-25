@@ -37,6 +37,11 @@ export interface DashboardSummaryFilters {
   toDate: string;
 }
 
+export interface DashboardStudentsTrendFilters {
+  fromDate: string;
+  toDate: string;
+}
+
 export interface DashboardRenewalsFilters {
   search: string;
   planId: number;

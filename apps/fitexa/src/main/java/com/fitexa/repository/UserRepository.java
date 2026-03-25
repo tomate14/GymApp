@@ -32,6 +32,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         LocalDate toDate
     );
 
+    long countByUserTypeAndPaymentStatusAndRenewalDateBetween(
+        UserType userType,
+        PaymentStatus paymentStatus,
+        LocalDate fromDate,
+        LocalDate toDate
+    );
+
     long countByUserTypeAndRenewalDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
 
     @Query("""
@@ -102,6 +109,23 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
     );
 
     @Query("""
+        select p.id, p.name, count(u.id)
+        from UserEntity u
+        join u.plan p
+        where u.userType = :userType
+          and u.paymentStatus = :paymentStatus
+          and u.renewalDate >= :referenceDate
+          and u.registrationDate <= :referenceDate
+        group by p.id, p.name
+        order by count(u.id) desc
+        """)
+    List<Object[]> countActiveUsersByPlan(
+        @Param("userType") UserType userType,
+        @Param("paymentStatus") PaymentStatus paymentStatus,
+        @Param("referenceDate") LocalDate referenceDate
+    );
+
+    @Query("""
         select u.paymentStatus, count(u.id)
         from UserEntity u
         where u.userType = :userType
@@ -121,6 +145,18 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         @Param("userType") UserType userType,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+        select u.paymentStatus, count(u.id)
+        from UserEntity u
+        where u.userType = :userType
+          and u.registrationDate <= :referenceDate
+        group by u.paymentStatus
+        """)
+    List<Object[]> countUsersByPaymentStatusUpToDate(
+        @Param("userType") UserType userType,
+        @Param("referenceDate") LocalDate referenceDate
     );
 
     @Query(

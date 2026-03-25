@@ -1,6 +1,7 @@
 package com.fitexa.services;
 
 import com.fitexa.dtos.DashboardActivityRankingRowDto;
+import com.fitexa.dtos.DashboardChartDto;
 import com.fitexa.dtos.DashboardClassRowDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.dtos.DashboardPlanOverloadRowDto;
@@ -10,6 +11,8 @@ import java.time.LocalDate;
 
 public interface DashboardService {
     DashboardSummaryResponseDto getSummary(LocalDate fromDate, LocalDate toDate, String studentsTrendMode);
+
+    DashboardChartDto getStudentsTrendChart(LocalDate fromDate, LocalDate toDate, String studentsTrendMode);
 
     DashboardPageResponseDto<DashboardRenewalRowDto> findRenewals(
         String search,

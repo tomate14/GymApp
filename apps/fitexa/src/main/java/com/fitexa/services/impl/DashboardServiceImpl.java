@@ -15,17 +15,20 @@ import com.fitexa.entities.UserType;
 import com.fitexa.repository.DashboardPlanOverloadProjection;
 import com.fitexa.repository.RoutineAssignmentRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.repository.UserPaymentMovementRepository;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
 import com.fitexa.services.DashboardService;
 import com.fitexa.services.DashboardStudentsTrendMode;
 import com.fitexa.services.impl.dashboard.DashboardClassMetricsService;
 import com.fitexa.services.impl.dashboard.DashboardClassOccurrenceMetric;
+import com.fitexa.services.impl.dashboard.DashboardStudentTrendChartStrategy;
 import com.fitexa.utils.DashboardGymClassSpecifications;
 import com.fitexa.utils.DashboardUserSpecifications;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -45,10 +48,13 @@ public class DashboardServiceImpl implements DashboardService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,##0.##");
     private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00");
+    private static final String RENEWAL_DETAIL = "Renovacion de cuota";
 
     private final UserRepository userRepository;
+    private final UserPaymentMovementRepository userPaymentMovementRepository;
     private final RoutineAssignmentRepository routineAssignmentRepository;
     private final DashboardClassMetricsService dashboardClassMetricsService;
+    private final DashboardStudentTrendChartStrategy dashboardStudentTrendChartStrategy;
     private final List<DashboardChartStrategy> dashboardChartStrategies;
 
     @Override
@@ -61,34 +67,38 @@ public class DashboardServiceImpl implements DashboardService {
 
         long totalStudents = userRepository.countByUserType(UserType.ALUMNO);
         long newStudents = userRepository.countByUserTypeAndRegistrationDateBetween(UserType.ALUMNO, effectiveFromDate, effectiveToDate);
-        long teachers = userRepository.countByUserTypeAndRegistrationDateBetween(UserType.PROFESOR, effectiveFromDate, effectiveToDate);
-        long upToDate = userRepository.countByUserTypeAndPaymentStatusAndRegistrationDateBetween(
-            UserType.ALUMNO,
+        List<DashboardClassOccurrenceMetric> classOccurrences = dashboardClassMetricsService.listOccurrences(effectiveFromDate, effectiveToDate);
+        long teachers = classOccurrences.stream()
+            .filter(DashboardClassOccurrenceMetric::hasTeacherAssigned)
+            .map(DashboardClassOccurrenceMetric::getTeacherId)
+            .distinct()
+            .count();
+        long upToDate = userPaymentMovementRepository.countDistinctUsersByDetailAndPaymentStatusAndPaidAtBetween(
+            RENEWAL_DETAIL,
             PaymentStatus.AL_DIA,
-            effectiveFromDate,
-            effectiveToDate
+            effectiveFromDate.atStartOfDay(),
+            effectiveToDate.atTime(LocalTime.MAX)
         );
         long renewalsInRange = userRepository.countByUserTypeAndRenewalDateBetween(UserType.ALUMNO, effectiveFromDate, effectiveToDate);
-        List<DashboardClassOccurrenceMetric> classOccurrences = dashboardClassMetricsService.listOccurrences(effectiveFromDate, effectiveToDate);
         long classesInRange = classOccurrences.size();
         double occupancy = averageOccupancy(classOccurrences);
         long activeRoutines = routineAssignmentRepository.countAssignmentsOverlappingRange(effectiveFromDate, effectiveToDate);
-        BigDecimal estimatedRevenue = userRepository.sumEstimatedRevenueByUserTypeAndRegistrationDateBetween(
-            UserType.ALUMNO,
-            effectiveFromDate,
-            effectiveToDate
+        BigDecimal estimatedRevenue = userPaymentMovementRepository.sumAmountByDetailAndPaidAtBetween(
+            RENEWAL_DETAIL,
+            effectiveFromDate.atStartOfDay(),
+            effectiveToDate.atTime(LocalTime.MAX)
         );
 
         List<DashboardKpiDto> kpis = List.of(
             DashboardKpiDto.builder().key("students-total").label("Alumnos totales").value(number(totalStudents)).hint("Base actual").build(),
-            DashboardKpiDto.builder().key("students-new-period").label("Alumnos nuevos en el periodo").value(number(newStudents)).hint(dateRangeHint(effectiveFromDate, effectiveToDate)).build(),
-            DashboardKpiDto.builder().key("teachers").label("Profesores (periodo)").value(number(teachers)).hint(dateRangeHint(effectiveFromDate, effectiveToDate)).build(),
-            DashboardKpiDto.builder().key("payment-ok").label("Cuotas al dia").value(number(upToDate)).hint("Registrados en periodo").build(),
+            DashboardKpiDto.builder().key("students-new-period").label("Altas de alumnos").value(number(newStudents)).hint(dateRangeHint(effectiveFromDate, effectiveToDate)).build(),
+            DashboardKpiDto.builder().key("teachers").label("Profesores con clases").value(number(teachers)).hint("Con clases dictadas en el periodo").build(),
+            DashboardKpiDto.builder().key("payment-ok").label("Cuotas al dia").value(number(upToDate)).hint("Renovaciones cobradas en el periodo").build(),
             DashboardKpiDto.builder().key("renewals-next").label("Vencimientos en periodo").value(number(renewalsInRange)).hint(dateRangeHint(effectiveFromDate, effectiveToDate)).build(),
             DashboardKpiDto.builder().key("classes-today").label("Clases en periodo").value(number(classesInRange)).hint(dateRangeHint(effectiveFromDate, effectiveToDate)).build(),
-            DashboardKpiDto.builder().key("occupancy").label("Ocupacion promedio").value(percentage(occupancy)).hint("Dentro de periodo").build(),
+            DashboardKpiDto.builder().key("occupancy").label("Ocupacion promedio").value(percentage(occupancy)).hint("Asistencia real sobre cupo").build(),
             DashboardKpiDto.builder().key("active-routines").label("Rutinas en periodo").value(number(activeRoutines)).hint("Con interseccion de fechas").build(),
-            DashboardKpiDto.builder().key("revenue").label("Ingreso estimado").value(currency(estimatedRevenue)).hint("Planes de alumnos del periodo").build()
+            DashboardKpiDto.builder().key("revenue").label("Ingresos por renovaciones").value(currency(estimatedRevenue)).hint("Cobros registrados en el periodo").build()
         );
 
         long studentsWithoutPlan = userRepository.countByUserTypeAndPlanIsNullAndRegistrationDateBetween(
@@ -124,6 +134,21 @@ public class DashboardServiceImpl implements DashboardService {
             .alerts(alerts)
             .charts(charts)
             .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardChartDto getStudentsTrendChart(LocalDate fromDate, LocalDate toDate, String studentsTrendMode) {
+        LocalDate[] range = resolveDateRange(fromDate, toDate);
+        DashboardStudentsTrendMode trendMode = DashboardStudentsTrendMode.fromValue(studentsTrendMode);
+        return dashboardStudentTrendChartStrategy.build(
+            DashboardChartContext.builder()
+                .fromDate(range[0])
+                .toDate(range[1])
+                .referenceDate(range[1])
+                .studentsTrendMode(trendMode)
+                .build()
+        );
     }
 
     @Override

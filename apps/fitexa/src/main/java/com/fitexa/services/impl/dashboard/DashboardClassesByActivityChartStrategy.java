@@ -2,8 +2,10 @@ package com.fitexa.services.impl.dashboard;
 
 import com.fitexa.dtos.DashboardChartDto;
 import com.fitexa.dtos.DashboardChartPointDto;
+import com.fitexa.repository.GymClassRepository;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class DashboardClassesByActivityChartStrategy implements DashboardChartStrategy {
 
     private final DashboardClassMetricsService dashboardClassMetricsService;
+    private final GymClassRepository gymClassRepository;
 
     @Override
     public int order() {
@@ -22,9 +25,15 @@ public class DashboardClassesByActivityChartStrategy implements DashboardChartSt
 
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
+        LocalDate referenceDate = LocalDate.now();
+        LocalDate fromDate = gymClassRepository.findEarliestClassDate();
+        if (fromDate == null || fromDate.isAfter(referenceDate)) {
+            fromDate = referenceDate;
+        }
+
         List<DashboardChartPointDto> points = dashboardClassMetricsService.listOccurrences(
-                context.getFromDate(),
-                context.getToDate()
+                fromDate,
+                referenceDate
             ).stream()
             .collect(java.util.stream.Collectors.groupingBy(
                 DashboardClassOccurrenceMetric::getActivityName,

@@ -1,6 +1,7 @@
 package com.fitexa.controler;
 
 import com.fitexa.dtos.DashboardActivityRankingRowDto;
+import com.fitexa.dtos.DashboardChartDto;
 import com.fitexa.dtos.DashboardClassRowDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.dtos.DashboardPlanOverloadRowDto;
@@ -29,6 +30,15 @@ public class DashboardControler {
         @RequestParam(name = "studentsTrendMode", required = false) String studentsTrendMode
     ) {
         return dashboardService.getSummary(fromDate, toDate, studentsTrendMode);
+    }
+
+    @GetMapping("/students-trend")
+    public DashboardChartDto getStudentsTrendChart(
+        @RequestParam(name = "fromDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(name = "toDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+        @RequestParam(name = "studentsTrendMode", required = false) String studentsTrendMode
+    ) {
+        return dashboardService.getStudentsTrendChart(fromDate, toDate, studentsTrendMode);
     }
 
     @GetMapping("/renewals")

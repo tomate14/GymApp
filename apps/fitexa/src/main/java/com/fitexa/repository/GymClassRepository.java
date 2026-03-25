@@ -13,6 +13,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface GymClassRepository extends JpaRepository<GymClassEntity, Long>, JpaSpecificationExecutor<GymClassEntity> {
     @Query("""
+        select min(gc.date)
+        from GymClassEntity gc
+        """)
+    LocalDate findEarliestClassDate();
+
+    @Query("""
         select gc
         from GymClassEntity gc
         where :weekDay in elements(gc.weekDays)
