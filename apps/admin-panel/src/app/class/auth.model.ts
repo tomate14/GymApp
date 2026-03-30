@@ -1,3 +1,5 @@
+import { AdminMenuKey } from './role.model';
+
 export type LoginCredentials = {
   email: string;
   password: string;
@@ -11,6 +13,9 @@ export type LoginResponse = {
   fullName: string;
   email: string;
   userType: string;
+  roleId: number | null;
+  roleName: string | null;
+  menuItems: AdminMenuKey[];
   mustChangePassword: boolean;
 };
 

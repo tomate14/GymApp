@@ -59,8 +59,11 @@ Luego se abre cada proyecto nativo desde Android Studio o Xcode.
 
 ### Scripts SQL
 
-- `apps/fitexa/src/main/resources/schema.sql`: creacion de todas las tablas
-- `apps/fitexa/src/main/resources/data.sql`: datos iniciales mock
+- `apps/fitexa/docker/mysql/bootstrap.sql`: crea y actualiza el esquema en cada arranque de MySQL, sin borrar datos existentes
+- no se carga mas data mockeada automaticamente
+- el mismo script crea el usuario inicial del sistema si todavia no existe:
+  - email: `admin@fitexa.com`
+  - password: `admin`
 
 ### Levantar MySQL (opcional con Docker)
 
@@ -69,7 +72,14 @@ cd apps/fitexa
 docker compose up -d
 ```
 
-Nota: `schema.sql` y `data.sql` se ejecutan automaticamente desde `/docker-entrypoint-initdb.d` cuando MySQL inicializa una base nueva (volumen vacio).
+Nota: `bootstrap.sql` se ejecuta en cada arranque de MySQL mediante `--init-file`, por eso el esquema se mantiene actualizado aunque el volumen ya exista.
+
+Si venis de una base vieja con datos mockeados y queres arrancar limpio una sola vez:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
 
 ## Docker (todas las aplicaciones)
 
@@ -98,7 +108,7 @@ Para detener y borrar volumen de MySQL:
 docker compose down -v
 ```
 
-Si queres forzar que MySQL vuelva a ejecutar `schema.sql`/`data.sql`, elimina el volumen y volve a levantar:
+Si queres recrear MySQL desde cero, elimina el volumen y volve a levantar:
 
 ```bash
 docker compose down -v
@@ -124,3 +134,4 @@ mvn spring-boot:run
 ## Documentacion adicional
 
 - Mercado Pago y ngrok para `mobile-app`: [docs/mercado-pago/README.md](docs/mercado-pago/README.md)
+- Asumpciones funcionales y tecnicas del sistema: [docs/asumpciones/README.md](docs/asumpciones/README.md)

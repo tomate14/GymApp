@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum UserType {
+    ADMIN("admin"),
     PROFESOR("profesor"),
     ALUMNO("alumno");
 

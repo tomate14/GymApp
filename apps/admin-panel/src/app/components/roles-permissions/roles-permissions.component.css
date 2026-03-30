@@ -1,0 +1,81 @@
+:host {
+  display: block;
+}
+
+.roles-table {
+  --bs-table-bg: rgba(255, 255, 255, 0.02);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-bg: rgba(255, 95, 31, 0.12);
+  margin-bottom: 0;
+}
+
+.roles-table th,
+.roles-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.permission-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4f7fb;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.permission-chip:hover {
+  border-color: rgba(255, 138, 61, 0.7);
+  transform: translateY(-1px);
+}
+
+.permission-chip-active {
+  background: rgba(255, 95, 31, 0.14);
+  border-color: rgba(255, 138, 61, 0.9);
+}
+
+.permission-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ff8a3d;
+  font-weight: 700;
+  flex: 0 0 22px;
+}
+
+.permission-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #8c95a8;
+  font-weight: 700;
+}
+
+.permission-badge-active {
+  background: rgba(255, 95, 31, 0.18);
+  color: #ffb175;
+}
+
+.search-box {
+  min-width: 280px;
+}

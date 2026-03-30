@@ -5,9 +5,9 @@ import com.fitexa.dtos.DashboardChartPointDto;
 import com.fitexa.repository.RoutineAssignmentExerciseRepository;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,16 +23,21 @@ public class DashboardTopMachinesChartStrategy implements DashboardChartStrategy
 
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
-        List<DashboardChartPointDto> points = routineAssignmentExerciseRepository.findTopMachinesUsageInRange(
-                context.getFromDate(),
-                context.getToDate(),
-                PageRequest.of(0, 10)
-            ).stream()
-            .map(item -> DashboardChartPointDto.builder()
-                .label(item.getMachineName())
-                .value(item.getUsageCount().doubleValue())
-                .build())
-            .toList();
+        LocalDate effectiveToDate = context.getToDate().isBefore(LocalDate.now())
+            ? context.getToDate()
+            : LocalDate.now().minusDays(1);
+
+        List<DashboardChartPointDto> points = effectiveToDate.isBefore(context.getFromDate())
+            ? List.of()
+            : routineAssignmentExerciseRepository.findTopMachinesUsageByCompletedRoutineDays(
+                    context.getFromDate(),
+                    effectiveToDate
+                ).stream()
+                .map(item -> DashboardChartPointDto.builder()
+                    .label(item.getMachineName())
+                    .value(item.getUsageCount().doubleValue())
+                    .build())
+                .toList();
 
         return DashboardChartDto.builder()
             .key("top-machines")

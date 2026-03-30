@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ChangePasswordRequest, LoginCredentials, LoginResponse } from '../class/auth.model';
+import { AdminMenuKey } from '../class/role.model';
 import { API_BASE_URL } from '../utils/api.util';
 
 @Injectable({
@@ -13,6 +14,7 @@ export class AuthService {
   private readonly changePasswordEndpoint = `${API_BASE_URL}/auth/change-password`;
   private readonly tokenStorageKey = 'fitexa_auth_token';
   private readonly mustChangeStorageKey = 'fitexa_must_change_password';
+  private readonly sessionStorageKey = 'fitexa_auth_session';
 
   constructor(
     private readonly http: HttpClient,
@@ -24,6 +26,7 @@ export class AuthService {
       tap((response) => {
         this.storeToken(response.token);
         this.storeMustChangePassword(response.mustChangePassword);
+        this.storeSession(response);
       })
     );
   }
@@ -42,6 +45,7 @@ export class AuthService {
   clearSession(): void {
     localStorage.removeItem(this.tokenStorageKey);
     localStorage.removeItem(this.mustChangeStorageKey);
+    localStorage.removeItem(this.sessionStorageKey);
   }
 
   getToken(): string | null {
@@ -61,12 +65,72 @@ export class AuthService {
     return localStorage.getItem(this.mustChangeStorageKey) === 'true';
   }
 
+  getSession(): LoginResponse | null {
+    const raw = localStorage.getItem(this.sessionStorageKey);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as LoginResponse;
+    } catch {
+      return null;
+    }
+  }
+
+  getMenuItems(): AdminMenuKey[] {
+    return this.getSession()?.menuItems ?? [];
+  }
+
+  canAccessMenu(key: AdminMenuKey): boolean {
+    const session = this.getSession();
+    if (!session) {
+      return false;
+    }
+    return session.menuItems.includes(key);
+  }
+
+  getDefaultRoute(): string {
+    const routeMap: Record<AdminMenuKey, string> = {
+      dashboard: '/dashboard',
+      agenda: '/agenda-clases',
+      users: '/usuarios',
+      plans: '/planes',
+      activities: '/actividades',
+      classes: '/clases',
+      routines: '/rutinas',
+      exercises: '/ejercicios',
+      machines: '/maquinas',
+      roles_permissions: '/roles-permisos'
+    };
+
+    const preferredOrder: AdminMenuKey[] = [
+      'dashboard',
+      'agenda',
+      'users',
+      'plans',
+      'activities',
+      'classes',
+      'routines',
+      'exercises',
+      'machines',
+      'roles_permissions'
+    ];
+
+    const firstAllowed = preferredOrder.find((key) => this.canAccessMenu(key));
+    return firstAllowed ? routeMap[firstAllowed] : '/dashboard';
+  }
+
   private storeToken(token: string): void {
     localStorage.setItem(this.tokenStorageKey, token);
   }
 
   private storeMustChangePassword(value: boolean): void {
     localStorage.setItem(this.mustChangeStorageKey, String(value));
+  }
+
+  private storeSession(session: LoginResponse): void {
+    localStorage.setItem(this.sessionStorageKey, JSON.stringify(session));
   }
 
   private isTokenExpired(token: string): boolean {

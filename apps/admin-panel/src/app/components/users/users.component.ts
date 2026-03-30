@@ -4,17 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Plan } from '../../class/plan.model';
+import { Role } from '../../class/role.model';
 import { UserPaymentMovement } from '../../class/user-payment-movement.model';
-import { createEmptyUserDraft, PaymentStatus, User, UserDraft, UserType } from '../../class/user.model';
+import { createEmptyUserDraft, PaymentStatus, User, UserDraft } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { PaymentsPopupComponent } from '../../popups/payments-popup/payments-popup.component';
 import { PlansService } from '../../services/plans.service';
+import { RolesService } from '../../services/roles.service';
 import { UserPageFilters, UsersService } from '../../services/users.service';
 
 type UserTableFilters = {
   name: string;
   dni: string;
-  userType: UserType | 'all';
+  roleId: number | null;
   paymentStatus: PaymentStatus | 'all';
   registrationFrom: string;
   registrationTo: string;
@@ -32,6 +34,7 @@ type UserTableFilters = {
 export class UsersComponent implements OnInit {
   usersPage: PageResponse<User> = createEmptyPageResponse<User>();
   plans: Plan[] = [];
+  roles: Role[] = [];
   showForm = false;
   userDraft: UserDraft = createEmptyUserDraft();
   editingUserId: number | null = null;
@@ -46,7 +49,7 @@ export class UsersComponent implements OnInit {
   filters: UserTableFilters = {
     name: '',
     dni: '',
-    userType: 'all',
+    roleId: null,
     paymentStatus: 'all',
     registrationFrom: '',
     registrationTo: '',
@@ -60,7 +63,8 @@ export class UsersComponent implements OnInit {
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly plansService: PlansService
+    private readonly plansService: PlansService,
+    private readonly rolesService: RolesService
   ) {}
 
   ngOnInit(): void {
@@ -85,6 +89,8 @@ export class UsersComponent implements OnInit {
   }
 
   saveUser(): void {
+    this.syncDerivedProfileFromRole();
+
     if (!this.userDraft.firstName || !this.userDraft.lastName || !this.userDraft.dni || !this.userDraft.email) {
       return;
     }
@@ -92,8 +98,11 @@ export class UsersComponent implements OnInit {
     if (this.userDraft.userType === 'alumno' && this.userDraft.planId === null) {
       return;
     }
+    if (this.userDraft.roleId === null) {
+      return;
+    }
 
-    if (this.userDraft.userType === 'profesor') {
+    if (this.userDraft.userType !== 'alumno') {
       this.userDraft.planId = null;
     }
 
@@ -170,7 +179,7 @@ export class UsersComponent implements OnInit {
     this.filters = {
       name: '',
       dni: '',
-      userType: 'all',
+      roleId: null,
       paymentStatus: 'all',
       registrationFrom: '',
       registrationTo: '',
@@ -197,6 +206,13 @@ export class UsersComponent implements OnInit {
 
   paymentStatusLabel(status: PaymentStatus): string {
     return status === 'al-dia' ? 'Al dia' : 'Adeuda';
+  }
+
+  roleName(roleId: number | null): string {
+    if (roleId === null) {
+      return 'Sin rol';
+    }
+    return this.roles.find((role) => role.id === roleId)?.name ?? 'Sin rol';
   }
 
   planName(planId: number | null): string {
@@ -252,8 +268,9 @@ export class UsersComponent implements OnInit {
     this.isLoadingPayments = false;
   }
 
-  onUserTypeChange(): void {
-    if (this.userDraft.userType === 'profesor') {
+  onRoleChange(): void {
+    this.syncDerivedProfileFromRole();
+    if (this.userDraft.userType !== 'alumno') {
       this.userDraft.planId = null;
       return;
     }
@@ -269,13 +286,19 @@ export class UsersComponent implements OnInit {
 
     forkJoin({
       plans: this.plansService.findAll(),
+      roles: this.rolesService.findAll(),
       usersPage: this.usersService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize)
     }).subscribe({
       next: (result) => {
         this.plans = result.plans;
+        this.roles = result.roles.sort((a, b) => a.name.localeCompare(b.name));
         this.usersPage = result.usersPage;
         this.isLoading = false;
 
+        if (this.userDraft.roleId === null) {
+          this.userDraft.roleId = this.defaultRoleId();
+        }
+        this.syncDerivedProfileFromRole();
         if (this.userDraft.userType === 'alumno' && this.userDraft.planId === null) {
           this.userDraft.planId = this.defaultPlanId();
         }
@@ -291,7 +314,14 @@ export class UsersComponent implements OnInit {
 
   private resetDraftDefaults(): void {
     this.userDraft.registrationDate = this.todayIsoDate();
+    this.userDraft.roleId = this.defaultRoleId();
+    this.syncDerivedProfileFromRole();
     this.userDraft.planId = this.defaultPlanId();
+  }
+
+  private defaultRoleId(): number | null {
+    const studentRole = this.roles.find((role) => role.name.toLowerCase() === 'alumno');
+    return studentRole?.id ?? this.roles[0]?.id ?? null;
   }
 
   private defaultPlanId(): number | null {
@@ -340,7 +370,8 @@ export class UsersComponent implements OnInit {
     return {
       name: this.filters.name,
       dni: this.filters.dni,
-      userType: this.filters.userType,
+      userType: undefined,
+      roleId: this.filters.roleId,
       paymentStatus: this.filters.paymentStatus,
       registrationFrom: this.filters.registrationFrom,
       registrationTo: this.filters.registrationTo,
@@ -351,5 +382,27 @@ export class UsersComponent implements OnInit {
 
   private todayIsoDate(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  isStudentRole(roleId: number | null): boolean {
+    if (roleId === null) {
+      return false;
+    }
+    return this.roles.find((role) => role.id === roleId)?.name.toLowerCase() === 'alumno';
+  }
+
+  private syncDerivedProfileFromRole(): void {
+    if (this.isStudentRole(this.userDraft.roleId)) {
+      this.userDraft.userType = 'alumno';
+      return;
+    }
+
+    const roleName = this.roleName(this.userDraft.roleId).toLowerCase();
+    if (roleName === 'administrador') {
+      this.userDraft.userType = 'admin';
+      return;
+    }
+
+    this.userDraft.userType = 'profesor';
   }
 }

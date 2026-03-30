@@ -2,6 +2,7 @@ package com.fitexa.controler;
 
 import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
+import com.fitexa.dtos.UserRoleAssignmentRequestDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.services.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +42,7 @@ public class UserControler {
     @GetMapping("/page")
     public DashboardPageResponseDto<UserResponseDto> findPage(
         @RequestParam(name = "type", required = false) String type,
+        @RequestParam(name = "roleId", required = false) Long roleId,
         @RequestParam(name = "name", required = false) String name,
         @RequestParam(name = "dni", required = false) String dni,
         @RequestParam(name = "paymentStatus", required = false) String paymentStatus,
@@ -53,6 +55,7 @@ public class UserControler {
     ) {
         return userService.findPage(
             type,
+            roleId,
             name,
             dni,
             paymentStatus,
@@ -78,6 +81,11 @@ public class UserControler {
     @PutMapping("/{id}")
     public UserResponseDto update(@PathVariable Long id, @Valid @RequestBody UserRequestDto request) {
         return userService.update(id, request);
+    }
+
+    @PutMapping("/{id}/role")
+    public UserResponseDto assignRole(@PathVariable Long id, @Valid @RequestBody UserRoleAssignmentRequestDto request) {
+        return userService.assignRole(id, request);
     }
 
     @PostMapping("/{id}/renew")

@@ -53,6 +53,9 @@ public class AuthServiceImpl implements AuthService {
             .fullName(user.getFirstName() + " " + user.getLastName())
             .email(user.getEmail())
             .userType(user.getUserType().getValue())
+            .roleId(user.getRole() == null ? null : user.getRole().getId())
+            .roleName(user.getRole() == null ? null : user.getRole().getName())
+            .menuItems(user.getRole() == null ? java.util.Set.of() : user.getRole().getMenuItems())
             .mustChangePassword(user.isMustChangePassword())
             .build();
     }

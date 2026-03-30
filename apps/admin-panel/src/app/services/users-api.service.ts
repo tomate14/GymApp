@@ -13,6 +13,7 @@ type UserApiRequest = {
   email: string;
   birthDate: string;
   userType: User['userType'];
+  roleId: number | null;
   planId: number | null;
   registrationDate: string;
   paymentStatus: User['paymentStatus'];
@@ -56,6 +57,7 @@ export class UsersApiService {
       email: draft.email,
       birthDate: draft.birthDate,
       userType: draft.userType,
+      roleId: draft.roleId,
       planId: draft.planId,
       registrationDate: draft.registrationDate,
       paymentStatus: draft.paymentStatus

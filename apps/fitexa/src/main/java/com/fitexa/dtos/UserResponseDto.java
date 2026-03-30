@@ -19,6 +19,8 @@ public class UserResponseDto {
     private String email;
     private LocalDate birthDate;
     private UserType userType;
+    private Long roleId;
+    private String roleName;
     private Long planId;
     private String planName;
     private BigDecimal planPrice;

@@ -61,6 +61,10 @@ public class UserEntity {
     private UserType userType;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private RoleEntity role;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "plan_id")
     private PlanEntity plan;
 

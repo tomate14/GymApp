@@ -30,14 +30,14 @@
         </div>
 
         <div class="col-12 col-xl-2">
-          <label class="form-label form-label-sm">Tipo de usuario</label>
-          <select class="form-select form-select-sm" name="userType" [(ngModel)]="userDraft.userType" (ngModelChange)="onUserTypeChange()">
-            <option value="alumno">Alumno</option>
-            <option value="profesor">Profesor</option>
+          <label class="form-label form-label-sm">Rol del panel</label>
+          <select class="form-select form-select-sm" name="userRoleId" [(ngModel)]="userDraft.roleId" (ngModelChange)="onRoleChange()" required>
+            <option [ngValue]="null">Seleccionar rol</option>
+            <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.name }}</option>
           </select>
         </div>
 
-        <ng-container *ngIf="userDraft.userType === 'alumno'">
+        <ng-container *ngIf="isStudentRole(userDraft.roleId)">
           <div class="col-12 col-xl-3">
             <label class="form-label form-label-sm">Plan del alumno</label>
             <select class="form-select form-select-sm" name="userPlanId" [(ngModel)]="userDraft.planId">
@@ -148,11 +148,10 @@
         </div>
 
         <div class="col-12 col-md-4 col-xl-2">
-          <label class="form-label form-label-sm">Tipo de usuario</label>
-          <select class="form-select form-select-sm" [(ngModel)]="filters.userType" (ngModelChange)="onFilterChange()">
-            <option value="all">Todos los tipos</option>
-            <option value="alumno">Alumno</option>
-            <option value="profesor">Profesor</option>
+          <label class="form-label form-label-sm">Rol</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filters.roleId" (ngModelChange)="onFilterChange()">
+            <option [ngValue]="null">Todos los roles</option>
+            <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.name }}</option>
           </select>
         </div>
 
@@ -228,7 +227,7 @@
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Tipo</th>
+              <th>Rol</th>
               <th>Plan</th>
               <th>DNI</th>
               <th>Fecha alta</th>
@@ -240,7 +239,7 @@
           <tbody>
             <tr *ngFor="let user of paginatedUsers">
               <td>{{ user.firstName }} {{ user.lastName }}</td>
-              <td class="text-capitalize">{{ user.userType }}</td>
+              <td>{{ roleName(user.roleId) }}</td>
               <td>{{ user.userType === 'alumno' ? planName(user.planId) : '-' }}</td>
               <td>{{ user.dni }}</td>
               <td>{{ user.registrationDate }}</td>

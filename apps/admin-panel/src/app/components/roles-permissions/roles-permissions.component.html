@@ -1,0 +1,186 @@
+<div class="row g-3">
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <div>
+          <h2 class="section-title mb-0">{{ editingRoleId === null ? 'Roles y permisos' : 'Editar rol' }}</h2>
+          <p class="text-secondary small mb-0">Defini que opciones del panel puede ver cada rol.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="toggleForm()">
+          {{ showForm ? 'Ocultar formulario' : 'Mostrar formulario' }}
+        </button>
+      </div>
+
+      <form class="row g-3" *ngIf="showForm" (ngSubmit)="saveRole()">
+        <div class="col-12 col-lg-4">
+          <label class="form-label form-label-sm">Nombre del rol</label>
+          <input class="form-control form-control-sm" type="text" name="roleName" [(ngModel)]="roleDraft.name" required />
+        </div>
+
+        <div class="col-12 col-lg-8">
+          <label class="form-label form-label-sm">Descripcion</label>
+          <input class="form-control form-control-sm" type="text" name="roleDescription" [(ngModel)]="roleDraft.description" required />
+        </div>
+
+        <div class="col-12">
+          <label class="form-label form-label-sm">Opciones visibles del menu</label>
+          <div class="permission-grid">
+            <button
+              type="button"
+              class="permission-chip"
+              *ngFor="let item of menuItems"
+              [class.permission-chip-active]="isSelected(item.key)"
+              (click)="toggleMenuItem(item.key)"
+            >
+              <span class="permission-mark">{{ isSelected(item.key) ? '✓' : '' }}</span>
+              <span>
+                <strong>{{ item.label }}</strong>
+                <small class="d-block text-secondary">{{ item.path }}</small>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2">
+          <button type="submit" class="btn btn-sm btn-brand" [disabled]="isSubmitting">
+            {{ editingRoleId === null ? 'Guardar rol' : 'Actualizar rol' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-light" *ngIf="editingRoleId !== null" (click)="cancelEdit()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h2 class="section-title mb-0">Roles creados</h2>
+          <p class="text-secondary small mb-0">Cada tilde indica que ese rol puede ver esa opcion del menu.</p>
+        </div>
+      </div>
+
+      <div class="alert alert-danger py-2 px-3 mb-3" *ngIf="apiError">
+        {{ apiError }}
+      </div>
+
+      <div class="d-flex align-items-center gap-2 mb-3" *ngIf="isLoading">
+        <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+        <small class="text-secondary">Cargando roles...</small>
+      </div>
+
+      <div class="table-responsive" *ngIf="roles.length > 0; else noRoles">
+        <table class="table table-dark table-striped table-hover align-middle roles-table">
+          <thead>
+            <tr>
+              <th>Rol</th>
+              <th>Descripcion</th>
+              <th>Usuarios</th>
+              <th *ngFor="let item of menuItems" class="text-center">{{ item.label }}</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let role of roles">
+              <td>
+                <div class="fw-semibold">{{ role.name }}</div>
+                <small class="text-secondary" *ngIf="role.systemRole">Rol del sistema</small>
+              </td>
+              <td>{{ role.description }}</td>
+              <td>{{ role.assignedUsersCount }}</td>
+              <td *ngFor="let item of menuItems" class="text-center">
+                <span class="permission-badge" [class.permission-badge-active]="menuLabel(role, item.key)">
+                  {{ menuLabel(role, item.key) ? '✓' : '–' }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                  <button class="btn btn-sm btn-outline-light" type="button" (click)="editRole(role)">Modificar</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="askDelete(role)" [disabled]="role.systemRole">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noRoles>
+        <p class="empty-state mb-0">Todavia no hay roles creados.</p>
+      </ng-template>
+    </section>
+  </div>
+
+  <div class="col-12">
+    <section class="admin-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h2 class="section-title mb-0">Asignacion de roles</h2>
+          <p class="text-secondary small mb-0">Selecciona un usuario y asignale el rol que va a usar dentro del panel.</p>
+        </div>
+
+        <div class="search-box">
+          <input
+            class="form-control form-control-sm"
+            type="text"
+            placeholder="Buscar por nombre o email"
+            [(ngModel)]="userSearch"
+          />
+        </div>
+      </div>
+
+      <div class="alert alert-danger py-2 px-3 mb-3" *ngIf="assignmentError">
+        {{ assignmentError }}
+      </div>
+
+      <div class="table-responsive" *ngIf="filteredUsers.length > 0; else noUsers">
+        <table class="table table-dark table-striped table-hover align-middle roles-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Rol actual</th>
+              <th>Nuevo rol</th>
+              <th class="text-end">Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td>{{ user.firstName }} {{ user.lastName }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ roleLabel(user.roleId) }}</td>
+              <td>
+                <select class="form-select form-select-sm" [(ngModel)]="assignmentSelections[user.id]">
+                  <option [ngValue]="''">{{ roleOptionsPlaceholder }}</option>
+                  <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.name }}</option>
+                </select>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-brand" type="button" (click)="assignRole(user)" [disabled]="isAssigning">
+                  Guardar rol
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noUsers>
+        <p class="empty-state mb-0">No hay usuarios para asignar roles.</p>
+      </ng-template>
+    </section>
+  </div>
+</div>
+
+<app-confirm-popup
+  [visible]="deleteCandidate !== null"
+  title="Eliminar rol"
+  [message]="'Se eliminara el rol ' + (deleteCandidate?.name ?? '') + '.'"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+></app-confirm-popup>

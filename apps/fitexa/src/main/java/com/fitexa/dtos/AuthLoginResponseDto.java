@@ -1,5 +1,7 @@
 package com.fitexa.dtos;
 
+import com.fitexa.entities.AdminPanelModule;
+import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,5 +15,8 @@ public class AuthLoginResponseDto {
     private String fullName;
     private String email;
     private String userType;
+    private Long roleId;
+    private String roleName;
+    private Set<AdminPanelModule> menuItems;
     private boolean mustChangePassword;
 }

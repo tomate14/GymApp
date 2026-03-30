@@ -17,6 +17,8 @@ type UserApiDto = {
   email: string;
   birthDate: string;
   userType: User['userType'];
+  roleId: number | null;
+  roleName: string | null;
   planId: number | null;
   registrationDate: string;
   renewalDate: string;
@@ -33,6 +35,7 @@ type UserApiRequest = {
   password: string | null;
   birthDate: string;
   userType: User['userType'];
+  roleId: number | null;
   planId: number | null;
   registrationDate: string;
   paymentStatus: User['paymentStatus'];
@@ -61,6 +64,7 @@ export type UserPageFilters = {
   name?: string;
   dni?: string;
   userType?: UserType | 'all';
+  roleId?: number | null;
   paymentStatus?: User['paymentStatus'] | 'all';
   registrationFrom?: string;
   registrationTo?: string;
@@ -98,6 +102,9 @@ export class UsersService {
 
     if (filters.userType && filters.userType !== 'all') {
       params = params.set('type', filters.userType);
+    }
+    if (filters.roleId !== undefined && filters.roleId !== null) {
+      params = params.set('roleId', String(filters.roleId));
     }
     if (filters.name && filters.name.trim() !== '') {
       params = params.set('name', filters.name.trim());
@@ -153,6 +160,13 @@ export class UsersService {
 
   renewSubscription(userId: number): Observable<User> {
     return this.http.post<UserApiDto>(`${this.endpoint}/${userId}/renew`, {}).pipe(
+      map((item) => this.mapFromApi(item)),
+      tap((saved) => this.upsertInCache(saved))
+    );
+  }
+
+  assignRole(userId: number, roleId: number | null): Observable<User> {
+    return this.http.put<UserApiDto>(`${this.endpoint}/${userId}/role`, { roleId }).pipe(
       map((item) => this.mapFromApi(item)),
       tap((saved) => this.upsertInCache(saved))
     );
@@ -223,6 +237,7 @@ export class UsersService {
       password: draft.password.trim() === '' ? null : draft.password.trim(),
       birthDate: draft.birthDate,
       userType: draft.userType,
+      roleId: draft.roleId,
       planId: draft.planId,
       registrationDate: draft.registrationDate,
       paymentStatus: draft.paymentStatus
@@ -240,6 +255,8 @@ export class UsersService {
       email: dto.email,
       birthDate: dto.birthDate,
       userType: dto.userType,
+      roleId: dto.roleId === null ? null : Number(dto.roleId),
+      roleName: dto.roleName,
       planId: dto.planId === null ? null : Number(dto.planId),
       registrationDate: dto.registrationDate,
       renewalDate: dto.renewalDate,

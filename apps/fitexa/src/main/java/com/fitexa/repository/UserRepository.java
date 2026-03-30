@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
 
     Optional<UserEntity> findByDni(String dni);
     Optional<UserEntity> findByEmailIgnoreCase(String email);
+    long countByRoleId(Long roleId);
 
     long countByUserType(UserType userType);
 
@@ -197,6 +198,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         select u
         from UserEntity u
         where (:userType is null or u.userType = :userType)
+          and (:roleId is null or (u.role is not null and u.role.id = :roleId))
           and (:name is null or lower(concat(u.firstName, ' ', u.lastName)) like lower(concat('%', :name, '%')))
           and (:dni is null or u.dni like concat('%', :dni, '%'))
           and (:paymentStatus is null or u.paymentStatus = :paymentStatus)
@@ -207,6 +209,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         """)
     Page<UserEntity> findForTable(
         @Param("userType") UserType userType,
+        @Param("roleId") Long roleId,
         @Param("name") String name,
         @Param("dni") String dni,
         @Param("paymentStatus") PaymentStatus paymentStatus,

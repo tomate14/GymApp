@@ -1,4 +1,4 @@
-export type UserType = 'profesor' | 'alumno';
+export type UserType = 'admin' | 'profesor' | 'alumno';
 export type PaymentStatus = 'al-dia' | 'adeuda';
 
 export interface User {
@@ -11,6 +11,8 @@ export interface User {
   email: string;
   birthDate: string;
   userType: UserType;
+  roleId: number | null;
+  roleName: string | null;
   planId: number | null;
   registrationDate: string;
   renewalDate: string;
@@ -30,6 +32,8 @@ export const createEmptyUserDraft = (): UserDraft => ({
   email: '',
   birthDate: '',
   userType: 'alumno',
+  roleId: null,
+  roleName: null,
   planId: null,
   password: '',
   registrationDate: '',

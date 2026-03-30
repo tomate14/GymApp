@@ -2,14 +2,17 @@ package com.fitexa.services.impl;
 
 import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
+import com.fitexa.dtos.UserRoleAssignmentRequestDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.PlanEntity;
+import com.fitexa.entities.RoleEntity;
 import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
 import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.PlanRepository;
+import com.fitexa.repository.RoleRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.UserPaymentMovementService;
 import com.fitexa.services.UserService;
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PlanRepository planRepository;
+    private final RoleRepository roleRepository;
     private final UserPaymentMovementService userPaymentMovementService;
     private final PasswordEncoder passwordEncoder;
 
@@ -45,6 +49,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public DashboardPageResponseDto<UserResponseDto> findPage(
         String type,
+        Long roleId,
         String name,
         String dni,
         String paymentStatus,
@@ -57,6 +62,7 @@ public class UserServiceImpl implements UserService {
     ) {
         Page<UserResponseDto> result = userRepository.findForTable(
             parseUserType(type),
+            roleId,
             clean(name),
             clean(dni),
             parsePaymentStatus(paymentStatus),
@@ -101,7 +107,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDto create(UserRequestDto request) {
-        PlanEntity plan = resolvePlan(request.getUserType(), request.getPlanId());
+        RoleEntity role = resolveRole(request.getRoleId());
+        UserType derivedUserType = resolveUserType(role);
+        PlanEntity plan = resolvePlan(derivedUserType, request.getPlanId());
         LocalDate registrationDate = request.getRegistrationDate() == null ? LocalDate.now() : request.getRegistrationDate();
         String normalizedEmail = normalizeEmail(request.getEmail());
 
@@ -115,7 +123,8 @@ public class UserServiceImpl implements UserService {
             .password(passwordEncoder.encode(normalizedEmail))
             .mustChangePassword(true)
             .birthDate(request.getBirthDate())
-            .userType(request.getUserType())
+            .userType(derivedUserType)
+            .role(role)
             .plan(plan)
             .registrationDate(registrationDate)
             .renewalDate(DateUtils.plusOneMonth(registrationDate))
@@ -129,7 +138,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDto update(Long id, UserRequestDto request) {
         UserEntity entity = findEntity(id);
-        PlanEntity plan = resolvePlan(request.getUserType(), request.getPlanId());
+        RoleEntity role = resolveRole(request.getRoleId());
+        UserType derivedUserType = resolveUserType(role);
+        PlanEntity plan = resolvePlan(derivedUserType, request.getPlanId());
 
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
@@ -138,7 +149,8 @@ public class UserServiceImpl implements UserService {
         entity.setPhone(request.getPhone());
         entity.setEmail(normalizeEmail(request.getEmail()));
         entity.setBirthDate(request.getBirthDate());
-        entity.setUserType(request.getUserType());
+        entity.setUserType(derivedUserType);
+        entity.setRole(role);
         entity.setPlan(plan);
         entity.setRegistrationDate(request.getRegistrationDate() == null ? entity.getRegistrationDate() : request.getRegistrationDate());
         entity.setPaymentStatus(request.getPaymentStatus());
@@ -148,6 +160,20 @@ public class UserServiceImpl implements UserService {
             entity.setMustChangePassword(false);
         }
 
+        return toDto(userRepository.save(entity));
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDto assignRole(Long id, UserRoleAssignmentRequestDto request) {
+        UserEntity entity = findEntity(id);
+        RoleEntity role = resolveRole(request.getRoleId());
+        UserType derivedUserType = resolveUserType(role);
+        entity.setRole(role);
+        entity.setUserType(derivedUserType);
+        if (derivedUserType != UserType.ALUMNO) {
+            entity.setPlan(null);
+        }
         return toDto(userRepository.save(entity));
     }
 
@@ -176,7 +202,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private PlanEntity resolvePlan(UserType userType, Long planId) {
-        if (userType == UserType.PROFESOR) {
+        if (userType != UserType.ALUMNO) {
             return null;
         }
         if (planId == null) {
@@ -191,6 +217,25 @@ public class UserServiceImpl implements UserService {
             .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + id));
     }
 
+    private RoleEntity resolveRole(Long roleId) {
+        if (roleId == null) {
+            throw new BusinessValidationException("El rol es obligatorio.");
+        }
+        return roleRepository.findById(roleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + roleId));
+    }
+
+    private UserType resolveUserType(RoleEntity role) {
+        String normalizedRoleName = role.getName().trim();
+        if ("Alumno".equalsIgnoreCase(normalizedRoleName)) {
+            return UserType.ALUMNO;
+        }
+        if ("Administrador".equalsIgnoreCase(normalizedRoleName)) {
+            return UserType.ADMIN;
+        }
+        return UserType.PROFESOR;
+    }
+
     private UserResponseDto toDto(UserEntity entity) {
         return UserResponseDto.builder()
             .id(entity.getId())
@@ -202,6 +247,8 @@ public class UserServiceImpl implements UserService {
             .email(entity.getEmail())
             .birthDate(entity.getBirthDate())
             .userType(entity.getUserType())
+            .roleId(entity.getRole() == null ? null : entity.getRole().getId())
+            .roleName(entity.getRole() == null ? null : entity.getRole().getName())
             .planId(entity.getPlan() == null ? null : entity.getPlan().getId())
             .planName(entity.getPlan() == null ? null : entity.getPlan().getName())
             .planPrice(entity.getPlan() == null ? null : entity.getPlan().getPrice())

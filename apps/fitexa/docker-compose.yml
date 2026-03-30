@@ -8,10 +8,10 @@ services:
       MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"
+    command: ["mysqld", "--init-file=/docker-entrypoint-initdb.d/00-bootstrap.sql"]
     volumes:
       - fitexa_mysql_data:/var/lib/mysql
-      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+      - ./docker/mysql/bootstrap.sql:/docker-entrypoint-initdb.d/00-bootstrap.sql:ro
 
 volumes:
   fitexa_mysql_data:

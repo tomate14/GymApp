@@ -13,15 +13,16 @@ import { AuthService } from './services/auth.service';
 })
 export class AppComponent implements OnInit {
   readonly menuItems: AdminMenuItem[] = [
-    { label: 'Dashboard', path: 'dashboard', shortLabel: 'D' },
-    { label: 'Agenda', path: 'agenda-clases', shortLabel: 'Ag' },
-    { label: 'Usuarios', path: 'usuarios', shortLabel: 'U' },
-    { label: 'Planes', path: 'planes', shortLabel: 'P' },
-    { label: 'Actividades', path: 'actividades', shortLabel: 'A' },
-    { label: 'Clases', path: 'clases', shortLabel: 'C' },
-    { label: 'Rutinas', path: 'rutinas', shortLabel: 'R' },
-    { label: 'Ejercicios', path: 'ejercicios', shortLabel: 'E' },
-    { label: 'Maquinas', path: 'maquinas', shortLabel: 'M' }
+    { key: 'dashboard', label: 'Dashboard', path: 'dashboard', shortLabel: 'D' },
+    { key: 'agenda', label: 'Agenda', path: 'agenda-clases', shortLabel: 'Ag' },
+    { key: 'users', label: 'Usuarios', path: 'usuarios', shortLabel: 'U' },
+    { key: 'plans', label: 'Planes', path: 'planes', shortLabel: 'P' },
+    { key: 'activities', label: 'Actividades', path: 'actividades', shortLabel: 'A' },
+    { key: 'classes', label: 'Clases', path: 'clases', shortLabel: 'C' },
+    { key: 'routines', label: 'Rutinas', path: 'rutinas', shortLabel: 'R' },
+    { key: 'exercises', label: 'Ejercicios', path: 'ejercicios', shortLabel: 'E' },
+    { key: 'machines', label: 'Maquinas', path: 'maquinas', shortLabel: 'M' },
+    { key: 'roles_permissions', label: 'Roles y permisos', path: 'roles-permisos', shortLabel: 'RP' }
   ];
 
   sidebarCollapsed = false;
@@ -37,13 +38,17 @@ export class AppComponent implements OnInit {
     this.updateViewport();
   }
 
+  get visibleMenuItems(): AdminMenuItem[] {
+    return this.menuItems.filter((item) => this.authService.canAccessMenu(item.key));
+  }
+
   @HostListener('window:resize')
   onResize(): void {
     this.updateViewport();
   }
 
   get sectionTitle(): string {
-    const current = this.menuItems.find((item) => this.router.url.includes(`/${item.path}`));
+    const current = this.visibleMenuItems.find((item) => this.router.url.includes(`/${item.path}`));
     return current?.label ?? 'Dashboard';
   }
 

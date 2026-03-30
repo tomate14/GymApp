@@ -50,7 +50,7 @@ export class LoginComponent {
           void this.router.navigateByUrl(redirectTo);
           return;
         }
-        void this.router.navigate(['/dashboard']);
+        void this.router.navigateByUrl(this.authService.getDefaultRoute());
       },
       error: () => {
         this.isSubmitting = false;

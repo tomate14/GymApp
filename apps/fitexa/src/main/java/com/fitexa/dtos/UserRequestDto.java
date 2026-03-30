@@ -36,8 +36,9 @@ public class UserRequestDto {
     @NotNull
     private LocalDate birthDate;
 
-    @NotNull
     private UserType userType;
+
+    private Long roleId;
 
     private Long planId;
 
