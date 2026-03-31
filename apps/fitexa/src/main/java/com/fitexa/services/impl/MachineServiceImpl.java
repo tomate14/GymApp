@@ -52,9 +52,10 @@ public class MachineServiceImpl implements MachineService {
 
     @Override
     @Transactional
-    public MachineResponseDto create(String name, MultipartFile photo) {
+    public MachineResponseDto create(String name, Integer quantity, MultipartFile photo) {
         MachineEntity entity = MachineEntity.builder()
             .name(cleanRequired(name))
+            .quantity(cleanRequiredQuantity(quantity))
             .photoUrl(storePhoto(photo))
             .build();
         return toDto(machineRepository.save(entity));
@@ -62,9 +63,10 @@ public class MachineServiceImpl implements MachineService {
 
     @Override
     @Transactional
-    public MachineResponseDto update(Long id, String name, MultipartFile photo) {
+    public MachineResponseDto update(Long id, String name, Integer quantity, MultipartFile photo) {
         MachineEntity entity = findEntity(id);
         entity.setName(cleanRequired(name));
+        entity.setQuantity(cleanRequiredQuantity(quantity));
         if (photo != null && !photo.isEmpty()) {
             replaceStoredPhoto(entity, photo);
         }
@@ -88,6 +90,7 @@ public class MachineServiceImpl implements MachineService {
         return MachineResponseDto.builder()
             .id(entity.getId())
             .name(entity.getName())
+            .quantity(entity.getQuantity())
             .photoUrl(entity.getPhotoUrl())
             .build();
     }
@@ -115,6 +118,13 @@ public class MachineServiceImpl implements MachineService {
             throw new IllegalArgumentException("El nombre de la maquina es obligatorio.");
         }
         return cleaned;
+    }
+
+    private Integer cleanRequiredQuantity(Integer value) {
+        if (value == null || value < 1) {
+            throw new IllegalArgumentException("La cantidad de maquinas debe ser mayor o igual a 1.");
+        }
+        return value;
     }
 
     private int sanitizePage(int page) {

@@ -41,7 +41,7 @@ public class DashboardTopMachinesChartStrategy implements DashboardChartStrategy
 
         return DashboardChartDto.builder()
             .key("top-machines")
-            .title("Top 10 maquinas mas usadas")
+            .title("Top 10 maquinas con mayor presion por unidad")
             .type("bar")
             .points(points)
             .build();

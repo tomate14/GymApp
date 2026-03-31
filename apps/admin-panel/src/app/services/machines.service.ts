@@ -9,6 +9,7 @@ import { API_BASE_URL, resolveApiAssetUrl } from '../utils/api.util';
 type MachineApiDto = {
   id: number;
   name: string;
+  quantity: number;
   photoUrl: string;
 };
 
@@ -67,6 +68,7 @@ export class MachinesService {
   upsert(draft: MachineDraft, photo: File | null, editingId: number | null): Observable<Machine> {
     const payload = new FormData();
     payload.append('name', draft.name);
+    payload.append('quantity', String(draft.quantity));
     if (photo) {
       payload.append('photo', photo);
     }
@@ -112,6 +114,7 @@ export class MachinesService {
     return {
       id: Number(dto.id),
       name: dto.name,
+      quantity: Number(dto.quantity),
       photoUrl: resolveApiAssetUrl(dto.photoUrl)
     };
   }

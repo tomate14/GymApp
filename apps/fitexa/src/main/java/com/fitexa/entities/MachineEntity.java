@@ -26,6 +26,10 @@ public class MachineEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer quantity = 1;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String photoUrl;
 }

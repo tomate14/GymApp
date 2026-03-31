@@ -66,13 +66,14 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
             )
             select usage.machine_id as machineId,
                    usage.machine_name as machineName,
-                   count(*) as usageCount
+                   round(count(*) / usage.machine_quantity, 2) as usageCount
             from (
                 select distinct
                     rd.assignment_id,
                     rd.target_date,
                     m.id as machine_id,
-                    m.name as machine_name
+                    m.name as machine_name,
+                    greatest(m.quantity, 1) as machine_quantity
                 from routine_days rd
                 join routine_assignment_days rad
                     on rad.routine_assignment_id = rd.assignment_id
@@ -93,7 +94,7 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                       when 7 then 'SABADO'
                   end
             ) usage
-            group by usage.machine_id, usage.machine_name
+            group by usage.machine_id, usage.machine_name, usage.machine_quantity
             order by usageCount desc, usage.machine_name asc
             limit 10
             """,

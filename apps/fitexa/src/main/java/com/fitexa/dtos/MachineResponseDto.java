@@ -8,5 +8,6 @@ import lombok.Data;
 public class MachineResponseDto {
     private Long id;
     private String name;
+    private Integer quantity;
     private String photoUrl;
 }

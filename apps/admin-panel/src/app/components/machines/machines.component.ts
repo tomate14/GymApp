@@ -72,7 +72,7 @@ export class MachinesComponent implements OnInit {
   }
 
   saveMachine(): void {
-    if (!this.machineDraft.name || (this.editingMachineId === null && !this.selectedPhoto)) {
+    if (!this.machineDraft.name || !this.machineDraft.quantity || this.machineDraft.quantity < 1 || (this.editingMachineId === null && !this.selectedPhoto)) {
       return;
     }
 

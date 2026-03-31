@@ -49,18 +49,20 @@ public class MachineControler {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public MachineResponseDto create(
         @RequestParam("name") String name,
+        @RequestParam("quantity") Integer quantity,
         @RequestPart("photo") MultipartFile photo
     ) {
-        return machineService.create(name, photo);
+        return machineService.create(name, quantity, photo);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public MachineResponseDto update(
         @PathVariable Long id,
         @RequestParam("name") String name,
+        @RequestParam("quantity") Integer quantity,
         @RequestPart(value = "photo", required = false) MultipartFile photo
     ) {
-        return machineService.update(id, name, photo);
+        return machineService.update(id, name, quantity, photo);
     }
 
     @DeleteMapping("/{id}")

@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS activities (
 CREATE TABLE IF NOT EXISTS machines (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(140) NOT NULL UNIQUE,
+    quantity INT NOT NULL DEFAULT 1,
     photo_url TEXT NOT NULL
 );
 
@@ -192,6 +193,22 @@ SET @users_has_must_change_password := (
 SET @sql := IF(
     @users_has_must_change_password = 0,
     'ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER password',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @machines_has_quantity := (
+    SELECT COUNT(*)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'machines'
+      AND column_name = 'quantity'
+);
+SET @sql := IF(
+    @machines_has_quantity = 0,
+    'ALTER TABLE machines ADD COLUMN quantity INT NOT NULL DEFAULT 1 AFTER name',
     'SELECT 1'
 );
 PREPARE stmt FROM @sql;

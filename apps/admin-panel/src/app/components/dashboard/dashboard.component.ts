@@ -132,183 +132,182 @@ export class DashboardComponent implements OnInit {
   readonly dashboardInfo: Record<string, DashboardInfoContent> = {
     'students-total': {
       title: 'Alumnos totales',
-      summary: 'Muestra la cantidad total de alumnos cargados hoy en el sistema.',
+      summary: 'Te muestra cuantas personas forman hoy parte de tu base de alumnos.',
       items: [
-        'Incluye toda la base actual de alumnos, sin importar cuando se hayan dado de alta.',
         'Sirve para tener una referencia rapida del tamano actual del gimnasio.',
-        'No depende del rango de fechas seleccionado.'
+        'Te ayuda a comparar si el negocio esta creciendo, estable o perdiendo volumen.',
+        'Es una foto actual y no cambia por el rango de fechas que selecciones.'
       ]
     },
     'students-new-period': {
       title: 'Altas de alumnos',
-      summary: 'Muestra cuantos alumnos nuevos ingresaron en el rango de fechas elegido.',
+      summary: 'Te muestra cuantas personas nuevas se sumaron al gimnasio en el periodo elegido.',
       items: [
-        'Cuenta alumnos cuya fecha de alta cae dentro del periodo seleccionado.',
-        'Sirve para medir captacion y crecimiento en ese tramo de tiempo.',
-        'Si el numero baja, conviene revisar acciones comerciales y seguimiento de prospectos.'
+        'Sirve para medir si las acciones comerciales y la captacion estan funcionando.',
+        'Te permite comparar meses o periodos para ver cuando ingresan mas alumnos nuevos.',
+        'Si baja, puede ser una senal para reforzar promociones, seguimiento o presencia comercial.'
       ]
     },
     teachers: {
       title: 'Profesores con clases',
-      summary: 'Muestra cuantos profesores tuvieron al menos una clase dentro del periodo seleccionado.',
+      summary: 'Te muestra cuantos profesores estuvieron realmente activos dando clases en el periodo.',
       items: [
-        'No cuenta profesores por fecha de alta, sino profesores que realmente dictaron clases en ese rango.',
-        'Sirve para ver cuanta dotacion docente estuvo activa en la agenda.',
-        'Ayuda a interpretar mejor la carga operativa del gimnasio en el periodo.'
+        'Sirve para entender cuanta parte del equipo docente estuvo en movimiento en ese tramo.',
+        'Ayuda a leer mejor si la agenda tuvo mucha o poca actividad operativa.',
+        'Tambien te da contexto para interpretar carga de trabajo y organizacion del staff.'
       ]
     },
     'payment-ok': {
       title: 'Cuotas al dia',
-      summary: 'Muestra cuantos alumnos quedaron al dia con una renovacion cobrada dentro del periodo elegido.',
+      summary: 'Te muestra cuantos alumnos regularizaron su cuota dentro del periodo seleccionado.',
       items: [
-        'Se toma la renovacion registrada como pago dentro del periodo, no la fecha de alta del alumno.',
-        'Solo cuenta alumnos que quedaron al dia y tienen un cobro de renovacion en ese rango.',
-        'Sirve para medir cuantas cuotas se regularizaron efectivamente en ese tramo.'
+        'Sirve para seguir de cerca como viene la gestion de cobros.',
+        'Te ayuda a ver si el trabajo de renovacion se esta transformando en pagos reales.',
+        'Mientras mas alto sea este valor, mejor acompanado esta el ingreso del gimnasio en ese periodo.'
       ]
     },
     'renewals-next': {
       title: 'Vencimientos en periodo',
-      summary: 'Muestra cuantos alumnos tienen vencimiento de cuota dentro del rango elegido.',
+      summary: 'Te muestra cuantos alumnos tienen la cuota para renovar dentro del periodo elegido.',
       items: [
-        'Sirve para anticipar contactos, recordatorios y acciones de renovacion.',
-        'Ayuda a ordenar la gestion de cobranzas antes de que la cuota quede vencida.',
-        'Mientras mas controlado este este numero, mejor previsibilidad tenes sobre los ingresos.'
+        'Sirve para anticiparte y no esperar a que el alumno quede vencido.',
+        'Te ayuda a organizar recordatorios, mensajes y seguimiento comercial.',
+        'Cuanto mejor controles estos vencimientos, mas previsible se vuelve tu ingreso mensual.'
       ]
     },
     'classes-today': {
       title: 'Clases en periodo',
-      summary: 'Muestra cuantas clases se dictaron dentro del rango de fechas seleccionado.',
+      summary: 'Te muestra el volumen real de clases dadas en el periodo seleccionado.',
       items: [
-        'Cuenta ocurrencias reales de clase dentro del periodo, no solo la ficha base de cada actividad.',
-        'Sirve para ver el volumen operativo real del gimnasio en ese tramo.',
-        'Ayuda a relacionar agenda, asistencia y uso del equipo docente.'
+        'Sirve para entender cuan intensa fue la operacion del gimnasio en ese tramo.',
+        'Te ayuda a comparar periodos con mas o menos movimiento de agenda.',
+        'Tambien da contexto para leer asistencia, ocupacion y carga del equipo docente.'
       ]
     },
     occupancy: {
       title: 'Ocupacion promedio',
-      summary: 'Muestra que porcentaje promedio del cupo se lleno con asistentes reales en el periodo.',
+      summary: 'Te muestra que tan llenas estuvieron tus clases, en promedio, segun la asistencia real.',
       items: [
-        'Se calcula usando alumnos marcados como presentes sobre el cupo de cada clase.',
-        'No se basa solo en inscriptos, sino en asistencia real.',
-        'Sirve para detectar si la agenda esta bien aprovechada o si hay capacidad ociosa.'
+        'Un valor alto indica que los cupos se estan aprovechando bien.',
+        'Un valor bajo puede mostrar horarios flojos o capacidad ociosa.',
+        'Sirve para decidir si conviene abrir mas lugares, ajustar horarios o reorganizar la oferta.'
       ]
     },
     'active-routines': {
       title: 'Rutinas en periodo',
-      summary: 'Muestra cuantas rutinas tuvieron vigencia dentro del rango elegido.',
+      summary: 'Te muestra cuantas rutinas estuvieron activas durante el periodo seleccionado.',
       items: [
-        'Cuenta rutinas cuya fecha se cruza con el periodo seleccionado.',
-        'Sirve para dimensionar el trabajo operativo de planificacion y seguimiento.',
-        'No depende de si la rutina empezo exactamente en ese rango, sino de si estuvo vigente.'
+        'Sirve para dimensionar el trabajo de planificacion y seguimiento sobre alumnos.',
+        'Te ayuda a ver si hubo mas o menos actividad en el area de entrenamiento personalizado.',
+        'Es una buena referencia para entender la carga operativa del equipo que arma rutinas.'
       ]
     },
     revenue: {
       title: 'Ingresos por renovaciones',
-      summary: 'Muestra el monto cobrado por renovaciones registradas dentro del periodo elegido.',
+      summary: 'Te muestra cuanto dinero ingreso por renovaciones dentro del periodo seleccionado.',
       items: [
-        'Se toma el comprobante de pago registrado al renovar la cuota.',
-        'No usa la fecha de alta del alumno ni una estimacion teorica del plan.',
-        'Sirve para ver cuanto dinero ingreso realmente por renovaciones en ese tramo.'
+        'Sirve para seguir la evolucion real de la caja vinculada a cuotas.',
+        'Te permite comparar periodos y detectar momentos fuertes o flojos de cobranza.',
+        'Es una medida directa del dinero efectivamente cobrado por renovaciones.'
       ]
     },
     'students-trend': {
       title: 'Altas de alumnos',
-      summary: 'Te ayuda a ver en que momentos entran mas alumnos nuevos al gimnasio.',
+      summary: 'Te ayuda a ver en que momentos del tiempo entran mas alumnos nuevos al gimnasio.',
       items: [
-        'Cada barra muestra cuantas altas de alumnos hubo dentro del rango que elegiste para este grafico.',
-        'Podes mirarlo por mes o por ano para comparar etapas de crecimiento.',
-        'Sirve para detectar temporadas fuertes, meses flojos y momentos donde conviene reforzar acciones comerciales.'
+        'Podes mirarlo por mes o por ano segun el nivel de detalle que necesites.',
+        'Sirve para detectar temporadas fuertes, meses flojos y etapas de crecimiento.',
+        'Te ayuda a decidir en que momentos conviene reforzar promociones o campanas comerciales.'
       ]
     },
     'students-by-teacher': {
       title: 'Alumnos por profesor',
-      summary: 'Muestra cuantos alumnos con plan activo hoy tienen clases asociadas a cada profesor.',
+      summary: 'Te muestra que profesores concentran hoy mas alumnos activos en sus clases.',
       items: [
-        'Permite ver que profesores concentran mas alumnos activos y cuales hoy tienen menor carga.',
-        'Ayuda a equilibrar horarios, demanda y organizacion del equipo docente.',
-        'Sirve tambien para detectar rapidamente si algun profesor esta quedando sobrecargado o subutilizado.'
+        'Sirve para ver si la carga esta repartida de forma pareja o si hay desequilibrios.',
+        'Te ayuda a ordenar mejor horarios, demanda y asignacion del staff.',
+        'Tambien permite detectar profesores con mucha demanda o con margen para crecer.'
       ]
     },
     'classes-by-activity': {
       title: 'Clases por actividad',
-      summary: 'Te muestra que actividades ocuparon mas espacio en la agenda general del gimnasio.',
+      summary: 'Te muestra que actividades tienen mas presencia en la agenda del gimnasio.',
       items: [
-        'Cada barra representa cuantas clases se dictaron por actividad desde el inicio de uso del sistema hasta hoy.',
-        'Sirve para ver si la oferta real acompana lo que queres impulsar en el negocio.',
-        'Tambien ayuda a detectar actividades demasiado presentes o con poca participacion en la agenda.'
+        'Sirve para entender que parte de tu oferta tiene mas peso en la operacion diaria.',
+        'Te ayuda a revisar si la agenda acompana la estrategia comercial del negocio.',
+        'Tambien puede mostrar actividades sobrerrepresentadas o con poca presencia real.'
       ]
     },
     'occupancy-by-activity': {
       title: 'Ocupacion por actividad',
-      summary: 'Te permite entender que actividades convierten mejor sus cupos en asistentes reales.',
+      summary: 'Te permite ver que actividades llenan mejor sus cupos con asistencia real.',
       items: [
-        'Un porcentaje alto indica que esa actividad suele tener buena asistencia real respecto de su cupo.',
-        'Un porcentaje bajo puede mostrar clases con espacio ocioso o baja presencia de alumnos.',
-        'Es util para decidir si conviene abrir mas horarios, reducirlos o ajustar la capacidad.'
+        'Las actividades con mejor ocupacion suelen ser las que tienen mas traccion real.',
+        'Las que muestran valores bajos pueden necesitar cambios de horario, propuesta o capacidad.',
+        'Sirve para decidir donde conviene crecer y donde hace falta ajustar.'
       ]
     },
     'payment-status': {
       title: 'Estado de pagos',
-      summary: 'Resume rapidamente como esta la salud de cobro de la base de alumnos.',
+      summary: 'Te da una foto simple de como esta hoy la situacion de cobro de tus alumnos.',
       items: [
-        'Te muestra el total actual de alumnos al dia y alumnos con deuda.',
-        'Sirve para tener una foto general de cobranzas desde que usas la aplicacion hasta hoy.',
-        'Si aumenta la deuda, conviene revisar renovaciones, recordatorios y seguimiento comercial.'
+        'Te permite ver rapido cuantos alumnos estan al dia y cuantos tienen deuda.',
+        'Sirve para detectar si la cobranza esta sana o si empieza a crecer el atraso.',
+        'Si la deuda sube, conviene reforzar seguimiento, recordatorios y renovaciones.'
       ]
     },
     'students-by-plan': {
       title: 'Alumnos por plan',
-      summary: 'Te ayuda a entender como se reparte hoy la base de alumnos con planes activos.',
+      summary: 'Te ayuda a entender como se reparte hoy tu base de alumnos entre los distintos planes activos.',
       items: [
-        'Permite ver que planes activos concentran mas alumnos hoy.',
-        'Es clave para analizar mezcla comercial y oportunidades de mejora de ingresos.',
-        'Tambien ayuda a detectar planes poco elegidos o con bajo nivel de adopcion real.'
+        'Sirve para ver que planes son los mas elegidos y cuales pesan menos en el negocio.',
+        'Te ayuda a analizar mezcla comercial e identificar oportunidades de mejora de ingresos.',
+        'Tambien permite detectar planes que tal vez necesiten ajustes o mejor comunicacion.'
       ]
     },
     'top-exercises': {
       title: 'Top ejercicios mas usados',
-      summary: 'Muestra que ejercicios aparecen con mas frecuencia en las rutinas del gimnasio.',
+      summary: 'Te muestra que ejercicios tienen mas presencia en el entrenamiento de tus alumnos.',
       items: [
-        'Sirve para entender que tipo de trabajo se esta prescribiendo mas a los alumnos.',
-        'Ayuda a ver tendencias de entrenamiento dentro del gimnasio.',
-        'Tambien puede orientar compras, reemplazos o mejoras de equipamiento asociado.'
+        'Sirve para entender que tipo de trabajo se esta usando mas dentro del gimnasio.',
+        'Ayuda a detectar tendencias de entrenamiento y preferencias operativas.',
+        'Tambien puede orientar compras, reemplazos o mejoras de equipamiento.'
       ]
     },
     'top-machines': {
-      title: 'Top maquinas mas usadas',
-      summary: 'Te muestra que maquinas aparecen mas en la planificacion de entrenamiento.',
+      title: 'Top maquinas con mayor presion por unidad',
+      summary: 'Te muestra que maquinas estan mas exigidas en relacion con la cantidad que tenes disponible.',
       items: [
-        'Sirve para detectar cuales son las maquinas con mayor demanda potencial.',
-        'Ayuda a priorizar mantenimiento, reemplazo o incorporacion de nuevos equipos.',
-        'Tambien permite ver si hay maquinas subutilizadas que no estan aportando valor.'
+        'Sirve para detectar donde puede haber mas espera, mas desgaste o mas necesidad de refuerzo.',
+        'Te ayuda a decidir mejor que equipamiento conviene duplicar, mantener o redistribuir.',
+        'Es mas util que mirar solo el uso total, porque tiene en cuenta cuantas unidades tenes de cada maquina.'
       ]
     },
     renewals: {
       title: 'Vencimientos de cuotas',
-      summary: 'Te muestra que alumnos tienen su cuota cerca de vencer o dentro del rango elegido.',
+      summary: 'Te muestra que alumnos necesitan seguimiento por su vencimiento de cuota.',
       items: [
-        'Sirve para hacer seguimiento comercial antes de que el alumno quede fuera de termino.',
-        'Te ayuda a priorizar contactos, recordatorios y acciones de renovacion.',
-        'Mientras mas ordenada este esta tabla, mejor control tenes sobre los ingresos del mes.'
+        'Sirve para priorizar a quien contactar primero y no perder renovaciones por olvido.',
+        'Te ayuda a organizar recordatorios y acciones comerciales con mas orden.',
+        'Mientras mejor se trabaje esta lista, mas estable suele ser el ingreso del mes.'
       ]
     },
     ranking: {
       title: 'Ranking de actividades',
-      summary: 'Compara las actividades segun volumen de clases, cantidad de anotados y nivel de ocupacion.',
+      summary: 'Compara tus actividades para mostrar cuales son mas fuertes y cuales necesitan revision.',
       items: [
-        'Clases te dice que actividades tuvieron mas presencia en la agenda.',
-        'Anotados muestra cuales mueven mas alumnos en total.',
-        'Ocupacion ayuda a ver cuales aprovechan mejor sus cupos disponibles.',
-        'En conjunto, sirve para decidir que actividades conviene sostener, expandir o revisar.'
+        'Te muestra que actividades tienen mas movimiento en clases, alumnos y aprovechamiento de cupos.',
+        'Sirve para detectar cuales conviene sostener, impulsar o revisar.',
+        'Es una vista muy util para decidir cambios en la oferta del gimnasio.'
       ]
     },
     overloads: {
       title: 'Sobreasignacion de planes',
-      summary: 'Marca alumnos que hoy tienen mas dias asignados de los que su plan permite.',
+      summary: 'Marca alumnos que hoy estan usando mas dias de los que su plan deberia permitir.',
       items: [
-        'Sirve para detectar desorden operativo o casos donde se esta regalando servicio sin control.',
-        'Ayuda a corregir asignaciones antes de que impacten en rentabilidad o en la experiencia del alumno.',
-        'Tambien permite identificar alumnos que deberian pasar a un plan superior.'
+        'Sirve para detectar desorden operativo o servicio entregado por encima de lo contratado.',
+        'Te ayuda a corregir casos que pueden afectar rentabilidad o generar inequidad entre alumnos.',
+        'Tambien puede mostrar alumnos a los que les convendria pasar a un plan superior.'
       ]
     }
   };

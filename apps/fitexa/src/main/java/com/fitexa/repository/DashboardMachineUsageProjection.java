@@ -3,5 +3,5 @@ package com.fitexa.repository;
 public interface DashboardMachineUsageProjection {
     Long getMachineId();
     String getMachineName();
-    Long getUsageCount();
+    Double getUsageCount();
 }
