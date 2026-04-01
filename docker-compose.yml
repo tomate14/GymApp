@@ -19,6 +19,27 @@ services:
       retries: 10
       start_period: 20s
 
+  mysql-backup:
+    image: mysql:8.4
+    container_name: fitexa-mysql-backup
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: America/Buenos_Aires
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: fitexa
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      BACKUP_DIR: /backups/mysql
+      RETENTION_COUNT: 4
+    command: ["/bin/sh", "/backup/backup-loop.sh"]
+    volumes:
+      - ./apps/fitexa/docker/mysql/backup-loop.sh:/backup/backup-loop.sh:ro
+      - ./backups/mysql:/backups/mysql
+
   fitexa:
     build:
       context: ./apps/fitexa
