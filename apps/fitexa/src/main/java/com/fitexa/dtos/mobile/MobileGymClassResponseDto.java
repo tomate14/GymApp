@@ -21,6 +21,7 @@ public class MobileGymClassResponseDto {
     private Integer availableSpots;
     private boolean subscribed;
     private boolean ownClass;
+    private boolean activityAllowed;
     private boolean canSubscribe;
     private String restrictionReason;
 }

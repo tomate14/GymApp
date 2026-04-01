@@ -264,6 +264,10 @@ public class MobileAppServiceImpl implements MobileAppService {
             throw new BusinessValidationException("La clase ya comenzo.");
         }
 
+        if (!isActivityAllowed(user, gymClass)) {
+            throw new BusinessValidationException("Esta actividad no esta incluida en tus actividades habilitadas.");
+        }
+
         validatePlanRestrictions(user, targetDate);
 
         long enrolledCount = gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(classId, targetDate);
@@ -383,6 +387,9 @@ public class MobileAppServiceImpl implements MobileAppService {
         if (hasClassStarted(gymClass, targetDate)) {
             return "La clase ya comenzo";
         }
+        if (!isActivityAllowed(user, gymClass)) {
+            return "Esta actividad no esta incluida en tus actividades habilitadas.";
+        }
         return resolvePlanRestriction(user, targetDate);
     }
 
@@ -430,10 +437,22 @@ public class MobileAppServiceImpl implements MobileAppService {
         return !gymClass.getStartTime().isAfter(java.time.LocalTime.now());
     }
 
+    private boolean isActivityAllowed(UserEntity user, GymClassEntity gymClass) {
+        if (user.getUserType() != com.fitexa.entities.UserType.ALUMNO) {
+            return true;
+        }
+        if (gymClass.getActivity() == null) {
+            return true;
+        }
+        return user.getActivities() != null
+            && user.getActivities().stream().anyMatch(item -> item.getId().equals(gymClass.getActivity().getId()));
+    }
+
     private MobileGymClassResponseDto toMobileClassDto(GymClassEntity item, UserEntity user, LocalDate targetDate, boolean subscribed) {
         int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(item.getId(), targetDate));
         Integer availableSpots = item.getMaxCapacity() == null ? null : Math.max(item.getMaxCapacity() - enrolled, 0);
         boolean ownClass = item.getTeacher() != null && item.getTeacher().getId().equals(user.getId());
+        boolean activityAllowed = isActivityAllowed(user, item);
         String restrictionReason = resolveSubscriptionRestriction(item, user, targetDate, subscribed, ownClass, availableSpots);
         boolean canSubscribe = restrictionReason == null;
 
@@ -451,6 +470,7 @@ public class MobileAppServiceImpl implements MobileAppService {
             .availableSpots(availableSpots)
             .subscribed(subscribed)
             .ownClass(ownClass)
+            .activityAllowed(activityAllowed)
             .canSubscribe(canSubscribe)
             .restrictionReason(restrictionReason)
             .build();
@@ -490,6 +510,14 @@ public class MobileAppServiceImpl implements MobileAppService {
             .userType(user.getUserType())
             .planName(user.getPlan() == null ? null : user.getPlan().getName())
             .planPrice(user.getPlan() == null ? null : user.getPlan().getPrice())
+            .activityNames(
+                user.getActivities() == null
+                    ? List.of()
+                    : user.getActivities().stream()
+                        .map(item -> item.getName())
+                        .sorted(String.CASE_INSENSITIVE_ORDER)
+                        .toList()
+            )
             .renewalDate(user.getRenewalDate())
             .paymentStatus(user.getPaymentStatus())
             .build();

@@ -166,6 +166,36 @@
   margin-top: 0.9rem;
 }
 
+.plan-activities {
+  margin-top: 1rem;
+}
+
+.activities-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.activities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.activity-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1;
+}
+
 .plan-price {
   font-size: 2.25rem;
   font-weight: 800;

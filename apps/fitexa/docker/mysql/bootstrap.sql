@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS fitexa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER DATABASE fitexa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE fitexa;
 
 CREATE TABLE IF NOT EXISTS plans (
@@ -76,6 +77,14 @@ CREATE TABLE IF NOT EXISTS exercises (
     video_url TEXT NOT NULL,
     CONSTRAINT fk_exercises_activity FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
     CONSTRAINT fk_exercises_machine FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_activities (
+    user_id BIGINT NOT NULL,
+    activity_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, activity_id),
+    CONSTRAINT fk_user_activities_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_activities_activity FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS gym_classes (

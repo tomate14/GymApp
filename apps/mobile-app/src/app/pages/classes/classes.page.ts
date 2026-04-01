@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { IonButton, IonCard, IonCardContent, IonSpinner } from '@ionic/angular/standalone';
+import { IonButton, IonCard, IonCardContent, IonSpinner, IonToast } from '@ionic/angular/standalone';
 import { MobileGymClass } from '../../models/mobile.model';
 import { MobileAppService } from '../../services/mobile-app.service';
 
 @Component({
   selector: 'app-classes-page',
   standalone: true,
-  imports: [CommonModule, IonCard, IonCardContent, IonButton, IonSpinner],
+  imports: [CommonModule, IonCard, IonCardContent, IonButton, IonSpinner, IonToast],
   templateUrl: './classes.page.html',
   styleUrl: './classes.page.css'
 })
@@ -15,8 +15,11 @@ export class ClassesPageComponent implements OnInit {
   classes: MobileGymClass[] = [];
   activeTab: 'mine' | 'available' = 'mine';
   selectedDate = new Date().toISOString().slice(0, 10);
+  showOnlyEnabledAvailable = false;
   errorMessage: string | null = null;
   isLoading = true;
+  toastMessage: string | null = null;
+  toastOpen = false;
 
   constructor(private readonly mobileAppService: MobileAppService) {}
 
@@ -57,9 +60,13 @@ export class ClassesPageComponent implements OnInit {
         this.classes = this.classes.map((current) => current.id === updated.id ? updated : current);
       },
       error: (err: { error?: { message?: string } }) => {
-        this.errorMessage = err.error?.message ?? 'No se pudo registrar la suscripcion.';
+        this.presentToast(err.error?.message ?? 'No se pudo registrar la suscripcion.');
       }
     });
+  }
+
+  dismissToast(): void {
+    this.toastOpen = false;
   }
 
   formatSelectedDate(): string {
@@ -88,12 +95,24 @@ export class ClassesPageComponent implements OnInit {
     return 'Suscribirme';
   }
 
+  toggleAvailableFilter(): void {
+    this.showOnlyEnabledAvailable = !this.showOnlyEnabledAvailable;
+  }
+
   get myClasses(): MobileGymClass[] {
     return this.classes.filter((item) => item.subscribed);
   }
 
   get availableClasses(): MobileGymClass[] {
-    return this.classes.filter((item) => !item.subscribed && !this.hasStarted(item));
+    return this.classes.filter((item) => {
+      if (item.subscribed || this.hasStarted(item)) {
+        return false;
+      }
+      if (this.showOnlyEnabledAvailable && !item.canSubscribe) {
+        return false;
+      }
+      return true;
+    });
   }
 
   canGoToPreviousDay(): boolean {
@@ -135,5 +154,10 @@ export class ClassesPageComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private presentToast(message: string): void {
+    this.toastMessage = message;
+    this.toastOpen = true;
   }
 }

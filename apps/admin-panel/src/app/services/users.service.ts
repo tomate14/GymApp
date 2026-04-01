@@ -20,6 +20,8 @@ type UserApiDto = {
   roleId: number | null;
   roleName: string | null;
   planId: number | null;
+  activityIds: number[];
+  activityNames: string[];
   registrationDate: string;
   renewalDate: string;
   paymentStatus: User['paymentStatus'];
@@ -37,6 +39,7 @@ type UserApiRequest = {
   userType: User['userType'];
   roleId: number | null;
   planId: number | null;
+  activityIds: number[];
   registrationDate: string;
   paymentStatus: User['paymentStatus'];
 };
@@ -239,6 +242,7 @@ export class UsersService {
       userType: draft.userType,
       roleId: draft.roleId,
       planId: draft.planId,
+      activityIds: draft.activityIds,
       registrationDate: draft.registrationDate,
       paymentStatus: draft.paymentStatus
     };
@@ -258,6 +262,8 @@ export class UsersService {
       roleId: dto.roleId === null ? null : Number(dto.roleId),
       roleName: dto.roleName,
       planId: dto.planId === null ? null : Number(dto.planId),
+      activityIds: (dto.activityIds ?? []).map((item) => Number(item)),
+      activityNames: dto.activityNames ?? [],
       registrationDate: dto.registrationDate,
       renewalDate: dto.renewalDate,
       paymentStatus: dto.paymentStatus

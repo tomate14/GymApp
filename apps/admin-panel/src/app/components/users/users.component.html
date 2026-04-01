@@ -30,7 +30,7 @@
         </div>
 
         <div class="col-12 col-xl-2">
-          <label class="form-label form-label-sm">Rol del panel</label>
+          <label class="form-label form-label-sm">Rol</label>
           <select class="form-select form-select-sm" name="userRoleId" [(ngModel)]="userDraft.roleId" (ngModelChange)="onRoleChange()" required>
             <option [ngValue]="null">Seleccionar rol</option>
             <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.name }}</option>
@@ -38,7 +38,7 @@
         </div>
 
         <ng-container *ngIf="isStudentRole(userDraft.roleId)">
-          <div class="col-12 col-xl-3">
+          <div class="col-12 col-xl-4">
             <label class="form-label form-label-sm">Plan del alumno</label>
             <select class="form-select form-select-sm" name="userPlanId" [(ngModel)]="userDraft.planId">
               <option [ngValue]="null">Seleccionar plan</option>
@@ -46,9 +46,36 @@
             </select>
           </div>
 
-          <div class="col-12 col-xl-3">
+          <div class="col-12 col-xl-4">
             <label class="form-label form-label-sm">Valor del plan</label>
             <input class="form-control form-control-sm" type="text" [value]="userDraft.planId === null ? '-' : '$' + planAmount(userDraft.planId)" readonly />
+          </div>
+
+          <div class="col-12 col-xl-4">
+            <label class="form-label form-label-sm">Actividades habilitadas</label>
+            <div class="activity-dropdown">
+              <button
+                class="btn btn-sm btn-outline-light activity-dropdown-trigger"
+                type="button"
+                (click)="toggleActivitiesDropdown()"
+              >
+                <span>{{ selectedActivitiesLabel() }}</span>
+                <span>{{ activitiesDropdownOpen ? 'Ocultar' : 'Ver' }}</span>
+              </button>
+
+              <div class="activity-dropdown-panel" *ngIf="activitiesDropdownOpen">
+                <label class="activity-option" *ngFor="let activity of activities">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="isActivitySelected(activity.id)"
+                    (change)="toggleActivity(activity.id)"
+                  />
+                  <span>{{ activity.name }}</span>
+                </label>
+              </div>
+            </div>
+            <small class="text-secondary d-block mt-1">Selecciona una o varias actividades para ese alumno.</small>
           </div>
         </ng-container>
 
@@ -258,7 +285,7 @@
                   <button class="btn btn-sm btn-outline-info" type="button" (click)="togglePayments(user)" [disabled]="user.userType !== 'alumno'">
                     Pagos
                   </button>
-                  <button class="btn btn-sm btn-outline-warning" type="button" (click)="renewQuota(user)" [disabled]="user.userType !== 'alumno' || user.planId === null">
+                  <button class="btn btn-sm btn-outline-warning" type="button" (click)="askRenewQuota(user)" [disabled]="user.userType !== 'alumno' || user.planId === null">
                     Renovar cuota
                   </button>
                   <button class="btn btn-sm btn-outline-light" type="button" (click)="editUser(user)">Modificar</button>
@@ -309,6 +336,16 @@
   </div>
 
 </div>
+
+<app-confirm-popup
+  [visible]="renewCandidate !== null"
+  title="Renovar cuota"
+  [message]="'Se renovara la cuota de ' + (renewCandidate?.firstName ?? '') + ' ' + (renewCandidate?.lastName ?? '') + ' y se registrara el movimiento de pago correspondiente.'"
+  confirmText="Renovar"
+  cancelText="Cancelar"
+  (confirmed)="confirmRenewQuota()"
+  (cancelled)="cancelRenewQuota()"
+></app-confirm-popup>
 
 <app-confirm-popup
   [visible]="deleteCandidate !== null"

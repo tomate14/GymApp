@@ -7,7 +7,19 @@
 
   <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-  <ion-card class="record-list-card" *ngFor="let record of records" [class.expanded]="isExpanded(record)">
+  <ion-card class="search-card">
+    <ion-card-content>
+      <ion-input
+        type="text"
+        label="Buscar ejercicio"
+        labelPlacement="stacked"
+        placeholder="Ejemplo: press banca"
+        [(ngModel)]="searchTerm"
+      ></ion-input>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card class="record-list-card" *ngFor="let record of filteredRecords" [class.expanded]="isExpanded(record)">
     <ion-card-content>
       <div class="record-row">
         <button class="record-main" type="button" (click)="toggleRecord(record)">
@@ -78,6 +90,10 @@
       </div>
     </ion-card-content>
   </ion-card>
+
+  <p class="empty-detail" *ngIf="!isLoading && filteredRecords.length === 0">
+    No encontramos ejercicios que coincidan con esa busqueda.
+  </p>
 </section>
 
 <ng-template #loadingTpl>

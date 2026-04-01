@@ -4,6 +4,7 @@ import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.UserType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,6 +21,7 @@ public class MobileProfileResponseDto {
     private UserType userType;
     private String planName;
     private BigDecimal planPrice;
+    private List<String> activityNames;
     private LocalDate renewalDate;
     private PaymentStatus paymentStatus;
 }

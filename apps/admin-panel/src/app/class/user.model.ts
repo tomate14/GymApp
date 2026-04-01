@@ -14,6 +14,8 @@ export interface User {
   roleId: number | null;
   roleName: string | null;
   planId: number | null;
+  activityIds: number[];
+  activityNames: string[];
   registrationDate: string;
   renewalDate: string;
   paymentStatus: PaymentStatus;
@@ -35,6 +37,8 @@ export const createEmptyUserDraft = (): UserDraft => ({
   roleId: null,
   roleName: null,
   planId: null,
+  activityIds: [],
+  activityNames: [],
   password: '',
   registrationDate: '',
   renewalDate: '',

@@ -199,3 +199,30 @@ ion-card {
   background: rgba(255, 106, 45, 0.3);
   color: var(--text);
 }
+
+ion-toast.fitexa-toast {
+  --background: linear-gradient(180deg, rgba(19, 24, 38, 0.98), rgba(11, 14, 24, 0.98));
+  --color: var(--text);
+  --border-radius: 1rem;
+  --box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+  --width: calc(100% - 1.5rem);
+  --max-width: 32rem;
+}
+
+ion-toast.fitexa-toast::part(container) {
+  border: 1px solid rgba(255, 143, 66, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+ion-toast.fitexa-toast::part(message) {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+ion-toast.fitexa-toast::part(button) {
+  color: var(--accent-soft);
+  font-family: var(--font-display);
+}

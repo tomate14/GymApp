@@ -50,6 +50,12 @@
   </ng-container>
 
   <ng-container *ngIf="activeTab === 'available'">
+    <div class="available-filter-row">
+      <button class="filter-toggle" type="button" [class.filter-toggle-active]="showOnlyEnabledAvailable" (click)="toggleAvailableFilter()">
+        {{ showOnlyEnabledAvailable ? 'Mostrando solo habilitadas' : 'Mostrar solo habilitadas' }}
+      </button>
+    </div>
+
     <ion-card class="class-card" *ngFor="let item of availableClasses">
       <ion-card-content>
         <div class="class-head">
@@ -63,6 +69,7 @@
 
         <div class="class-meta">
           <span *ngIf="item.ownClass">Clase asignada a tu perfil docente</span>
+          <span *ngIf="!item.activityAllowed" class="meta-pill meta-pill-blocked">No incluida en tu plan</span>
           <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
           <span *ngIf="item.availableSpots === null">Capacidad libre</span>
           <span>{{ item.enrolled }} inscriptos</span>
@@ -90,3 +97,12 @@
     <ion-spinner name="crescent"></ion-spinner>
   </div>
 </ng-template>
+
+<ion-toast
+  [isOpen]="toastOpen"
+  [message]="toastMessage ?? ''"
+  cssClass="fitexa-toast"
+  position="top"
+  duration="2800"
+  (didDismiss)="dismissToast()"
+></ion-toast>

@@ -76,6 +76,28 @@
   color: var(--text);
 }
 
+.available-filter-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filter-toggle {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.55rem 0.9rem;
+}
+
+.filter-toggle-active {
+  background: rgba(255, 106, 45, 0.14);
+  border-color: rgba(255, 163, 114, 0.32);
+  color: var(--text);
+}
+
 .class-head {
   display: flex;
   justify-content: space-between;
@@ -119,6 +141,12 @@
   background: rgba(0, 223, 161, 0.12);
   border-color: rgba(0, 223, 161, 0.18);
   color: #9ff5db;
+}
+
+.meta-pill-blocked {
+  background: rgba(255, 106, 45, 0.12);
+  border-color: rgba(255, 163, 114, 0.25);
+  color: #ffd0b6 !important;
 }
 
 .class-note {

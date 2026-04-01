@@ -81,6 +81,13 @@
           <p class="plan-caption">Valor mensual vigente para tu membresia.</p>
         </div>
 
+        <div class="plan-activities" *ngIf="profile.activityNames.length > 0">
+          <div class="activities-kicker">Actividades incluidas</div>
+          <div class="activities-list">
+            <span class="activity-chip" *ngFor="let activityName of profile.activityNames">{{ activityName }}</span>
+          </div>
+        </div>
+
         <ng-template #noPlan>
           <p class="muted-copy">Tu cuenta no tiene un plan asociado actualmente.</p>
         </ng-template>

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { Activity } from '../../class/activity.model';
 import { createEmptyPageResponse, PageResponse } from '../../class/page.model';
 import { Plan } from '../../class/plan.model';
 import { Role } from '../../class/role.model';
@@ -9,6 +10,7 @@ import { UserPaymentMovement } from '../../class/user-payment-movement.model';
 import { createEmptyUserDraft, PaymentStatus, User, UserDraft } from '../../class/user.model';
 import { ConfirmPopupComponent } from '../../popup/confirm-popup.component';
 import { PaymentsPopupComponent } from '../../popups/payments-popup/payments-popup.component';
+import { ActivitiesService } from '../../services/activities.service';
 import { PlansService } from '../../services/plans.service';
 import { RolesService } from '../../services/roles.service';
 import { UserPageFilters, UsersService } from '../../services/users.service';
@@ -33,12 +35,15 @@ type UserTableFilters = {
 })
 export class UsersComponent implements OnInit {
   usersPage: PageResponse<User> = createEmptyPageResponse<User>();
+  activities: Activity[] = [];
   plans: Plan[] = [];
   roles: Role[] = [];
+  activitiesDropdownOpen = false;
   showForm = false;
   userDraft: UserDraft = createEmptyUserDraft();
   editingUserId: number | null = null;
   deleteCandidate: User | null = null;
+  renewCandidate: User | null = null;
   isLoading = false;
   apiError: string | null = null;
   selectedPaymentsUser: User | null = null;
@@ -63,6 +68,7 @@ export class UsersComponent implements OnInit {
 
   constructor(
     private readonly usersService: UsersService,
+    private readonly activitiesService: ActivitiesService,
     private readonly plansService: PlansService,
     private readonly rolesService: RolesService
   ) {}
@@ -98,12 +104,16 @@ export class UsersComponent implements OnInit {
     if (this.userDraft.userType === 'alumno' && this.userDraft.planId === null) {
       return;
     }
+    if (this.userDraft.userType === 'alumno' && this.userDraft.activityIds.length === 0) {
+      return;
+    }
     if (this.userDraft.roleId === null) {
       return;
     }
 
     if (this.userDraft.userType !== 'alumno') {
       this.userDraft.planId = null;
+      this.userDraft.activityIds = [];
     }
 
     const today = this.todayIsoDate();
@@ -128,6 +138,7 @@ export class UsersComponent implements OnInit {
     this.showForm = true;
     this.editingUserId = user.id;
     this.userDraft = { ...user, password: '' };
+    this.activitiesDropdownOpen = false;
   }
 
   toggleForm(): void {
@@ -137,6 +148,7 @@ export class UsersComponent implements OnInit {
   cancelEdit(): void {
     this.editingUserId = null;
     this.userDraft = createEmptyUserDraft();
+    this.activitiesDropdownOpen = false;
     this.resetDraftDefaults();
   }
 
@@ -168,6 +180,39 @@ export class UsersComponent implements OnInit {
 
   cancelDelete(): void {
     this.deleteCandidate = null;
+  }
+
+  askRenewQuota(user: User): void {
+    if (user.userType !== 'alumno' || user.planId === null) {
+      return;
+    }
+
+    this.renewCandidate = user;
+  }
+
+  confirmRenewQuota(): void {
+    if (!this.renewCandidate) {
+      return;
+    }
+
+    const user = this.renewCandidate;
+    this.renewCandidate = null;
+
+    this.usersService.renewSubscription(user.id).subscribe({
+      next: () => {
+        this.loadUsersPage();
+        if (this.selectedPaymentsUser?.id === user.id) {
+          this.loadPaymentMovements(user.id);
+        }
+      },
+      error: () => {
+        this.apiError = 'No se pudo renovar la cuota en el backend.';
+      }
+    });
+  }
+
+  cancelRenewQuota(): void {
+    this.renewCandidate = null;
   }
 
   onFilterChange(): void {
@@ -231,24 +276,6 @@ export class UsersComponent implements OnInit {
     return this.plansService.getById(planId)?.price ?? 0;
   }
 
-  renewQuota(user: User): void {
-    if (user.userType !== 'alumno') {
-      return;
-    }
-
-    this.usersService.renewSubscription(user.id).subscribe({
-      next: () => {
-        this.loadUsersPage();
-        if (this.selectedPaymentsUser?.id === user.id) {
-          this.loadPaymentMovements(user.id);
-        }
-      },
-      error: () => {
-        this.apiError = 'No se pudo renovar la cuota en el backend.';
-      }
-    });
-  }
-
   togglePayments(user: User): void {
     if (user.userType !== 'alumno') {
       return;
@@ -272,6 +299,8 @@ export class UsersComponent implements OnInit {
     this.syncDerivedProfileFromRole();
     if (this.userDraft.userType !== 'alumno') {
       this.userDraft.planId = null;
+      this.userDraft.activityIds = [];
+      this.activitiesDropdownOpen = false;
       return;
     }
 
@@ -280,16 +309,54 @@ export class UsersComponent implements OnInit {
     }
   }
 
+  toggleActivitiesDropdown(): void {
+    if (!this.isStudentRole(this.userDraft.roleId)) {
+      return;
+    }
+    this.activitiesDropdownOpen = !this.activitiesDropdownOpen;
+  }
+
+  isActivitySelected(activityId: number): boolean {
+    return this.userDraft.activityIds.includes(activityId);
+  }
+
+  toggleActivity(activityId: number): void {
+    if (this.isActivitySelected(activityId)) {
+      this.userDraft.activityIds = this.userDraft.activityIds.filter((item) => item !== activityId);
+      return;
+    }
+
+    this.userDraft.activityIds = [...this.userDraft.activityIds, activityId];
+  }
+
+  selectedActivitiesLabel(): string {
+    if (this.userDraft.activityIds.length === 0) {
+      return 'Seleccionar actividades';
+    }
+
+    const names = this.activities
+      .filter((activity) => this.userDraft.activityIds.includes(activity.id))
+      .map((activity) => activity.name);
+
+    if (names.length <= 2) {
+      return names.join(', ');
+    }
+
+    return `${names[0]}, ${names[1]} y ${names.length - 2} mas`;
+  }
+
   private loadData(): void {
     this.isLoading = true;
     this.apiError = null;
 
     forkJoin({
+      activities: this.activitiesService.findAll(),
       plans: this.plansService.findAll(),
       roles: this.rolesService.findAll(),
       usersPage: this.usersService.findPage(this.toPageFilters(), this.currentPage - 1, this.pageSize)
     }).subscribe({
       next: (result) => {
+        this.activities = result.activities.sort((a, b) => a.name.localeCompare(b.name));
         this.plans = result.plans;
         this.roles = result.roles.sort((a, b) => a.name.localeCompare(b.name));
         this.usersPage = result.usersPage;
@@ -305,6 +372,7 @@ export class UsersComponent implements OnInit {
       },
       error: () => {
         this.apiError = 'No se pudieron obtener datos iniciales del backend.';
+        this.activities = this.activitiesService.getAll();
         this.plans = this.plansService.getAll();
         this.usersPage = createEmptyPageResponse<User>();
         this.isLoading = false;
@@ -317,6 +385,7 @@ export class UsersComponent implements OnInit {
     this.userDraft.roleId = this.defaultRoleId();
     this.syncDerivedProfileFromRole();
     this.userDraft.planId = this.defaultPlanId();
+    this.userDraft.activityIds = [];
   }
 
   private defaultRoleId(): number | null {

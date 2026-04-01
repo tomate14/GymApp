@@ -14,6 +14,7 @@ export type MobileProfile = {
   userType: UserType;
   planName: string | null;
   planPrice: number | null;
+  activityNames: string[];
   renewalDate: string;
   paymentStatus: PaymentStatus;
 };
@@ -103,6 +104,7 @@ export type MobileGymClass = {
   availableSpots: number | null;
   subscribed: boolean;
   ownClass: boolean;
+  activityAllowed: boolean;
   canSubscribe: boolean;
   restrictionReason: string | null;
 };

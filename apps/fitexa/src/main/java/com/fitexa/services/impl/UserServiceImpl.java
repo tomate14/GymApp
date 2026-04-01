@@ -4,6 +4,7 @@ import com.fitexa.dtos.UserRequestDto;
 import com.fitexa.dtos.UserResponseDto;
 import com.fitexa.dtos.UserRoleAssignmentRequestDto;
 import com.fitexa.dtos.DashboardPageResponseDto;
+import com.fitexa.entities.ActivityEntity;
 import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.PlanEntity;
 import com.fitexa.entities.RoleEntity;
@@ -11,6 +12,7 @@ import com.fitexa.entities.UserEntity;
 import com.fitexa.entities.UserType;
 import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
+import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.PlanRepository;
 import com.fitexa.repository.RoleRepository;
 import com.fitexa.repository.UserRepository;
@@ -18,7 +20,9 @@ import com.fitexa.services.UserPaymentMovementService;
 import com.fitexa.services.UserService;
 import com.fitexa.utils.DateUtils;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +38,7 @@ public class UserServiceImpl implements UserService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository userRepository;
+    private final ActivityRepository activityRepository;
     private final PlanRepository planRepository;
     private final RoleRepository roleRepository;
     private final UserPaymentMovementService userPaymentMovementService;
@@ -110,6 +115,7 @@ public class UserServiceImpl implements UserService {
         RoleEntity role = resolveRole(request.getRoleId());
         UserType derivedUserType = resolveUserType(role);
         PlanEntity plan = resolvePlan(derivedUserType, request.getPlanId());
+        Set<ActivityEntity> activities = resolveActivities(derivedUserType, request.getActivityIds());
         LocalDate registrationDate = request.getRegistrationDate() == null ? LocalDate.now() : request.getRegistrationDate();
         String normalizedEmail = normalizeEmail(request.getEmail());
 
@@ -126,6 +132,7 @@ public class UserServiceImpl implements UserService {
             .userType(derivedUserType)
             .role(role)
             .plan(plan)
+            .activities(activities)
             .registrationDate(registrationDate)
             .renewalDate(DateUtils.plusOneMonth(registrationDate))
             .paymentStatus(request.getPaymentStatus())
@@ -141,6 +148,7 @@ public class UserServiceImpl implements UserService {
         RoleEntity role = resolveRole(request.getRoleId());
         UserType derivedUserType = resolveUserType(role);
         PlanEntity plan = resolvePlan(derivedUserType, request.getPlanId());
+        Set<ActivityEntity> activities = resolveActivities(derivedUserType, request.getActivityIds());
 
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
@@ -152,6 +160,7 @@ public class UserServiceImpl implements UserService {
         entity.setUserType(derivedUserType);
         entity.setRole(role);
         entity.setPlan(plan);
+        entity.setActivities(activities);
         entity.setRegistrationDate(request.getRegistrationDate() == null ? entity.getRegistrationDate() : request.getRegistrationDate());
         entity.setPaymentStatus(request.getPaymentStatus());
         String password = clean(request.getPassword());
@@ -173,6 +182,7 @@ public class UserServiceImpl implements UserService {
         entity.setUserType(derivedUserType);
         if (derivedUserType != UserType.ALUMNO) {
             entity.setPlan(null);
+            entity.getActivities().clear();
         }
         return toDto(userRepository.save(entity));
     }
@@ -212,6 +222,28 @@ public class UserServiceImpl implements UserService {
             .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado: " + planId));
     }
 
+    private Set<ActivityEntity> resolveActivities(UserType userType, List<Long> activityIds) {
+        if (userType != UserType.ALUMNO) {
+            return new LinkedHashSet<>();
+        }
+
+        List<Long> ids = activityIds == null ? List.of() : activityIds.stream()
+            .filter(id -> id != null && id > 0)
+            .distinct()
+            .toList();
+
+        if (ids.isEmpty()) {
+            throw new BusinessValidationException("Un alumno debe tener al menos una actividad habilitada.");
+        }
+
+        List<ActivityEntity> activities = activityRepository.findAllById(ids);
+        if (activities.size() != ids.size()) {
+            throw new BusinessValidationException("Una o mas actividades seleccionadas no existen.");
+        }
+
+        return new LinkedHashSet<>(activities);
+    }
+
     private UserEntity findEntity(Long id) {
         return userRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + id));
@@ -237,6 +269,10 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserResponseDto toDto(UserEntity entity) {
+        List<ActivityEntity> activities = entity.getActivities() == null ? List.of() : entity.getActivities().stream()
+            .sorted((current, next) -> current.getName().compareToIgnoreCase(next.getName()))
+            .toList();
+
         return UserResponseDto.builder()
             .id(entity.getId())
             .firstName(entity.getFirstName())
@@ -252,6 +288,8 @@ public class UserServiceImpl implements UserService {
             .planId(entity.getPlan() == null ? null : entity.getPlan().getId())
             .planName(entity.getPlan() == null ? null : entity.getPlan().getName())
             .planPrice(entity.getPlan() == null ? null : entity.getPlan().getPrice())
+            .activityIds(activities.stream().map(ActivityEntity::getId).toList())
+            .activityNames(activities.stream().map(ActivityEntity::getName).toList())
             .registrationDate(entity.getRegistrationDate())
             .renewalDate(entity.getRenewalDate())
             .paymentStatus(entity.getPaymentStatus())

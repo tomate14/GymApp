@@ -31,6 +31,7 @@ export class PersonalRecordsPageComponent implements OnInit {
   errorMessage: string | null = null;
   isLoading = true;
   selectedExerciseId: number | null = null;
+  searchTerm = '';
 
   constructor(private readonly mobileAppService: MobileAppService) {
     addIcons({ addOutline, analyticsOutline, chevronDownOutline, chevronUpOutline });
@@ -91,6 +92,15 @@ export class PersonalRecordsPageComponent implements OnInit {
 
   isExpanded(record: EditableRecord): boolean {
     return this.selectedExerciseId === record.exerciseId;
+  }
+
+  get filteredRecords(): EditableRecord[] {
+    const normalized = this.searchTerm.trim().toLowerCase();
+    if (!normalized) {
+      return this.records;
+    }
+
+    return this.records.filter((record) => record.exerciseName.toLowerCase().includes(normalized));
   }
 
   formatWeight(value: number | null): string {
