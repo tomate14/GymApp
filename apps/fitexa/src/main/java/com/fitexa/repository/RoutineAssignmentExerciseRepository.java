@@ -64,9 +64,9 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                 from routine_days rd
                 where rd.target_date < rd.end_date
             )
-            select usage.machine_id as machineId,
-                   usage.machine_name as machineName,
-                   round(count(*) / usage.machine_quantity, 2) as usageCount
+            select machine_stats.machine_id as machineId,
+                   machine_stats.machine_name as machineName,
+                   round(count(*) / machine_stats.machine_quantity, 2) as usageCount
             from (
                 select distinct
                     rd.assignment_id,
@@ -93,9 +93,9 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                       when 6 then 'VIERNES'
                       when 7 then 'SABADO'
                   end
-            ) usage
-            group by usage.machine_id, usage.machine_name, usage.machine_quantity
-            order by usageCount desc, usage.machine_name asc
+            ) machine_stats
+            group by machine_stats.machine_id, machine_stats.machine_name, machine_stats.machine_quantity
+            order by usageCount desc, machine_stats.machine_name asc
             limit 10
             """,
         nativeQuery = true

@@ -143,6 +143,12 @@
   color: #9ff5db;
 }
 
+.meta-pill-available {
+  background: rgba(0, 223, 161, 0.12);
+  border-color: rgba(0, 223, 161, 0.18);
+  color: #9ff5db !important;
+}
+
 .meta-pill-blocked {
   background: rgba(255, 106, 45, 0.12);
   border-color: rgba(255, 163, 114, 0.25);

@@ -20,6 +20,7 @@ export class ClassAttendancePopupComponent implements OnChanges {
   @Input() isLoading = false;
   @Input() isSaving = false;
   @Input() error: string | null = null;
+  @Input() successMessage: string | null = null;
 
   @Output() readonly closed = new EventEmitter<void>();
   @Output() readonly saved = new EventEmitter<GymClassAttendanceUpdateItem[]>();

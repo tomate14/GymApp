@@ -51,6 +51,7 @@ export class ClassesTableComponent implements OnChanges {
   selectedAttendanceClass: DashboardClassRow | null = null;
   attendanceData: GymClassAttendance | null = null;
   attendanceError: string | null = null;
+  attendanceSuccessMessage: string | null = null;
   isLoadingAttendance = false;
   isSavingAttendance = false;
   private expandedEventKeys = new Set<string>();
@@ -134,6 +135,7 @@ export class ClassesTableComponent implements OnChanges {
     this.selectedAttendanceClass = item;
     this.attendancePopupVisible = true;
     this.attendanceError = null;
+    this.attendanceSuccessMessage = null;
     this.attendanceData = null;
     this.isLoadingAttendance = true;
     this.classesService.getAttendance(item.classId, item.date).subscribe({
@@ -153,6 +155,7 @@ export class ClassesTableComponent implements OnChanges {
     this.selectedAttendanceClass = null;
     this.attendanceData = null;
     this.attendanceError = null;
+    this.attendanceSuccessMessage = null;
     this.isLoadingAttendance = false;
     this.isSavingAttendance = false;
   }
@@ -167,6 +170,7 @@ export class ClassesTableComponent implements OnChanges {
       next: (response) => {
         this.attendanceData = response;
         this.isSavingAttendance = false;
+        this.attendanceSuccessMessage = 'Asistencia guardada correctamente.';
       },
       error: () => {
         this.attendanceError = 'No se pudo guardar la asistencia de esta clase.';

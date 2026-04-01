@@ -14,6 +14,8 @@ export class AuthService {
   private readonly changePasswordEndpoint = `${API_BASE_URL}/auth/change-password`;
   private readonly tokenStorageKey = 'fitexa_mobile_token';
   private readonly mustChangeStorageKey = 'fitexa_mobile_must_change_password';
+  private readonly onboardingPendingUserKey = 'fitexa_mobile_onboarding_pending_user';
+  private readonly onboardingSeenPrefix = 'fitexa_mobile_onboarding_seen_';
 
   constructor(
     private readonly http: HttpClient,
@@ -25,6 +27,7 @@ export class AuthService {
       tap((response) => {
         localStorage.setItem(this.tokenStorageKey, response.token);
         localStorage.setItem(this.mustChangeStorageKey, String(response.mustChangePassword));
+        localStorage.setItem(this.onboardingPendingUserKey, String(response.userId));
       })
     );
   }
@@ -43,6 +46,7 @@ export class AuthService {
   clearSession(): void {
     localStorage.removeItem(this.tokenStorageKey);
     localStorage.removeItem(this.mustChangeStorageKey);
+    localStorage.removeItem(this.onboardingPendingUserKey);
   }
 
   getToken(): string | null {
@@ -61,6 +65,23 @@ export class AuthService {
 
   requiresPasswordChange(): boolean {
     return localStorage.getItem(this.mustChangeStorageKey) === 'true';
+  }
+
+  consumePendingOnboarding(userId: number): boolean {
+    const pendingUserId = localStorage.getItem(this.onboardingPendingUserKey);
+    const seenKey = `${this.onboardingSeenPrefix}${userId}`;
+
+    if (pendingUserId !== String(userId)) {
+      return false;
+    }
+
+    localStorage.removeItem(this.onboardingPendingUserKey);
+    if (localStorage.getItem(seenKey) === 'true') {
+      return false;
+    }
+
+    localStorage.setItem(seenKey, 'true');
+    return true;
   }
 
   private parseTokenPayload(token: string): { exp?: number } | null {

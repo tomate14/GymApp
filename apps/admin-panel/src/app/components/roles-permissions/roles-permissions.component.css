@@ -79,3 +79,16 @@
 .search-box {
   min-width: 280px;
 }
+
+.page-size-select {
+  width: 84px;
+}
+
+.table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}

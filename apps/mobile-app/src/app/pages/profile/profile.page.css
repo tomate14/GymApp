@@ -216,6 +216,61 @@
   place-items: center;
 }
 
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(5, 8, 15, 0.82);
+  backdrop-filter: blur(16px);
+  z-index: 40;
+}
+
+.welcome-card {
+  width: min(28rem, 100%);
+  padding: 1.25rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(255, 106, 45, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(18, 21, 33, 0.98), rgba(10, 12, 20, 0.98));
+  box-shadow: var(--shadow-elevated);
+}
+
+.welcome-card h2 {
+  margin: 0.25rem 0 0.45rem;
+}
+
+.welcome-copy {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.welcome-points {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0 1.15rem;
+}
+
+.welcome-points article {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.welcome-points strong {
+  color: var(--text);
+}
+
+.welcome-points span {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
 @media (max-width: 420px) {
   .profile-hero {
     grid-template-columns: 1fr;

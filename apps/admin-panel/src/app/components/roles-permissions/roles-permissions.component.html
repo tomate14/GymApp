@@ -11,6 +11,10 @@
         </button>
       </div>
 
+      <div class="alert alert-success py-2 px-3 mb-3" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
       <form class="row g-3" *ngIf="showForm" (ngSubmit)="saveRole()">
         <div class="col-12 col-lg-4">
           <label class="form-label form-label-sm">Nombre del rol</label>
@@ -32,7 +36,7 @@
               [class.permission-chip-active]="isSelected(item.key)"
               (click)="toggleMenuItem(item.key)"
             >
-              <span class="permission-mark">{{ isSelected(item.key) ? '✓' : '' }}</span>
+              <span class="permission-mark">{{ isSelected(item.key) ? 'Si' : '' }}</span>
               <span>
                 <strong>{{ item.label }}</strong>
                 <small class="d-block text-secondary">{{ item.path }}</small>
@@ -58,7 +62,7 @@
       <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h2 class="section-title mb-0">Roles creados</h2>
-          <p class="text-secondary small mb-0">Cada tilde indica que ese rol puede ver esa opcion del menu.</p>
+          <p class="text-secondary small mb-0">Cada columna te muestra si ese rol puede ver o no una seccion del panel.</p>
         </div>
       </div>
 
@@ -92,7 +96,7 @@
               <td>{{ role.assignedUsersCount }}</td>
               <td *ngFor="let item of menuItems" class="text-center">
                 <span class="permission-badge" [class.permission-badge-active]="menuLabel(role, item.key)">
-                  {{ menuLabel(role, item.key) ? '✓' : '–' }}
+                  {{ menuLabel(role, item.key) ? 'Si' : 'No' }}
                 </span>
               </td>
               <td class="text-end">
@@ -109,7 +113,7 @@
       </div>
 
       <ng-template #noRoles>
-        <p class="empty-state mb-0">Todavia no hay roles creados.</p>
+        <p class="empty-state mb-0">Todavia no hay roles creados. Cuando des de alta uno, lo vas a ver listado aca.</p>
       </ng-template>
     </section>
   </div>
@@ -119,16 +123,28 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h2 class="section-title mb-0">Asignacion de roles</h2>
-          <p class="text-secondary small mb-0">Selecciona un usuario y asignale el rol que va a usar dentro del panel.</p>
+          <p class="text-secondary small mb-0">Selecciona un usuario y guardale el rol que va a usar dentro del panel.</p>
         </div>
 
-        <div class="search-box">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <label class="small text-secondary mb-0">Mostrar</label>
+          <select
+            class="form-select form-select-sm page-size-select"
+            [(ngModel)]="assignmentPageSize"
+            (ngModelChange)="onAssignmentPageSizeChange()"
+          >
+            <option *ngFor="let size of assignmentPageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+
+          <div class="search-box">
           <input
             class="form-control form-control-sm"
             type="text"
             placeholder="Buscar por nombre o email"
             [(ngModel)]="userSearch"
+            (ngModelChange)="onUserSearchChange()"
           />
+          </div>
         </div>
       </div>
 
@@ -136,7 +152,7 @@
         {{ assignmentError }}
       </div>
 
-      <div class="table-responsive" *ngIf="filteredUsers.length > 0; else noUsers">
+      <div class="table-responsive" *ngIf="users.length > 0; else noUsers">
         <table class="table table-dark table-striped table-hover align-middle roles-table">
           <thead>
             <tr>
@@ -148,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of filteredUsers">
+            <tr *ngFor="let user of users">
               <td>{{ user.firstName }} {{ user.lastName }}</td>
               <td>{{ user.email }}</td>
               <td>{{ roleLabel(user.roleId) }}</td>
@@ -159,7 +175,7 @@
                 </select>
               </td>
               <td class="text-end">
-                <button class="btn btn-sm btn-brand" type="button" (click)="assignRole(user)" [disabled]="isAssigning">
+                <button class="btn btn-sm btn-brand" type="button" (click)="askAssignRole(user)" [disabled]="isAssigning">
                   Guardar rol
                 </button>
               </td>
@@ -168,8 +184,47 @@
         </table>
       </div>
 
+      <div class="table-footer" *ngIf="assignmentPage.totalElements > 0">
+        <small class="text-secondary">
+          Mostrando {{ assignmentVisibleRange.start }} a {{ assignmentVisibleRange.end }} de {{ assignmentVisibleRange.total }} usuarios
+        </small>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-light"
+            (click)="goToAssignmentPage(assignmentCurrentPage - 1)"
+            [disabled]="assignmentCurrentPage === 1"
+          >
+            Anterior
+          </button>
+
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-sm"
+              *ngFor="let page of assignmentPageNumbers"
+              [class.btn-brand]="page === assignmentCurrentPage"
+              [class.btn-outline-light]="page !== assignmentCurrentPage"
+              (click)="goToAssignmentPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-light"
+            (click)="goToAssignmentPage(assignmentCurrentPage + 1)"
+            [disabled]="assignmentCurrentPage === assignmentTotalPages"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+
       <ng-template #noUsers>
-        <p class="empty-state mb-0">No hay usuarios para asignar roles.</p>
+        <p class="empty-state mb-0">No encontramos usuarios para asignar roles con la busqueda actual.</p>
       </ng-template>
     </section>
   </div>
@@ -183,4 +238,14 @@
   cancelText="Cancelar"
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
+></app-confirm-popup>
+
+<app-confirm-popup
+  [visible]="roleChangeCandidate !== null"
+  title="Cambiar rol"
+  [message]="'Se cambiara el rol de ' + (roleChangeCandidate?.firstName ?? '') + ' ' + (roleChangeCandidate?.lastName ?? '') + ' a ' + pendingRoleLabel() + '.'"
+  confirmText="Cambiar rol"
+  cancelText="Cancelar"
+  (confirmed)="confirmAssignRole()"
+  (cancelled)="cancelAssignRole()"
 ></app-confirm-popup>

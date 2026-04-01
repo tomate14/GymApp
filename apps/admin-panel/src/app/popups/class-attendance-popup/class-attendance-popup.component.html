@@ -19,6 +19,10 @@
       {{ error }}
     </div>
 
+    <div class="alert alert-success py-2 px-3 mb-3" role="alert" *ngIf="successMessage !== null">
+      {{ successMessage }}
+    </div>
+
     <div *ngIf="!isLoading && attendance !== null && editableStudents.length > 0; else emptyState">
       <div class="students-list">
         <label class="student-row" *ngFor="let student of editableStudents">

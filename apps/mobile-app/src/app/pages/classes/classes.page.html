@@ -36,17 +36,17 @@
         </div>
 
         <div class="class-meta">
-          <span class="meta-pill meta-pill-mine">Reservada</span>
+          <span class="meta-pill meta-pill-mine">{{ statusLabel(item) }}</span>
           <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
           <span *ngIf="item.availableSpots === null">Capacidad libre</span>
           <span>{{ item.enrolled }} inscriptos</span>
         </div>
 
-        <p class="class-note">Ya tenes tu lugar reservado para esta clase.</p>
+        <p class="class-note">Ya tenes tu lugar confirmado para esta clase.</p>
       </ion-card-content>
     </ion-card>
 
-    <p class="empty-state" *ngIf="myClasses.length === 0">No tenes clases reservadas para este dia.</p>
+    <p class="empty-state" *ngIf="myClasses.length === 0">Todavia no tenes clases anotadas para este dia. Si queres, explora las disponibles y reserva tu lugar.</p>
   </ng-container>
 
   <ng-container *ngIf="activeTab === 'available'">
@@ -68,7 +68,8 @@
         </div>
 
         <div class="class-meta">
-          <span *ngIf="item.ownClass">Clase asignada a tu perfil docente</span>
+          <span class="meta-pill" [class.meta-pill-available]="item.canSubscribe" [class.meta-pill-blocked]="!item.canSubscribe">{{ statusLabel(item) }}</span>
+          <span *ngIf="item.ownClass">Esta clase ya esta vinculada a tu perfil docente</span>
           <span *ngIf="!item.activityAllowed" class="meta-pill meta-pill-blocked">No incluida en tu plan</span>
           <span *ngIf="item.availableSpots !== null">Cupos disponibles: {{ item.availableSpots }}</span>
           <span *ngIf="item.availableSpots === null">Capacidad libre</span>
@@ -88,7 +89,7 @@
       </ion-card-content>
     </ion-card>
 
-    <p class="empty-state" *ngIf="availableClasses.length === 0">No hay otras clases para explorar en este dia.</p>
+    <p class="empty-state" *ngIf="availableClasses.length === 0">No hay clases disponibles para explorar en este dia. Proba con otra fecha o desactiva el filtro de habilitadas.</p>
   </ng-container>
 </section>
 

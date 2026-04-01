@@ -30,6 +30,17 @@
         </button>
       </div>
 
+      <div class="alert alert-success py-2 px-3 mb-3" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <div class="manager-help-copy mb-3">
+        <strong *ngIf="isTemplateTabActive">Plantilla reutilizable:</strong>
+        <strong *ngIf="isAssignmentTabActive">Asignacion individual:</strong>
+        <span *ngIf="isTemplateTabActive"> armala una sola vez para volver a usarla con distintos alumnos.</span>
+        <span *ngIf="isAssignmentTabActive"> esta rutina queda vinculada al alumno elegido y no se reutiliza automaticamente.</span>
+      </div>
+
       <form class="row g-2" (ngSubmit)="saveTemplate()" *ngIf="isTemplateTabActive && showTemplateForm">
         <div class="col-12 col-md-6">
           <label class="form-label form-label-sm">Nombre de rutina</label>
@@ -131,7 +142,8 @@
                 {{ isCustomAssignmentDraft ? 'Editar personalizado' : 'Crear personalizado' }}
               </button>
               <span class="badge rounded-pill text-bg-warning" *ngIf="isCustomAssignmentDraft">Rutina Custom</span>
-              <span class="text-secondary small" *ngIf="!isCustomAssignmentDraft">La rutina generica queda reusable para otros alumnos.</span>
+              <span class="text-secondary small" *ngIf="!isCustomAssignmentDraft">La plantilla generica se puede volver a usar con otros alumnos.</span>
+              <span class="text-secondary small" *ngIf="isCustomAssignmentDraft">La rutina custom queda solo para este alumno.</span>
             </div>
           </div>
         </div>
@@ -198,7 +210,7 @@
             </div>
 
             <ng-template #noStudentHistory>
-              <p class="empty-state mb-0">El alumno no tiene rutinas asignadas previamente.</p>
+              <p class="empty-state mb-0">Este alumno todavia no tuvo rutinas asignadas. Cuando tenga historial, lo vas a ver aca.</p>
             </ng-template>
           </div>
         </div>
@@ -386,7 +398,7 @@
       </div>
 
       <ng-template #noTemplates>
-        <p class="empty-state mb-0">No hay rutinas para los filtros aplicados.</p>
+        <p class="empty-state mb-0">No encontramos plantillas con esos filtros. Proba limpiar la busqueda o crear una nueva.</p>
       </ng-template>
 
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="templateTablePage.totalElements > 0">
@@ -490,7 +502,7 @@
       </div>
 
       <ng-template #noAssignments>
-        <p class="empty-state mb-0">No hay asignaciones para los filtros aplicados.</p>
+        <p class="empty-state mb-0">No encontramos asignaciones para esos filtros. Cambia la busqueda o crea una nueva asignacion.</p>
       </ng-template>
 
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2" *ngIf="assignmentTablePage.totalElements > 0">

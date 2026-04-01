@@ -98,6 +98,7 @@ export class RoutinesComponent implements OnInit {
   deleteAssignmentCandidate: RoutineAssignment | null = null;
   isLoading = false;
   apiError: string | null = null;
+  successMessage: string | null = null;
 
   readonly studentFilterFields: SearchableFieldConfig[] = [
     { field: 'firstName', type: 'text' },
@@ -272,7 +273,9 @@ export class RoutinesComponent implements OnInit {
 
     this.routinesService.upsertTemplate(this.templateDraft, this.editingTemplateId).subscribe({
       next: () => {
+        const isCreating = this.editingTemplateId === null;
         this.cancelTemplateEdit();
+        this.successMessage = isCreating ? 'Plantilla guardada correctamente.' : 'Plantilla actualizada correctamente.';
         this.loadData();
       },
       error: () => {
@@ -411,7 +414,9 @@ export class RoutinesComponent implements OnInit {
 
     this.routinesService.upsertAssignment(payload, this.editingAssignmentId).subscribe({
       next: () => {
+        const isCreating = this.editingAssignmentId === null;
         this.cancelAssignmentEdit();
+        this.successMessage = isCreating ? 'Asignacion guardada correctamente.' : 'Asignacion actualizada correctamente.';
         this.loadData();
         this.onAssignmentFilterChange();
       },
@@ -474,6 +479,7 @@ export class RoutinesComponent implements OnInit {
           this.assignmentDraft.exercisePlans = [];
         }
 
+        this.successMessage = 'Plantilla eliminada correctamente.';
         this.loadData();
       },
       error: () => {
@@ -504,6 +510,7 @@ export class RoutinesComponent implements OnInit {
           this.cancelAssignmentEdit();
         }
 
+        this.successMessage = 'Asignacion quitada correctamente.';
         this.loadData();
       },
       error: () => {
@@ -569,8 +576,8 @@ export class RoutinesComponent implements OnInit {
 
   assignmentRoutinePlaceholder(): string {
     return this.isCustomAssignmentDraft
-      ? 'Selecciona los ejercicios desde "Crear personalizado" para cargar series/reps/peso.'
-      : 'Selecciona una rutina para cargar series/reps/peso por alumno.';
+      ? 'Selecciona los ejercicios desde "Crear personalizado" para dejar armada la rutina exclusiva de este alumno.'
+      : 'Selecciona una plantilla para cargar series, repeticiones y peso para este alumno.';
   }
 
   templateUsageCount(templateId: number): number {

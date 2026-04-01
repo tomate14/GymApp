@@ -53,6 +53,13 @@
   background: rgba(255, 95, 31, 0.18);
 }
 
+.dashboard-group-card {
+  padding-top: 0.95rem;
+  padding-bottom: 0.95rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 @media (max-width: 1199px) {
   .kpi-card-compact {
     min-height: auto;

@@ -103,3 +103,30 @@
     <ion-spinner name="crescent"></ion-spinner>
   </div>
 </ng-template>
+
+<div class="welcome-overlay" *ngIf="showWelcomeGuide">
+  <section class="welcome-card">
+    <p class="eyebrow">Bienvenido a Fitexa</p>
+    <h2>Tu app ya esta lista</h2>
+    <p class="welcome-copy">
+      Desde aca vas a poder revisar tus datos, ver tus rutinas, anotar clases y seguir tus marcas personales.
+    </p>
+
+    <div class="welcome-points">
+      <article>
+        <strong>Datos personales</strong>
+        <span>Revisa tu plan, actividades incluidas y fecha de renovacion.</span>
+      </article>
+      <article>
+        <strong>Clases</strong>
+        <span>Explora que clases tenes disponibles y reserva tu lugar.</span>
+      </article>
+      <article>
+        <strong>Pesos maximos</strong>
+        <span>Registra tus mejores marcas y segui tu evolucion.</span>
+      </article>
+    </div>
+
+    <ion-button expand="block" (click)="dismissWelcomeGuide()">Empezar a usar la app</ion-button>
+  </section>
+</div>

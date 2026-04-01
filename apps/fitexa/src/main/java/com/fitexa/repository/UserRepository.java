@@ -184,8 +184,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
             where u.user_type = 'ALUMNO'
               and u.registration_date >= :fromDate
               and u.registration_date <= :toDate
-            group by year(u.registration_date)
-            order by period asc
+            group by cast(year(u.registration_date) as char)
+            order by cast(year(u.registration_date) as char) asc
             """,
         nativeQuery = true
     )
@@ -199,7 +199,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         from UserEntity u
         where (:userType is null or u.userType = :userType)
           and (:roleId is null or (u.role is not null and u.role.id = :roleId))
-          and (:name is null or lower(concat(u.firstName, ' ', u.lastName)) like lower(concat('%', :name, '%')))
+          and (
+            :name is null
+            or lower(concat(u.firstName, ' ', u.lastName)) like lower(concat('%', :name, '%'))
+            or lower(u.email) like lower(concat('%', :name, '%'))
+          )
           and (:dni is null or u.dni like concat('%', :dni, '%'))
           and (:paymentStatus is null or u.paymentStatus = :paymentStatus)
           and (:registrationFrom is null or u.registrationDate >= :registrationFrom)

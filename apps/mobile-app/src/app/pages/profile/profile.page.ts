@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonBadge, IonButton, IonCard, IonCardContent, IonInput, IonSpinner } from '@ionic/angular/standalone';
 import { MobileProfile, MobileProfileUpdateRequest } from '../../models/mobile.model';
+import { AuthService } from '../../services/auth.service';
 import { MobileAppService } from '../../services/mobile-app.service';
 
 @Component({
@@ -18,6 +19,7 @@ export class ProfilePageComponent implements OnInit {
   isLoading = true;
   isEditing = false;
   isSaving = false;
+  showWelcomeGuide = false;
   draft: MobileProfileUpdateRequest = {
     firstName: '',
     lastName: '',
@@ -26,13 +28,17 @@ export class ProfilePageComponent implements OnInit {
     birthDate: ''
   };
 
-  constructor(private readonly mobileAppService: MobileAppService) {}
+  constructor(
+    private readonly mobileAppService: MobileAppService,
+    private readonly authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.mobileAppService.getProfile().subscribe({
       next: (profile) => {
         this.profile = profile;
         this.syncDraft(profile);
+        this.showWelcomeGuide = this.authService.consumePendingOnboarding(profile.id);
         this.isLoading = false;
       },
       error: (err: { error?: { message?: string } }) => {
@@ -116,6 +122,10 @@ export class ProfilePageComponent implements OnInit {
 
   userTypeLabel(profile: MobileProfile): string {
     return profile.userType === 'profesor' ? 'Profesor' : 'Alumno';
+  }
+
+  dismissWelcomeGuide(): void {
+    this.showWelcomeGuide = false;
   }
 
   private syncDraft(profile: MobileProfile): void {

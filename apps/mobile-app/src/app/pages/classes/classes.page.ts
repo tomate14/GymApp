@@ -84,15 +84,28 @@ export class ClassesPageComponent implements OnInit {
 
   subscriptionLabel(item: MobileGymClass): string {
     if (item.ownClass) {
-      return 'La dictas vos';
+      return 'La das vos';
     }
     if (item.subscribed) {
-      return 'Ya suscripto';
+      return 'Ya anotado';
     }
     if (item.availableSpots === 0) {
       return 'Sin cupos';
     }
-    return 'Suscribirme';
+    return 'Anotarme';
+  }
+
+  statusLabel(item: MobileGymClass): string {
+    if (item.subscribed) {
+      return 'Ya anotado';
+    }
+    if (item.ownClass) {
+      return 'La das vos';
+    }
+    if (item.canSubscribe) {
+      return 'Disponible';
+    }
+    return 'No disponible';
   }
 
   toggleAvailableFilter(): void {
