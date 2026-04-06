@@ -12,6 +12,9 @@ import { MobileAppService } from '../../services/mobile-app.service';
   styleUrl: './classes.page.css'
 })
 export class ClassesPageComponent implements OnInit {
+  private static readonly PLAN_BLOCKED_MESSAGE =
+    'Tu plan esta vencido o adeudado. Regulariza tu cuota para anotarte a clases.';
+
   classes: MobileGymClass[] = [];
   activeTab: 'mine' | 'available' = 'mine';
   selectedDate = new Date().toISOString().slice(0, 10);
@@ -161,6 +164,7 @@ export class ClassesPageComponent implements OnInit {
       next: (classes) => {
         this.classes = classes;
         this.isLoading = false;
+        this.presentPlanBlockedToastIfNeeded(classes);
       },
       error: (err: { error?: { message?: string } }) => {
         this.errorMessage = err.error?.message ?? 'No se pudieron cargar las clases.';
@@ -172,5 +176,18 @@ export class ClassesPageComponent implements OnInit {
   private presentToast(message: string): void {
     this.toastMessage = message;
     this.toastOpen = true;
+  }
+
+  private presentPlanBlockedToastIfNeeded(classes: MobileGymClass[]): void {
+    const hasPlanBlockedClasses = classes.some((item) =>
+      !item.subscribed
+      && !item.ownClass
+      && !this.hasStarted(item)
+      && item.restrictionReason === ClassesPageComponent.PLAN_BLOCKED_MESSAGE
+    );
+
+    if (hasPlanBlockedClasses) {
+      this.presentToast(ClassesPageComponent.PLAN_BLOCKED_MESSAGE);
+    }
   }
 }

@@ -15,6 +15,7 @@ import com.fitexa.entities.ExercisePersonalRecordEntryEntity;
 import com.fitexa.entities.ExercisePersonalRecordEntity;
 import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.GymClassSubscriptionEntity;
+import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.RoutineAssignmentEntity;
 import com.fitexa.entities.RoutineAssignmentExerciseEntity;
 import com.fitexa.entities.UserEntity;
@@ -47,6 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MobileAppServiceImpl implements MobileAppService {
+
+    private static final String PLAN_PAYMENT_RESTRICTION_MESSAGE =
+        "Tu plan esta vencido o adeudado. Regulariza tu cuota para anotarte a clases.";
 
     private final AuthenticatedUserService authenticatedUserService;
     private final RoutineAssignmentRepository routineAssignmentRepository;
@@ -397,6 +401,9 @@ public class MobileAppServiceImpl implements MobileAppService {
         if (user.getUserType() != com.fitexa.entities.UserType.ALUMNO || user.getPlan() == null) {
             return null;
         }
+        if (hasExpiredOrOverduePlan(user, targetDate)) {
+            return PLAN_PAYMENT_RESTRICTION_MESSAGE;
+        }
         if (isFreePlan(user)) {
             return null;
         }
@@ -421,6 +428,13 @@ public class MobileAppServiceImpl implements MobileAppService {
             return false;
         }
         return "libre".equalsIgnoreCase(user.getPlan().getName().trim());
+    }
+
+    private boolean hasExpiredOrOverduePlan(UserEntity user, LocalDate targetDate) {
+        if (user.getPaymentStatus() != PaymentStatus.AL_DIA) {
+            return true;
+        }
+        return user.getRenewalDate() != null && user.getRenewalDate().isBefore(targetDate);
     }
 
     private boolean hasClassStarted(GymClassEntity gymClass, LocalDate targetDate) {
