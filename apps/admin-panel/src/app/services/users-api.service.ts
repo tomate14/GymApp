@@ -17,7 +17,6 @@ type UserApiRequest = {
   planId: number | null;
   activityIds: number[];
   registrationDate: string;
-  paymentStatus: User['paymentStatus'];
 };
 
 @Injectable({
@@ -61,8 +60,7 @@ export class UsersApiService {
       roleId: draft.roleId,
       planId: draft.planId,
       activityIds: draft.activityIds,
-      registrationDate: draft.registrationDate,
-      paymentStatus: draft.paymentStatus
+      registrationDate: draft.registrationDate
     };
   }
 }

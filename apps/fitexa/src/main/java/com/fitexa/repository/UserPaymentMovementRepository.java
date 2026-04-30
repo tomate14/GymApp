@@ -1,8 +1,8 @@
 package com.fitexa.repository;
 
 import com.fitexa.entities.UserPaymentMovementEntity;
-import com.fitexa.entities.PaymentStatus;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,13 +31,17 @@ public interface UserPaymentMovementRepository extends JpaRepository<UserPayment
         select count(distinct m.user.id)
         from UserPaymentMovementEntity m
         where m.detail = :detail
-          and m.user.paymentStatus = :paymentStatus
+          and (
+            (:paymentStatusAlDia = true and m.user.renewalDate >= :referenceDate)
+            or (:paymentStatusAlDia = false and m.user.renewalDate < :referenceDate)
+          )
           and m.paidAt >= :fromDateTime
           and m.paidAt <= :toDateTime
         """)
     long countDistinctUsersByDetailAndPaymentStatusAndPaidAtBetween(
         @Param("detail") String detail,
-        @Param("paymentStatus") PaymentStatus paymentStatus,
+        @Param("paymentStatusAlDia") boolean paymentStatusAlDia,
+        @Param("referenceDate") LocalDate referenceDate,
         @Param("fromDateTime") LocalDateTime fromDateTime,
         @Param("toDateTime") LocalDateTime toDateTime
     );

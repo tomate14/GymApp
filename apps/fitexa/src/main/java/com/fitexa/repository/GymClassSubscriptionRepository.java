@@ -86,7 +86,6 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         join gc.teacher t
         join s.user u
         where u.userType = com.fitexa.entities.UserType.ALUMNO
-          and u.paymentStatus = com.fitexa.entities.PaymentStatus.AL_DIA
           and u.renewalDate >= :referenceDate
           and u.registrationDate <= :referenceDate
           and s.targetDate <= :referenceDate

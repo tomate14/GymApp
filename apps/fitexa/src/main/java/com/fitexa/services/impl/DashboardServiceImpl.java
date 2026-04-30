@@ -25,6 +25,7 @@ import com.fitexa.services.impl.dashboard.DashboardClassOccurrenceMetric;
 import com.fitexa.services.impl.dashboard.DashboardStudentTrendChartStrategy;
 import com.fitexa.utils.DashboardGymClassSpecifications;
 import com.fitexa.utils.DashboardUserSpecifications;
+import com.fitexa.utils.PaymentStatusUtils;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -75,7 +76,8 @@ public class DashboardServiceImpl implements DashboardService {
             .count();
         long upToDate = userPaymentMovementRepository.countDistinctUsersByDetailAndPaymentStatusAndPaidAtBetween(
             RENEWAL_DETAIL,
-            PaymentStatus.AL_DIA,
+            true,
+            LocalDate.now(),
             effectiveFromDate.atStartOfDay(),
             effectiveToDate.atTime(LocalTime.MAX)
         );
@@ -196,7 +198,7 @@ public class DashboardServiceImpl implements DashboardService {
             .dni(item.getDni())
             .planName(item.getPlan() == null ? "Sin plan" : item.getPlan().getName())
             .renewalDate(item.getRenewalDate())
-            .paymentStatus(item.getPaymentStatus().getValue())
+            .paymentStatus(PaymentStatusUtils.fromRenewalDate(item.getRenewalDate()).getValue())
             .phone(item.getPhone())
             .build()
         );

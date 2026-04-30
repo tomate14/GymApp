@@ -2,7 +2,6 @@ package com.fitexa.services.impl.dashboard;
 
 import com.fitexa.dtos.DashboardChartDto;
 import com.fitexa.dtos.DashboardChartPointDto;
-import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.UserType;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.services.DashboardChartContext;
@@ -28,7 +27,6 @@ public class DashboardPlanDistributionChartStrategy implements DashboardChartStr
         LocalDate referenceDate = LocalDate.now();
         List<DashboardChartPointDto> points = userRepository.countActiveUsersByPlan(
                 UserType.ALUMNO,
-                PaymentStatus.AL_DIA,
                 referenceDate
             ).stream()
             .map(item -> DashboardChartPointDto.builder()

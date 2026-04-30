@@ -52,7 +52,11 @@ public final class DashboardUserSpecifications {
         if (paymentStatus == null) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("paymentStatus"), paymentStatus);
+        LocalDate today = LocalDate.now();
+        if (paymentStatus == PaymentStatus.AL_DIA) {
+            return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("renewalDate"), today);
+        }
+        return (root, query, cb) -> cb.lessThan(root.get("renewalDate"), today);
     }
 
     private static Specification<UserEntity> byRenewalFrom(LocalDate renewalFrom) {

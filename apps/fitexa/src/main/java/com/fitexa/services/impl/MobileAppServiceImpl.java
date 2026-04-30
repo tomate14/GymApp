@@ -15,7 +15,6 @@ import com.fitexa.entities.ExercisePersonalRecordEntryEntity;
 import com.fitexa.entities.ExercisePersonalRecordEntity;
 import com.fitexa.entities.GymClassEntity;
 import com.fitexa.entities.GymClassSubscriptionEntity;
-import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.RoutineAssignmentEntity;
 import com.fitexa.entities.RoutineAssignmentExerciseEntity;
 import com.fitexa.entities.UserEntity;
@@ -33,6 +32,7 @@ import com.fitexa.repository.UserPaymentMovementRepository;
 import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.MobileAppService;
 import com.fitexa.services.PaymentReceiptPdfService;
+import com.fitexa.utils.PaymentStatusUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -431,9 +431,6 @@ public class MobileAppServiceImpl implements MobileAppService {
     }
 
     private boolean hasExpiredOrOverduePlan(UserEntity user, LocalDate targetDate) {
-        if (user.getPaymentStatus() != PaymentStatus.AL_DIA) {
-            return true;
-        }
         return user.getRenewalDate() != null && user.getRenewalDate().isBefore(targetDate);
     }
 
@@ -533,7 +530,7 @@ public class MobileAppServiceImpl implements MobileAppService {
                         .toList()
             )
             .renewalDate(user.getRenewalDate())
-            .paymentStatus(user.getPaymentStatus())
+            .paymentStatus(PaymentStatusUtils.fromRenewalDate(user.getRenewalDate()))
             .build();
     }
 }

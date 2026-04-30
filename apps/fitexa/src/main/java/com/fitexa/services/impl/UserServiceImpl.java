@@ -19,6 +19,7 @@ import com.fitexa.repository.UserRepository;
 import com.fitexa.services.UserPaymentMovementService;
 import com.fitexa.services.UserService;
 import com.fitexa.utils.DateUtils;
+import com.fitexa.utils.PaymentStatusUtils;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -65,12 +66,15 @@ public class UserServiceImpl implements UserService {
         int page,
         int size
     ) {
+        PaymentStatus parsedPaymentStatus = parsePaymentStatus(paymentStatus);
         Page<UserResponseDto> result = userRepository.findForTable(
             parseUserType(type),
             roleId,
             clean(name),
             clean(dni),
-            parsePaymentStatus(paymentStatus),
+            parsedPaymentStatus != null,
+            parsedPaymentStatus == PaymentStatus.AL_DIA,
+            LocalDate.now(),
             registrationFrom,
             registrationTo,
             renewalFrom,
@@ -135,7 +139,6 @@ public class UserServiceImpl implements UserService {
             .activities(activities)
             .registrationDate(registrationDate)
             .renewalDate(DateUtils.plusOneMonth(registrationDate))
-            .paymentStatus(request.getPaymentStatus())
             .build();
 
         return toDto(userRepository.save(entity));
@@ -162,7 +165,6 @@ public class UserServiceImpl implements UserService {
         entity.setPlan(plan);
         entity.setActivities(activities);
         entity.setRegistrationDate(request.getRegistrationDate() == null ? entity.getRegistrationDate() : request.getRegistrationDate());
-        entity.setPaymentStatus(request.getPaymentStatus());
         String password = clean(request.getPassword());
         if (password != null) {
             entity.setPassword(passwordEncoder.encode(password));
@@ -199,7 +201,6 @@ public class UserServiceImpl implements UserService {
         }
 
         entity.setRenewalDate(DateUtils.plusOneMonth(LocalDate.now()));
-        entity.setPaymentStatus(PaymentStatus.AL_DIA);
         UserEntity savedEntity = userRepository.save(entity);
         userPaymentMovementService.registerRenewalMovement(savedEntity);
         return toDto(savedEntity);
@@ -292,7 +293,7 @@ public class UserServiceImpl implements UserService {
             .activityNames(activities.stream().map(ActivityEntity::getName).toList())
             .registrationDate(entity.getRegistrationDate())
             .renewalDate(entity.getRenewalDate())
-            .paymentStatus(entity.getPaymentStatus())
+            .paymentStatus(PaymentStatusUtils.fromRenewalDate(entity.getRenewalDate()))
             .build();
     }
 

@@ -1,6 +1,5 @@
 package com.fitexa.dtos;
 
-import com.fitexa.entities.PaymentStatus;
 import com.fitexa.entities.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -46,7 +45,4 @@ public class UserRequestDto {
     private List<Long> activityIds;
 
     private LocalDate registrationDate;
-
-    @NotNull
-    private PaymentStatus paymentStatus;
 }

@@ -40,10 +40,24 @@ CREATE TABLE IF NOT EXISTS users (
     plan_id BIGINT NULL,
     registration_date DATE NOT NULL,
     renewal_date DATE NOT NULL,
-    payment_status VARCHAR(40) NOT NULL,
     CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL,
     CONSTRAINT fk_users_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
 );
+
+SET @drop_payment_status_sql = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE users DROP COLUMN payment_status',
+        'SELECT 1'
+    )
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'payment_status'
+);
+PREPARE drop_payment_status_stmt FROM @drop_payment_status_sql;
+EXECUTE drop_payment_status_stmt;
+DEALLOCATE PREPARE drop_payment_status_stmt;
 
 CREATE TABLE IF NOT EXISTS user_payment_movements (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -567,8 +581,7 @@ INSERT INTO users (
     role_id,
     plan_id,
     registration_date,
-    renewal_date,
-    payment_status
+    renewal_date
 )
 SELECT
     'Admin',
@@ -584,8 +597,7 @@ SELECT
     @admin_role_id,
     NULL,
     CURDATE(),
-    '2099-12-31',
-    'AL_DIA'
+    '2099-12-31'
 WHERE NOT EXISTS (
     SELECT 1
     FROM users

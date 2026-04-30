@@ -24,22 +24,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
 
     long countByUserTypeAndRegistrationDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
 
-    long countByUserTypeAndPaymentStatus(UserType userType, PaymentStatus paymentStatus);
-
-    long countByUserTypeAndPaymentStatusAndRegistrationDateBetween(
-        UserType userType,
-        PaymentStatus paymentStatus,
-        LocalDate fromDate,
-        LocalDate toDate
-    );
-
-    long countByUserTypeAndPaymentStatusAndRenewalDateBetween(
-        UserType userType,
-        PaymentStatus paymentStatus,
-        LocalDate fromDate,
-        LocalDate toDate
-    );
-
     long countByUserTypeAndRenewalDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
 
     @Query("""
@@ -114,7 +98,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         from UserEntity u
         join u.plan p
         where u.userType = :userType
-          and u.paymentStatus = :paymentStatus
           and u.renewalDate >= :referenceDate
           and u.registrationDate <= :referenceDate
         group by p.id, p.name
@@ -122,38 +105,41 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         """)
     List<Object[]> countActiveUsersByPlan(
         @Param("userType") UserType userType,
-        @Param("paymentStatus") PaymentStatus paymentStatus,
         @Param("referenceDate") LocalDate referenceDate
     );
 
     @Query("""
-        select u.paymentStatus, count(u.id)
+        select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
-        group by u.paymentStatus
+        group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
-    List<Object[]> countUsersByPaymentStatus(@Param("userType") UserType userType);
+    List<Object[]> countUsersByPaymentStatus(
+        @Param("userType") UserType userType,
+        @Param("referenceDate") LocalDate referenceDate
+    );
 
     @Query("""
-        select u.paymentStatus, count(u.id)
+        select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
           and u.registrationDate >= :fromDate
           and u.registrationDate <= :toDate
-        group by u.paymentStatus
+        group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
     List<Object[]> countUsersByPaymentStatusInRegistrationRange(
         @Param("userType") UserType userType,
         @Param("fromDate") LocalDate fromDate,
-        @Param("toDate") LocalDate toDate
+        @Param("toDate") LocalDate toDate,
+        @Param("referenceDate") LocalDate referenceDate
     );
 
     @Query("""
-        select u.paymentStatus, count(u.id)
+        select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
           and u.registrationDate <= :referenceDate
-        group by u.paymentStatus
+        group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
     List<Object[]> countUsersByPaymentStatusUpToDate(
         @Param("userType") UserType userType,
@@ -205,7 +191,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
             or lower(u.email) like lower(concat('%', :name, '%'))
           )
           and (:dni is null or u.dni like concat('%', :dni, '%'))
-          and (:paymentStatus is null or u.paymentStatus = :paymentStatus)
+          and (
+            :filterPaymentStatus = false
+            or (:paymentStatusAlDia = true and u.renewalDate >= :referenceDate)
+            or (:paymentStatusAlDia = false and u.renewalDate < :referenceDate)
+          )
           and (:registrationFrom is null or u.registrationDate >= :registrationFrom)
           and (:registrationTo is null or u.registrationDate <= :registrationTo)
           and (:renewalFrom is null or u.renewalDate >= :renewalFrom)
@@ -216,7 +206,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         @Param("roleId") Long roleId,
         @Param("name") String name,
         @Param("dni") String dni,
-        @Param("paymentStatus") PaymentStatus paymentStatus,
+        @Param("filterPaymentStatus") boolean filterPaymentStatus,
+        @Param("paymentStatusAlDia") boolean paymentStatusAlDia,
+        @Param("referenceDate") LocalDate referenceDate,
         @Param("registrationFrom") LocalDate registrationFrom,
         @Param("registrationTo") LocalDate registrationTo,
         @Param("renewalFrom") LocalDate renewalFrom,

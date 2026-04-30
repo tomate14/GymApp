@@ -34,7 +34,7 @@ public class DashboardPaymentStatusChartStrategy implements DashboardChartStrate
             UserType.ALUMNO,
             referenceDate
         ).forEach(item ->
-            countByStatus.put((PaymentStatus) item[0], ((Number) item[1]).longValue())
+            countByStatus.put(PaymentStatus.valueOf(String.valueOf(item[0])), ((Number) item[1]).longValue())
         );
 
         List<DashboardChartPointDto> points = countByStatus.entrySet().stream()
