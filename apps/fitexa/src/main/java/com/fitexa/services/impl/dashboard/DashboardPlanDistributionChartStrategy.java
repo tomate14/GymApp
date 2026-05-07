@@ -27,6 +27,7 @@ public class DashboardPlanDistributionChartStrategy implements DashboardChartStr
         LocalDate referenceDate = LocalDate.now();
         List<DashboardChartPointDto> points = userRepository.countActiveUsersByPlan(
                 UserType.ALUMNO,
+                context.getClientId(),
                 referenceDate
             ).stream()
             .map(item -> DashboardChartPointDto.builder()

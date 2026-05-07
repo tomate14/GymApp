@@ -11,17 +11,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface UserPaymentMovementRepository extends JpaRepository<UserPaymentMovementEntity, Long> {
-    List<UserPaymentMovementEntity> findByUserIdOrderByPaidAtDesc(Long userId);
-    Optional<UserPaymentMovementEntity> findByIdAndUserId(Long id, Long userId);
+    List<UserPaymentMovementEntity> findByUserIdAndClientIdOrderByPaidAtDesc(Long userId, Long clientId);
+    Optional<UserPaymentMovementEntity> findByIdAndUserIdAndClientId(Long id, Long userId, Long clientId);
 
     @Query("""
         select count(m.id)
         from UserPaymentMovementEntity m
-        where m.detail = :detail
+        where m.client.id = :clientId
+          and m.detail = :detail
           and m.paidAt >= :fromDateTime
           and m.paidAt <= :toDateTime
         """)
     long countByDetailAndPaidAtBetween(
+        @Param("clientId") Long clientId,
         @Param("detail") String detail,
         @Param("fromDateTime") LocalDateTime fromDateTime,
         @Param("toDateTime") LocalDateTime toDateTime
@@ -30,7 +32,8 @@ public interface UserPaymentMovementRepository extends JpaRepository<UserPayment
     @Query("""
         select count(distinct m.user.id)
         from UserPaymentMovementEntity m
-        where m.detail = :detail
+        where m.client.id = :clientId
+          and m.detail = :detail
           and (
             (:paymentStatusAlDia = true and m.user.renewalDate >= :referenceDate)
             or (:paymentStatusAlDia = false and m.user.renewalDate < :referenceDate)
@@ -39,6 +42,7 @@ public interface UserPaymentMovementRepository extends JpaRepository<UserPayment
           and m.paidAt <= :toDateTime
         """)
     long countDistinctUsersByDetailAndPaymentStatusAndPaidAtBetween(
+        @Param("clientId") Long clientId,
         @Param("detail") String detail,
         @Param("paymentStatusAlDia") boolean paymentStatusAlDia,
         @Param("referenceDate") LocalDate referenceDate,
@@ -49,11 +53,13 @@ public interface UserPaymentMovementRepository extends JpaRepository<UserPayment
     @Query("""
         select coalesce(sum(m.amount), 0)
         from UserPaymentMovementEntity m
-        where m.detail = :detail
+        where m.client.id = :clientId
+          and m.detail = :detail
           and m.paidAt >= :fromDateTime
           and m.paidAt <= :toDateTime
         """)
     BigDecimal sumAmountByDetailAndPaidAtBetween(
+        @Param("clientId") Long clientId,
         @Param("detail") String detail,
         @Param("fromDateTime") LocalDateTime fromDateTime,
         @Param("toDateTime") LocalDateTime toDateTime

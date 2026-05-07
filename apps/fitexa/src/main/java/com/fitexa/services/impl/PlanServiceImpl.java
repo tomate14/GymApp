@@ -6,6 +6,7 @@ import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.PlanEntity;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.PlanRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.PlanService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,17 +23,19 @@ public class PlanServiceImpl implements PlanService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final PlanRepository planRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<PlanResponseDto> findAll() {
-        return planRepository.findAll().stream().map(this::toDto).toList();
+        return planRepository.findByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public DashboardPageResponseDto<PlanResponseDto> findPage(String name, String status, int page, int size) {
         Page<PlanResponseDto> result = planRepository.findForTable(
+            currentClientId(),
             clean(name),
             parseStatus(status),
             PageRequest.of(sanitizePage(page), sanitizeSize(size), Sort.by(Sort.Direction.ASC, "name"))
@@ -44,7 +47,7 @@ public class PlanServiceImpl implements PlanService {
     @Override
     @Transactional(readOnly = true)
     public List<PlanResponseDto> findActive() {
-        return planRepository.findByActiveTrue().stream().map(this::toDto).toList();
+        return planRepository.findByClientIdAndActiveTrue(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -62,6 +65,7 @@ public class PlanServiceImpl implements PlanService {
             .maxDaysPerWeek(request.getMaxDaysPerWeek())
             .active(request.getActive())
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(planRepository.save(entity));
     }
 
@@ -83,8 +87,12 @@ public class PlanServiceImpl implements PlanService {
     }
 
     private PlanEntity findEntity(Long id) {
-        return planRepository.findById(id)
+        return planRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado: " + id));
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private PlanResponseDto toDto(PlanEntity entity) {

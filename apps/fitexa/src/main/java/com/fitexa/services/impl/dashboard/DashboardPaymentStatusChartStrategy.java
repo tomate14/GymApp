@@ -32,6 +32,7 @@ public class DashboardPaymentStatusChartStrategy implements DashboardChartStrate
         Arrays.stream(PaymentStatus.values()).forEach(status -> countByStatus.put(status, 0L));
         userRepository.countUsersByPaymentStatusUpToDate(
             UserType.ALUMNO,
+            context.getClientId(),
             referenceDate
         ).forEach(item ->
             countByStatus.put(PaymentStatus.valueOf(String.valueOf(item[0])), ((Number) item[1]).longValue())

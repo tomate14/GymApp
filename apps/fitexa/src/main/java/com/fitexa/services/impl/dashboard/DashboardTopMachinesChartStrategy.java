@@ -30,6 +30,7 @@ public class DashboardTopMachinesChartStrategy implements DashboardChartStrategy
         List<DashboardChartPointDto> points = effectiveToDate.isBefore(context.getFromDate())
             ? List.of()
             : routineAssignmentExerciseRepository.findTopMachinesUsageByCompletedRoutineDays(
+                    context.getClientId(),
                     context.getFromDate(),
                     effectiveToDate
                 ).stream()

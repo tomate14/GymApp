@@ -5,5 +5,5 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExercisePersonalRecordEntryRepository extends JpaRepository<ExercisePersonalRecordEntryEntity, Long> {
-    List<ExercisePersonalRecordEntryEntity> findByUserIdAndExerciseIdOrderByRecordedAtAscIdAsc(Long userId, Long exerciseId);
+    List<ExercisePersonalRecordEntryEntity> findByUserIdAndExerciseIdAndClientIdOrderByRecordedAtAscIdAsc(Long userId, Long exerciseId, Long clientId);
 }

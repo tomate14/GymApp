@@ -50,7 +50,7 @@ public class DashboardStudentTrendChartStrategy implements DashboardChartStrateg
             current = current.plusMonths(1);
         }
 
-        userRepository.countStudentRegistrationsByMonth(queryFromDate, toDate).forEach(item -> {
+        userRepository.countStudentRegistrationsByMonth(context.getClientId(), queryFromDate, toDate).forEach(item -> {
             String key = String.valueOf(item[0]);
             long total = ((Number) item[1]).longValue();
             if (valuesByPeriod.containsKey(key)) {
@@ -85,7 +85,7 @@ public class DashboardStudentTrendChartStrategy implements DashboardChartStrateg
             valuesByPeriod.put(String.valueOf(year), 0L);
         }
 
-        userRepository.countStudentRegistrationsByYear(queryFromDate, queryToDate).forEach(item -> {
+        userRepository.countStudentRegistrationsByYear(context.getClientId(), queryFromDate, queryToDate).forEach(item -> {
             String key = String.valueOf(item[0]);
             long total = ((Number) item[1]).longValue();
             if (valuesByPeriod.containsKey(key)) {

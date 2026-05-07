@@ -14,22 +14,25 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                item.exerciseName as exerciseName,
                count(item.id) as usageCount
         from RoutineAssignmentExerciseEntity item
+        where item.client.id = :clientId
         group by item.exercise.id, item.exerciseName
         order by count(item.id) desc
         """)
-    List<DashboardExerciseUsageProjection> findTopExercisesUsage(Pageable pageable);
+    List<DashboardExerciseUsageProjection> findTopExercisesUsage(@Param("clientId") Long clientId, Pageable pageable);
 
     @Query("""
         select item.exercise.id as exerciseId,
                item.exerciseName as exerciseName,
                count(item.id) as usageCount
         from RoutineAssignmentExerciseEntity item
-        where item.assignment.startDate <= :toDate
+        where item.client.id = :clientId
+          and item.assignment.startDate <= :toDate
           and item.assignment.endDate >= :fromDate
         group by item.exercise.id, item.exerciseName
         order by count(item.id) desc
         """)
     List<DashboardExerciseUsageProjection> findTopExercisesUsageInRange(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate,
         Pageable pageable
@@ -40,11 +43,12 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                item.exercise.machine.name as machineName,
                count(item.id) as usageCount
         from RoutineAssignmentExerciseEntity item
-        where item.exercise.machine is not null
+        where item.client.id = :clientId
+          and item.exercise.machine is not null
         group by item.exercise.machine.id, item.exercise.machine.name
         order by count(item.id) desc
         """)
-    List<DashboardMachineUsageProjection> findTopMachinesUsage(Pageable pageable);
+    List<DashboardMachineUsageProjection> findTopMachinesUsage(@Param("clientId") Long clientId, Pageable pageable);
 
     @Query(
         value = """
@@ -54,6 +58,7 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
                        least(ra.end_date, :toDate) as end_date
                 from routine_assignments ra
                 where ra.start_date <= :toDate
+                  and ra.client_id = :clientId
                   and ra.end_date >= :fromDate
 
                 union all
@@ -101,6 +106,7 @@ public interface RoutineAssignmentExerciseRepository extends JpaRepository<Routi
         nativeQuery = true
     )
     List<DashboardMachineUsageProjection> findTopMachinesUsageByCompletedRoutineDays(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );

@@ -10,19 +10,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssignmentEntity, Long> {
+    java.util.Optional<RoutineAssignmentEntity> findByIdAndClientId(Long id, Long clientId);
+    List<RoutineAssignmentEntity> findByClientId(Long clientId);
 
-    List<RoutineAssignmentEntity> findByUserIdOrderByStartDateDescIdDesc(Long userId);
+    List<RoutineAssignmentEntity> findByUserIdAndClientIdOrderByStartDateDescIdDesc(Long userId, Long clientId);
 
     @Query("""
         select ra
         from RoutineAssignmentEntity ra
         where ra.user.id = :userId
+          and ra.client.id = :clientId
           and (:excludeId is null or ra.id <> :excludeId)
           and ra.startDate <= :endDate
           and ra.endDate >= :startDate
         """)
     List<RoutineAssignmentEntity> findOverlappingAssignments(
         @Param("userId") Long userId,
+        @Param("clientId") Long clientId,
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate,
         @Param("excludeId") Long excludeId
@@ -31,18 +35,21 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
     @Query("""
         select count(ra.id)
         from RoutineAssignmentEntity ra
-        where ra.startDate <= :referenceDate
+        where ra.client.id = :clientId
+          and ra.startDate <= :referenceDate
           and ra.endDate >= :referenceDate
         """)
-    long countCurrentAssignments(@Param("referenceDate") LocalDate referenceDate);
+    long countCurrentAssignments(@Param("clientId") Long clientId, @Param("referenceDate") LocalDate referenceDate);
 
     @Query("""
         select count(ra.id)
         from RoutineAssignmentEntity ra
-        where ra.startDate <= :toDate
+        where ra.client.id = :clientId
+          and ra.startDate <= :toDate
           and ra.endDate >= :fromDate
         """)
     long countAssignmentsOverlappingRange(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -50,17 +57,20 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
     @Query("""
         select count(ra.id)
         from RoutineAssignmentEntity ra
-        where ra.endDate < :referenceDate
+        where ra.client.id = :clientId
+          and ra.endDate < :referenceDate
         """)
-    long countExpiredAssignments(@Param("referenceDate") LocalDate referenceDate);
+    long countExpiredAssignments(@Param("clientId") Long clientId, @Param("referenceDate") LocalDate referenceDate);
 
     @Query("""
         select count(ra.id)
         from RoutineAssignmentEntity ra
-        where ra.endDate >= :fromDate
+        where ra.client.id = :clientId
+          and ra.endDate >= :fromDate
           and ra.endDate <= :toDate
         """)
     long countAssignmentsEndedInRange(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -80,7 +90,10 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
                 and ra.start_date <= :referenceDate
                 and ra.end_date >= :referenceDate
             join routine_assignment_days rad on rad.routine_assignment_id = ra.id
-            where u.user_type = 'ALUMNO'
+            where u.client_id = :clientId
+              and p.client_id = :clientId
+              and ra.client_id = :clientId
+              and u.user_type = 'ALUMNO'
               and (
                 :search is null
                 or lower(concat(u.first_name, ' ', u.last_name)) like lower(concat('%', :search, '%'))
@@ -99,7 +112,10 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
                     and ra.start_date <= :referenceDate
                     and ra.end_date >= :referenceDate
                 join routine_assignment_days rad on rad.routine_assignment_id = ra.id
-                where u.user_type = 'ALUMNO'
+                where u.client_id = :clientId
+                  and p.client_id = :clientId
+                  and ra.client_id = :clientId
+                  and u.user_type = 'ALUMNO'
                   and (
                     :search is null
                     or lower(concat(u.first_name, ' ', u.last_name)) like lower(concat('%', :search, '%'))
@@ -112,6 +128,7 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
         nativeQuery = true
     )
     Page<DashboardPlanOverloadProjection> findPlanOverloads(
+        @Param("clientId") Long clientId,
         @Param("referenceDate") LocalDate referenceDate,
         @Param("search") String search,
         Pageable pageable
@@ -132,7 +149,10 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
                 and ra.start_date <= :toDate
                 and ra.end_date >= :fromDate
             join routine_assignment_days rad on rad.routine_assignment_id = ra.id
-            where u.user_type = 'ALUMNO'
+            where u.client_id = :clientId
+              and p.client_id = :clientId
+              and ra.client_id = :clientId
+              and u.user_type = 'ALUMNO'
               and (
                 :search is null
                 or lower(concat(u.first_name, ' ', u.last_name)) like lower(concat('%', :search, '%'))
@@ -151,7 +171,10 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
                     and ra.start_date <= :toDate
                     and ra.end_date >= :fromDate
                 join routine_assignment_days rad on rad.routine_assignment_id = ra.id
-                where u.user_type = 'ALUMNO'
+                where u.client_id = :clientId
+                  and p.client_id = :clientId
+                  and ra.client_id = :clientId
+                  and u.user_type = 'ALUMNO'
                   and (
                     :search is null
                     or lower(concat(u.first_name, ' ', u.last_name)) like lower(concat('%', :search, '%'))
@@ -164,6 +187,7 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
         nativeQuery = true
     )
     Page<DashboardPlanOverloadProjection> findPlanOverloadsInRange(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate,
         @Param("search") String search,
@@ -175,7 +199,8 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
         from RoutineAssignmentEntity ra
         join ra.user u
         left join ra.routineTemplate rt
-        where (
+        where ra.client.id = :clientId
+          and (
             :student is null
             or lower(concat(u.firstName, ' ', u.lastName)) like lower(concat('%', :student, '%'))
             or u.dni like concat('%', :student, '%')
@@ -190,6 +215,7 @@ public interface RoutineAssignmentRepository extends JpaRepository<RoutineAssign
           )
         """)
     Page<RoutineAssignmentEntity> findForTable(
+        @Param("clientId") Long clientId,
         @Param("student") String student,
         @Param("templateId") Long templateId,
         @Param("currentOnly") boolean currentOnly,

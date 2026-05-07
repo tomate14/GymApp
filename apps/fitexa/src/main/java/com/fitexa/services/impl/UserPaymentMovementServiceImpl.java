@@ -8,6 +8,7 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.UserPaymentMovementRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.UserPaymentMovementService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,14 +24,16 @@ public class UserPaymentMovementServiceImpl implements UserPaymentMovementServic
 
     private final UserPaymentMovementRepository userPaymentMovementRepository;
     private final UserRepository userRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<UserPaymentMovementResponseDto> findByUserId(Long userId) {
-        if (!userRepository.existsById(userId)) {
+        Long clientId = currentClientId();
+        if (!userRepository.existsByIdAndClientId(userId, clientId)) {
             throw new ResourceNotFoundException("Usuario no encontrado: " + userId);
         }
-        return userPaymentMovementRepository.findByUserIdOrderByPaidAtDesc(userId).stream().map(this::toDto).toList();
+        return userPaymentMovementRepository.findByUserIdAndClientIdOrderByPaidAtDesc(userId, clientId).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -53,8 +56,13 @@ public class UserPaymentMovementServiceImpl implements UserPaymentMovementServic
             .detail(RENEWAL_DETAIL)
             .paidAt(LocalDateTime.now())
             .build();
+        entity.setClient(user.getClient());
 
         userPaymentMovementRepository.save(entity);
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private UserPaymentMovementResponseDto toDto(UserPaymentMovementEntity entity) {

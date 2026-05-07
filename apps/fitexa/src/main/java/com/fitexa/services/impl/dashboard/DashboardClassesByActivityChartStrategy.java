@@ -26,7 +26,7 @@ public class DashboardClassesByActivityChartStrategy implements DashboardChartSt
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
         LocalDate referenceDate = LocalDate.now();
-        LocalDate fromDate = gymClassRepository.findEarliestClassDate();
+        LocalDate fromDate = gymClassRepository.findEarliestClassDate(context.getClientId());
         if (fromDate == null || fromDate.isAfter(referenceDate)) {
             fromDate = referenceDate;
         }

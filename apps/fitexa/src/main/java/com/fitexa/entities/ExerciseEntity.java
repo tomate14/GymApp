@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExerciseEntity {
+public class ExerciseEntity extends ClientScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

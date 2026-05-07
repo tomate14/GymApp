@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RoutineTemplateEntity {
+public class RoutineTemplateEntity extends ClientScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

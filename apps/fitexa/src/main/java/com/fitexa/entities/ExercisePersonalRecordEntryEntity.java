@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExercisePersonalRecordEntryEntity {
+public class ExercisePersonalRecordEntryEntity extends ClientScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

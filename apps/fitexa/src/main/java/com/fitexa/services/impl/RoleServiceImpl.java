@@ -9,6 +9,7 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.RoleRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.RoleService;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,11 +23,12 @@ public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<RoleResponseDto> findAll() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findAllByClientId(currentClientId()).stream()
             .map(this::toDto)
             .toList();
     }
@@ -41,7 +43,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public RoleResponseDto create(RoleRequestDto request) {
         String normalizedName = normalizeName(request.getName());
-        if (roleRepository.existsByNameIgnoreCase(normalizedName)) {
+        if (roleRepository.existsByNameIgnoreCaseAndClientId(normalizedName, currentClientId())) {
             throw new BusinessValidationException("Ya existe un rol con ese nombre.");
         }
 
@@ -51,6 +53,7 @@ public class RoleServiceImpl implements RoleService {
             .systemRole(false)
             .menuItems(request.getMenuItems() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(request.getMenuItems()))
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
 
         return toDto(roleRepository.save(entity));
     }
@@ -61,7 +64,7 @@ public class RoleServiceImpl implements RoleService {
         RoleEntity entity = findEntity(id);
         String normalizedName = normalizeName(request.getName());
 
-        roleRepository.findByNameIgnoreCase(normalizedName)
+        roleRepository.findByNameIgnoreCaseAndClientId(normalizedName, currentClientId())
             .filter(existing -> !existing.getId().equals(id))
             .ifPresent(existing -> {
                 throw new BusinessValidationException("Ya existe un rol con ese nombre.");
@@ -81,7 +84,7 @@ public class RoleServiceImpl implements RoleService {
         if (entity.isSystemRole()) {
             throw new BusinessValidationException("No se puede eliminar un rol del sistema.");
         }
-        if (userRepository.countByRoleId(id) > 0) {
+        if (userRepository.countByRoleIdAndClientId(id, currentClientId()) > 0) {
             throw new BusinessValidationException("No se puede eliminar un rol que esta asignado a usuarios.");
         }
         roleRepository.delete(entity);
@@ -100,7 +103,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private RoleEntity findEntity(Long id) {
-        return roleRepository.findById(id)
+        return roleRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + id));
     }
 
@@ -110,9 +113,13 @@ public class RoleServiceImpl implements RoleService {
             .name(entity.getName())
             .description(entity.getDescription())
             .systemRole(entity.isSystemRole())
-            .assignedUsersCount(userRepository.countByRoleId(entity.getId()))
+            .assignedUsersCount(userRepository.countByRoleIdAndClientId(entity.getId(), currentClientId()))
             .menuItems(new LinkedHashSet<>(entity.getMenuItems()))
             .build();
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private String normalizeName(String value) {

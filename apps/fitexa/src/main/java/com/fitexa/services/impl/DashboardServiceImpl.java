@@ -16,6 +16,7 @@ import com.fitexa.repository.DashboardPlanOverloadProjection;
 import com.fitexa.repository.RoutineAssignmentRepository;
 import com.fitexa.repository.UserRepository;
 import com.fitexa.repository.UserPaymentMovementRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.DashboardChartContext;
 import com.fitexa.services.DashboardChartStrategy;
 import com.fitexa.services.DashboardService;
@@ -57,6 +58,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final DashboardClassMetricsService dashboardClassMetricsService;
     private final DashboardStudentTrendChartStrategy dashboardStudentTrendChartStrategy;
     private final List<DashboardChartStrategy> dashboardChartStrategies;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,9 +67,10 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDate effectiveFromDate = range[0];
         LocalDate effectiveToDate = range[1];
         DashboardStudentsTrendMode trendMode = DashboardStudentsTrendMode.fromValue(studentsTrendMode);
+        Long clientId = currentClientId();
 
-        long totalStudents = userRepository.countByUserType(UserType.ALUMNO);
-        long newStudents = userRepository.countByUserTypeAndRegistrationDateBetween(UserType.ALUMNO, effectiveFromDate, effectiveToDate);
+        long totalStudents = userRepository.countByUserTypeAndClientId(UserType.ALUMNO, clientId);
+        long newStudents = userRepository.countByUserTypeAndClientIdAndRegistrationDateBetween(UserType.ALUMNO, clientId, effectiveFromDate, effectiveToDate);
         List<DashboardClassOccurrenceMetric> classOccurrences = dashboardClassMetricsService.listOccurrences(effectiveFromDate, effectiveToDate);
         long teachers = classOccurrences.stream()
             .filter(DashboardClassOccurrenceMetric::hasTeacherAssigned)
@@ -75,17 +78,19 @@ public class DashboardServiceImpl implements DashboardService {
             .distinct()
             .count();
         long upToDate = userPaymentMovementRepository.countDistinctUsersByDetailAndPaymentStatusAndPaidAtBetween(
+            clientId,
             RENEWAL_DETAIL,
             true,
             LocalDate.now(),
             effectiveFromDate.atStartOfDay(),
             effectiveToDate.atTime(LocalTime.MAX)
         );
-        long renewalsInRange = userRepository.countByUserTypeAndRenewalDateBetween(UserType.ALUMNO, effectiveFromDate, effectiveToDate);
+        long renewalsInRange = userRepository.countByUserTypeAndClientIdAndRenewalDateBetween(UserType.ALUMNO, clientId, effectiveFromDate, effectiveToDate);
         long classesInRange = classOccurrences.size();
         double occupancy = averageOccupancy(classOccurrences);
-        long activeRoutines = routineAssignmentRepository.countAssignmentsOverlappingRange(effectiveFromDate, effectiveToDate);
+        long activeRoutines = routineAssignmentRepository.countAssignmentsOverlappingRange(clientId, effectiveFromDate, effectiveToDate);
         BigDecimal estimatedRevenue = userPaymentMovementRepository.sumAmountByDetailAndPaidAtBetween(
+            clientId,
             RENEWAL_DETAIL,
             effectiveFromDate.atStartOfDay(),
             effectiveToDate.atTime(LocalTime.MAX)
@@ -103,14 +108,15 @@ public class DashboardServiceImpl implements DashboardService {
             DashboardKpiDto.builder().key("revenue").label("Ingresos por renovaciones").value(currency(estimatedRevenue)).hint("Cobros registrados en el periodo").build()
         );
 
-        long studentsWithoutPlan = userRepository.countByUserTypeAndPlanIsNullAndRegistrationDateBetween(
+        long studentsWithoutPlan = userRepository.countByUserTypeAndClientIdAndPlanIsNullAndRegistrationDateBetween(
             UserType.ALUMNO,
+            clientId,
             effectiveFromDate,
             effectiveToDate
         );
         long classesWithoutTeacher = classOccurrences.stream().filter(item -> !item.hasTeacherAssigned()).count();
         long classesAtCapacity = classOccurrences.stream().filter(DashboardClassOccurrenceMetric::isAtCapacity).count();
-        long expiredRoutines = routineAssignmentRepository.countAssignmentsEndedInRange(effectiveFromDate, effectiveToDate);
+        long expiredRoutines = routineAssignmentRepository.countAssignmentsEndedInRange(clientId, effectiveFromDate, effectiveToDate);
 
         List<DashboardAlertDto> alerts = List.of(
             DashboardAlertDto.builder().key("students-without-plan").label("Alumnos sin plan").count(studentsWithoutPlan).severity("high").build(),
@@ -123,6 +129,7 @@ public class DashboardServiceImpl implements DashboardService {
             .sorted(Comparator.comparingInt(DashboardChartStrategy::order))
             .map(strategy -> strategy.build(
                 DashboardChartContext.builder()
+                    .clientId(clientId)
                     .fromDate(effectiveFromDate)
                     .toDate(effectiveToDate)
                     .referenceDate(effectiveToDate)
@@ -145,6 +152,7 @@ public class DashboardServiceImpl implements DashboardService {
         DashboardStudentsTrendMode trendMode = DashboardStudentsTrendMode.fromValue(studentsTrendMode);
         return dashboardStudentTrendChartStrategy.build(
             DashboardChartContext.builder()
+                .clientId(currentClientId())
                 .fromDate(range[0])
                 .toDate(range[1])
                 .referenceDate(range[1])
@@ -183,6 +191,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         Page<UserEntity> resultPage = userRepository.findAll(
             DashboardUserSpecifications.buildRenewalsFilter(
+                currentClientId(),
                 clean(search),
                 planId,
                 parsedPaymentStatus,
@@ -225,7 +234,7 @@ public class DashboardServiceImpl implements DashboardService {
             .listOccurrences(
                 effectiveFrom,
                 effectiveTo,
-                DashboardGymClassSpecifications.buildClassScheduleFilter(clean(search), activityId, teacherId)
+                DashboardGymClassSpecifications.buildClassScheduleFilter(currentClientId(), clean(search), activityId, teacherId)
             )
             .stream()
             .map(this::toClassRowDto)
@@ -321,6 +330,7 @@ public class DashboardServiceImpl implements DashboardService {
         Pageable pageable = PageRequest.of(sanitizePage(page), sanitizeSize(size));
 
         Page<DashboardPlanOverloadRowDto> dtoPage = routineAssignmentRepository.findPlanOverloadsInRange(
+            currentClientId(),
             globalRange[0],
             globalRange[1],
             clean(search),
@@ -438,6 +448,10 @@ public class DashboardServiceImpl implements DashboardService {
 
     private String dateRangeHint(LocalDate fromDate, LocalDate toDate) {
         return fromDate + " a " + toDate;
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private static final class ActivityRankingAccumulator {

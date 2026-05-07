@@ -14,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class FitexaUserDetails implements UserDetails {
 
     private final Long id;
+    private final Long clientId;
+    private final String clientName;
+    private final String clientSlug;
     private final String email;
     private final String password;
     private final String fullName;
@@ -23,6 +26,9 @@ public class FitexaUserDetails implements UserDetails {
     public static FitexaUserDetails from(UserEntity entity) {
         return new FitexaUserDetails(
             entity.getId(),
+            entity.getClient().getId(),
+            entity.getClient().getName(),
+            entity.getClient().getSlug(),
             entity.getEmail(),
             entity.getPassword(),
             entity.getFirstName() + " " + entity.getLastName(),

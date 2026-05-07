@@ -24,6 +24,7 @@ public class DashboardTopExercisesChartStrategy implements DashboardChartStrateg
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
         List<DashboardChartPointDto> points = routineAssignmentExerciseRepository.findTopExercisesUsageInRange(
+                context.getClientId(),
                 context.getFromDate(),
                 context.getToDate(),
                 PageRequest.of(0, 10)

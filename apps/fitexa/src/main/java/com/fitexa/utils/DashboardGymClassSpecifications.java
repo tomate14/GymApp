@@ -7,13 +7,19 @@ public final class DashboardGymClassSpecifications {
     private DashboardGymClassSpecifications() {}
 
     public static Specification<GymClassEntity> buildClassScheduleFilter(
+        Long clientId,
         String search,
         Long activityId,
         Long teacherId
     ) {
-        return Specification.where(bySearch(search))
+        return Specification.where(byClient(clientId))
+            .and(bySearch(search))
             .and(byActivity(activityId))
             .and(byTeacher(teacherId));
+    }
+
+    private static Specification<GymClassEntity> byClient(Long clientId) {
+        return (root, query, cb) -> cb.equal(root.get("client").get("id"), clientId);
     }
 
     private static Specification<GymClassEntity> bySearch(String search) {

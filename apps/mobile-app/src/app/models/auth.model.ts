@@ -8,6 +8,9 @@ export type LoginResponse = {
   tokenType: string;
   expiresInSeconds: number;
   userId: number;
+  clientId: number;
+  clientName: string;
+  clientSlug: string;
   fullName: string;
   email: string;
   userType: string;

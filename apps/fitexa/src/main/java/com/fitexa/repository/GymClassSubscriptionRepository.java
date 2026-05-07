@@ -9,22 +9,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSubscriptionEntity, Long> {
-    long countByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
-    boolean existsByGymClassIdAndUserIdAndTargetDate(Long gymClassId, Long userId, LocalDate targetDate);
-    List<GymClassSubscriptionEntity> findByUserIdAndTargetDate(Long userId, LocalDate targetDate);
-    List<GymClassSubscriptionEntity> findByUserIdAndTargetDateBetween(Long userId, LocalDate fromDate, LocalDate toDate);
-    List<GymClassSubscriptionEntity> findByGymClassIdAndTargetDate(Long gymClassId, LocalDate targetDate);
+    long countByGymClassIdAndClientIdAndTargetDate(Long gymClassId, Long clientId, LocalDate targetDate);
+    boolean existsByGymClassIdAndUserIdAndClientIdAndTargetDate(Long gymClassId, Long userId, Long clientId, LocalDate targetDate);
+    List<GymClassSubscriptionEntity> findByUserIdAndClientIdAndTargetDate(Long userId, Long clientId, LocalDate targetDate);
+    List<GymClassSubscriptionEntity> findByUserIdAndClientIdAndTargetDateBetween(Long userId, Long clientId, LocalDate fromDate, LocalDate toDate);
+    List<GymClassSubscriptionEntity> findByGymClassIdAndClientIdAndTargetDate(Long gymClassId, Long clientId, LocalDate targetDate);
 
     @Query("""
         select s
         from GymClassSubscriptionEntity s
         join fetch s.user u
         where s.gymClass.id = :gymClassId
+          and s.client.id = :clientId
           and s.targetDate = :targetDate
         order by u.lastName asc, u.firstName asc
         """)
     List<GymClassSubscriptionEntity> findDetailedByGymClassIdAndTargetDate(
         @Param("gymClassId") Long gymClassId,
+        @Param("clientId") Long clientId,
         @Param("targetDate") LocalDate targetDate
     );
 
@@ -33,13 +35,15 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
                s.targetDate as targetDate,
                count(s.id) as attendanceCount
         from GymClassSubscriptionEntity s
-        where s.gymClass.id in :gymClassIds
+        where s.client.id = :clientId
+          and s.gymClass.id in :gymClassIds
           and s.targetDate >= :fromDate
           and s.targetDate <= :toDate
           and s.attendancePresent = true
         group by s.gymClass.id, s.targetDate
         """)
     List<DashboardClassAttendanceCountProjection> countAttendanceByGymClassIdsAndTargetDateBetween(
+        @Param("clientId") Long clientId,
         @Param("gymClassIds") Collection<Long> gymClassIds,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
@@ -50,12 +54,14 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
                s.targetDate as targetDate,
                count(s.id) as subscribedCount
         from GymClassSubscriptionEntity s
-        where s.gymClass.id in :gymClassIds
+        where s.client.id = :clientId
+          and s.gymClass.id in :gymClassIds
           and s.targetDate >= :fromDate
           and s.targetDate <= :toDate
         group by s.gymClass.id, s.targetDate
         """)
     List<DashboardClassSubscriptionCountProjection> countSubscriptionsByGymClassIdsAndTargetDateBetween(
+        @Param("clientId") Long clientId,
         @Param("gymClassIds") Collection<Long> gymClassIds,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
@@ -68,12 +74,14 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         join s.gymClass gc
         join gc.teacher t
         where s.user.userType = com.fitexa.entities.UserType.ALUMNO
+          and s.client.id = :clientId
           and (:fromDate is null or s.targetDate >= :fromDate)
           and (:toDate is null or s.targetDate <= :toDate)
         group by t.id, t.firstName, t.lastName
         order by count(distinct s.user.id) desc
         """)
     List<DashboardStudentsByTeacherProjection> countStudentsByTeacherInRange(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -86,6 +94,7 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         join gc.teacher t
         join s.user u
         where u.userType = com.fitexa.entities.UserType.ALUMNO
+          and s.client.id = :clientId
           and u.renewalDate >= :referenceDate
           and u.registrationDate <= :referenceDate
           and s.targetDate <= :referenceDate
@@ -93,6 +102,7 @@ public interface GymClassSubscriptionRepository extends JpaRepository<GymClassSu
         order by count(distinct s.user.id) desc
         """)
     List<DashboardStudentsByTeacherProjection> countActiveStudentsByTeacher(
+        @Param("clientId") Long clientId,
         @Param("referenceDate") LocalDate referenceDate
     );
 }

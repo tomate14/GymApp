@@ -10,6 +10,7 @@ import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ExerciseRepository;
 import com.fitexa.repository.RoutineTemplateRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.RoutineTemplateService;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
@@ -30,11 +31,12 @@ public class RoutineTemplateServiceImpl implements RoutineTemplateService {
 
     private final RoutineTemplateRepository routineTemplateRepository;
     private final ExerciseRepository exerciseRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<RoutineTemplateResponseDto> findAll() {
-        return routineTemplateRepository.findAll().stream().map(this::toDto).toList();
+        return routineTemplateRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -50,6 +52,7 @@ public class RoutineTemplateServiceImpl implements RoutineTemplateService {
         Integer normalizedMinStudents = minStudents == null || minStudents <= 0 ? null : minStudents;
 
         Page<RoutineTemplateResponseDto> result = routineTemplateRepository.findForTable(
+            currentClientId(),
             clean(name),
             normalizedMinExercises,
             normalizedMinStudents,
@@ -79,6 +82,7 @@ public class RoutineTemplateServiceImpl implements RoutineTemplateService {
             .createdAt(request.getCreatedAt() == null ? LocalDate.now() : request.getCreatedAt())
             .exercises(exercises)
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(routineTemplateRepository.save(entity));
     }
 
@@ -105,13 +109,15 @@ public class RoutineTemplateServiceImpl implements RoutineTemplateService {
         Set<ExerciseEntity> exercises = new LinkedHashSet<>();
         ids.forEach(exerciseId -> exercises.add(
             exerciseRepository.findById(exerciseId)
+                .filter(item -> item.getClient().getId().equals(currentClientId()))
+                .or(() -> exerciseRepository.findByIdAndClientId(exerciseId, currentClientId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado: " + exerciseId))
         ));
         return exercises;
     }
 
     private RoutineTemplateEntity findEntity(Long id) {
-        return routineTemplateRepository.findById(id)
+        return routineTemplateRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Rutina no encontrada: " + id));
     }
 
@@ -155,5 +161,9 @@ public class RoutineTemplateServiceImpl implements RoutineTemplateService {
             return 8;
         }
         return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 }

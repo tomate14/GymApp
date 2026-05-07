@@ -7,6 +7,7 @@ import lombok.Value;
 @Value
 @Builder
 public class DashboardChartContext {
+    Long clientId;
     LocalDate fromDate;
     LocalDate toDate;
     LocalDate referenceDate;

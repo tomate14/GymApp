@@ -12,6 +12,9 @@ public class AuthLoginResponseDto {
     private String tokenType;
     private long expiresInSeconds;
     private Long userId;
+    private Long clientId;
+    private String clientName;
+    private String clientSlug;
     private String fullName;
     private String email;
     private String userType;

@@ -6,6 +6,7 @@ import com.fitexa.repository.DashboardClassAttendanceCountProjection;
 import com.fitexa.repository.DashboardClassSubscriptionCountProjection;
 import com.fitexa.repository.GymClassRepository;
 import com.fitexa.repository.GymClassSubscriptionRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -27,10 +28,11 @@ public class DashboardClassMetricsService {
 
     private final GymClassRepository gymClassRepository;
     private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Transactional(readOnly = true)
     public List<DashboardClassOccurrenceMetric> listOccurrences(LocalDate fromDate, LocalDate toDate) {
-        return buildOccurrences(gymClassRepository.findAll(), fromDate, toDate);
+        return buildOccurrences(gymClassRepository.findAllByClientId(currentClientId()), fromDate, toDate);
     }
 
     @Transactional(readOnly = true)
@@ -40,7 +42,7 @@ public class DashboardClassMetricsService {
         Specification<GymClassEntity> specification
     ) {
         List<GymClassEntity> classes = specification == null
-            ? gymClassRepository.findAll()
+            ? gymClassRepository.findAllByClientId(currentClientId())
             : gymClassRepository.findAll(specification);
         return buildOccurrences(classes, fromDate, toDate);
     }
@@ -80,7 +82,7 @@ public class DashboardClassMetricsService {
 
         Map<String, Integer> counts = new HashMap<>();
         for (DashboardClassSubscriptionCountProjection item :
-            gymClassSubscriptionRepository.countSubscriptionsByGymClassIdsAndTargetDateBetween(classIds, fromDate, toDate)) {
+            gymClassSubscriptionRepository.countSubscriptionsByGymClassIdsAndTargetDateBetween(currentClientId(), classIds, fromDate, toDate)) {
             counts.put(key(item.getGymClassId(), item.getTargetDate()), item.getSubscribedCount().intValue());
         }
         return counts;
@@ -95,7 +97,7 @@ public class DashboardClassMetricsService {
 
         Map<String, Integer> counts = new HashMap<>();
         for (DashboardClassAttendanceCountProjection item :
-            gymClassSubscriptionRepository.countAttendanceByGymClassIdsAndTargetDateBetween(classIds, fromDate, toDate)) {
+            gymClassSubscriptionRepository.countAttendanceByGymClassIdsAndTargetDateBetween(currentClientId(), classIds, fromDate, toDate)) {
             counts.put(key(item.getGymClassId(), item.getTargetDate()), item.getAttendanceCount().intValue());
         }
         return counts;
@@ -198,5 +200,9 @@ public class DashboardClassMetricsService {
 
     private String key(Long gymClassId, LocalDate targetDate) {
         return gymClassId + "|" + targetDate;
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 }

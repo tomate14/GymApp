@@ -5,6 +5,7 @@ import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.MachineEntity;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.MachineRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.MachinePhotoStorageService;
 import com.fitexa.services.MachineService;
 import java.io.IOException;
@@ -25,17 +26,19 @@ public class MachineServiceImpl implements MachineService {
 
     private final MachineRepository machineRepository;
     private final MachinePhotoStorageService machinePhotoStorageService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<MachineResponseDto> findAll() {
-        return machineRepository.findAll().stream().map(this::toDto).toList();
+        return machineRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public DashboardPageResponseDto<MachineResponseDto> findPage(String name, boolean onlyInUse, int page, int size) {
         Page<MachineResponseDto> result = machineRepository.findForTable(
+            currentClientId(),
             clean(name),
             onlyInUse,
             PageRequest.of(sanitizePage(page), sanitizeSize(size), Sort.by(Sort.Direction.ASC, "name"))
@@ -58,6 +61,7 @@ public class MachineServiceImpl implements MachineService {
             .quantity(cleanRequiredQuantity(quantity))
             .photoUrl(storePhoto(photo))
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(machineRepository.save(entity));
     }
 
@@ -82,8 +86,12 @@ public class MachineServiceImpl implements MachineService {
     }
 
     private MachineEntity findEntity(Long id) {
-        return machineRepository.findById(id)
+        return machineRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Maquina no encontrada: " + id));
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private MachineResponseDto toDto(MachineEntity entity) {

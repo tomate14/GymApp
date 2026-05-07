@@ -10,6 +10,7 @@ import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.ExerciseRepository;
 import com.fitexa.repository.MachineRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.ExerciseService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +29,12 @@ public class ExerciseServiceImpl implements ExerciseService {
     private final ExerciseRepository exerciseRepository;
     private final ActivityRepository activityRepository;
     private final MachineRepository machineRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<ExerciseResponseDto> findAll() {
-        return exerciseRepository.findAll().stream().map(this::toDto).toList();
+        return exerciseRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -45,6 +47,7 @@ public class ExerciseServiceImpl implements ExerciseService {
         int size
     ) {
         Page<ExerciseResponseDto> result = exerciseRepository.findForTable(
+            currentClientId(),
             clean(name),
             activityId,
             machineId,
@@ -69,6 +72,7 @@ public class ExerciseServiceImpl implements ExerciseService {
             .machine(findMachine(request.getMachineId()))
             .videoUrl(request.getVideoUrl())
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(exerciseRepository.save(entity));
     }
 
@@ -90,7 +94,7 @@ public class ExerciseServiceImpl implements ExerciseService {
     }
 
     private ExerciseEntity findEntity(Long id) {
-        return exerciseRepository.findById(id)
+        return exerciseRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado: " + id));
     }
 
@@ -98,7 +102,7 @@ public class ExerciseServiceImpl implements ExerciseService {
         if (id == null) {
             return null;
         }
-        return activityRepository.findById(id)
+        return activityRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada: " + id));
     }
 
@@ -106,8 +110,12 @@ public class ExerciseServiceImpl implements ExerciseService {
         if (id == null) {
             return null;
         }
-        return machineRepository.findById(id)
+        return machineRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Maquina no encontrada: " + id));
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private ExerciseResponseDto toDto(ExerciseEntity entity) {

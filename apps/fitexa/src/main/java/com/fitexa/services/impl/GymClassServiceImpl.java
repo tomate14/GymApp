@@ -19,6 +19,7 @@ import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.GymClassRepository;
 import com.fitexa.repository.GymClassSubscriptionRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.GymClassService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,11 +46,12 @@ public class GymClassServiceImpl implements GymClassService {
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
     private final GymClassSubscriptionRepository gymClassSubscriptionRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<GymClassResponseDto> findAll() {
-        return gymClassRepository.findAll().stream().map(this::toDto).toList();
+        return gymClassRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -64,6 +66,7 @@ public class GymClassServiceImpl implements GymClassService {
     ) {
         WeekDay parsedWeekDay = parseWeekDay(weekDay);
         Page<GymClassResponseDto> result = gymClassRepository.findForTable(
+            currentClientId(),
             clean(className),
             activityId,
             teacherId,
@@ -90,7 +93,7 @@ public class GymClassServiceImpl implements GymClassService {
         GymClassEntity gymClass = findEntity(id);
         LocalDate effectiveDate = targetDate == null ? LocalDate.now() : targetDate;
         List<GymClassAttendanceStudentDto> students = gymClassSubscriptionRepository
-            .findDetailedByGymClassIdAndTargetDate(id, effectiveDate)
+            .findDetailedByGymClassIdAndTargetDate(id, currentClientId(), effectiveDate)
             .stream()
             .map(this::toAttendanceStudentDto)
             .toList();
@@ -108,7 +111,7 @@ public class GymClassServiceImpl implements GymClassService {
     public GymClassAttendanceResponseDto updateAttendance(Long id, LocalDate targetDate, GymClassAttendanceUpdateRequestDto request) {
         GymClassEntity gymClass = findEntity(id);
         LocalDate effectiveDate = targetDate == null ? LocalDate.now() : targetDate;
-        List<GymClassSubscriptionEntity> subscriptions = gymClassSubscriptionRepository.findDetailedByGymClassIdAndTargetDate(id, effectiveDate);
+        List<GymClassSubscriptionEntity> subscriptions = gymClassSubscriptionRepository.findDetailedByGymClassIdAndTargetDate(id, currentClientId(), effectiveDate);
         Map<Long, GymClassSubscriptionEntity> subscriptionsById = new LinkedHashMap<>();
         for (GymClassSubscriptionEntity subscription : subscriptions) {
             subscriptionsById.put(subscription.getId(), subscription);
@@ -152,6 +155,7 @@ public class GymClassServiceImpl implements GymClassService {
             .startTime(allDay ? null : request.getStartTime())
             .endTime(allDay ? null : request.getEndTime())
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(gymClassRepository.save(entity));
     }
 
@@ -182,7 +186,7 @@ public class GymClassServiceImpl implements GymClassService {
     }
 
     private GymClassEntity findEntity(Long id) {
-        return gymClassRepository.findById(id)
+        return gymClassRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada: " + id));
     }
 
@@ -190,7 +194,7 @@ public class GymClassServiceImpl implements GymClassService {
         if (id == null) {
             return null;
         }
-        return activityRepository.findById(id)
+        return activityRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada: " + id));
     }
 
@@ -198,7 +202,7 @@ public class GymClassServiceImpl implements GymClassService {
         if (id == null) {
             return null;
         }
-        UserEntity teacher = userRepository.findById(id)
+        UserEntity teacher = userRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado: " + id));
         if (teacher.getUserType() != UserType.PROFESOR) {
             throw new BusinessValidationException("El usuario seleccionado no es profesor.");
@@ -323,5 +327,9 @@ public class GymClassServiceImpl implements GymClassService {
             case 6 -> WeekDay.SABADO;
             default -> WeekDay.DOMINGO;
         };
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 }

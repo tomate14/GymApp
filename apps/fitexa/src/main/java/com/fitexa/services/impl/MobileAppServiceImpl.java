@@ -87,8 +87,9 @@ public class MobileAppServiceImpl implements MobileAppService {
     public List<MobileRoutineResponseDto> getMyRoutines() {
         UserEntity user = authenticatedUserService.getCurrentUser();
         LocalDate today = LocalDate.now();
+        Long clientId = user.getClient().getId();
 
-        return routineAssignmentRepository.findByUserIdOrderByStartDateDescIdDesc(user.getId()).stream()
+        return routineAssignmentRepository.findByUserIdAndClientIdOrderByStartDateDescIdDesc(user.getId(), clientId).stream()
             .sorted(
                 Comparator.comparing((RoutineAssignmentEntity item) -> routinePriority(item, today))
                     .thenComparing(RoutineAssignmentEntity::getStartDate, Comparator.reverseOrder())
@@ -101,7 +102,7 @@ public class MobileAppServiceImpl implements MobileAppService {
     @Transactional(readOnly = true)
     public List<MobilePaymentMovementResponseDto> getMyPaymentMovements() {
         UserEntity user = authenticatedUserService.getCurrentUser();
-        return userPaymentMovementRepository.findByUserIdOrderByPaidAtDesc(user.getId()).stream()
+        return userPaymentMovementRepository.findByUserIdAndClientIdOrderByPaidAtDesc(user.getId(), user.getClient().getId()).stream()
             .map(this::toMobilePaymentDto)
             .toList();
     }
@@ -110,7 +111,7 @@ public class MobileAppServiceImpl implements MobileAppService {
     @Transactional(readOnly = true)
     public byte[] downloadMyPaymentMovementPdf(Long movementId) {
         UserEntity user = authenticatedUserService.getCurrentUser();
-        UserPaymentMovementEntity movement = userPaymentMovementRepository.findByIdAndUserId(movementId, user.getId())
+        UserPaymentMovementEntity movement = userPaymentMovementRepository.findByIdAndUserIdAndClientId(movementId, user.getId(), user.getClient().getId())
             .orElseThrow(() -> new ResourceNotFoundException("Movimiento de pago no encontrado: " + movementId));
         return paymentReceiptPdfService.generateReceipt(movement);
     }
@@ -119,9 +120,10 @@ public class MobileAppServiceImpl implements MobileAppService {
     @Transactional(readOnly = true)
     public List<MobilePersonalRecordResponseDto> getMyPersonalRecords() {
         UserEntity user = authenticatedUserService.getCurrentUser();
+        Long clientId = user.getClient().getId();
         Map<Long, MobilePersonalRecordResponseDto> items = new LinkedHashMap<>();
 
-        for (RoutineAssignmentEntity assignment : routineAssignmentRepository.findByUserIdOrderByStartDateDescIdDesc(user.getId())) {
+        for (RoutineAssignmentEntity assignment : routineAssignmentRepository.findByUserIdAndClientIdOrderByStartDateDescIdDesc(user.getId(), clientId)) {
             for (RoutineAssignmentExerciseEntity exercisePlan : assignment.getExercisePlans()) {
                 ExerciseEntity exercise = exercisePlan.getExercise();
                 items.putIfAbsent(
@@ -137,7 +139,7 @@ public class MobileAppServiceImpl implements MobileAppService {
             }
         }
 
-        for (ExercisePersonalRecordEntity record : exercisePersonalRecordRepository.findByUserId(user.getId())) {
+        for (ExercisePersonalRecordEntity record : exercisePersonalRecordRepository.findByUserIdAndClientId(user.getId(), clientId)) {
             ExerciseEntity exercise = record.getExercise();
             items.put(
                 exercise.getId(),
@@ -160,16 +162,17 @@ public class MobileAppServiceImpl implements MobileAppService {
     @Transactional(readOnly = true)
     public MobilePersonalRecordDetailResponseDto getMyPersonalRecordDetail(Long exerciseId) {
         UserEntity user = authenticatedUserService.getCurrentUser();
-        ensureExerciseWorkedByUser(user.getId(), exerciseId);
+        Long clientId = user.getClient().getId();
+        ensureExerciseWorkedByUser(user.getId(), clientId, exerciseId);
 
-        ExerciseEntity exercise = exerciseRepository.findById(exerciseId)
+        ExerciseEntity exercise = exerciseRepository.findByIdAndClientId(exerciseId, clientId)
             .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado: " + exerciseId));
 
-        ExercisePersonalRecordEntity summary = exercisePersonalRecordRepository.findByUserIdAndExerciseId(user.getId(), exerciseId)
+        ExercisePersonalRecordEntity summary = exercisePersonalRecordRepository.findByUserIdAndExerciseIdAndClientId(user.getId(), exerciseId, clientId)
             .orElse(null);
 
         List<MobilePersonalRecordHistoryPointResponseDto> history = exercisePersonalRecordEntryRepository
-            .findByUserIdAndExerciseIdOrderByRecordedAtAscIdAsc(user.getId(), exerciseId).stream()
+            .findByUserIdAndExerciseIdAndClientIdOrderByRecordedAtAscIdAsc(user.getId(), exerciseId, clientId).stream()
             .map(item -> MobilePersonalRecordHistoryPointResponseDto.builder()
                 .id(item.getId())
                 .weight(item.getWeight())
@@ -191,22 +194,27 @@ public class MobileAppServiceImpl implements MobileAppService {
     @Transactional
     public MobilePersonalRecordResponseDto savePersonalRecord(Long exerciseId, MobilePersonalRecordRequestDto request) {
         UserEntity user = authenticatedUserService.getCurrentUser();
-        ensureExerciseWorkedByUser(user.getId(), exerciseId);
+        Long clientId = user.getClient().getId();
+        ensureExerciseWorkedByUser(user.getId(), clientId, exerciseId);
 
-        ExerciseEntity exercise = exerciseRepository.findById(exerciseId)
+        ExerciseEntity exercise = exerciseRepository.findByIdAndClientId(exerciseId, clientId)
             .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado: " + exerciseId));
 
-        ExercisePersonalRecordEntity entity = exercisePersonalRecordRepository.findByUserIdAndExerciseId(user.getId(), exerciseId)
-            .orElseGet(() -> ExercisePersonalRecordEntity.builder().user(user).exercise(exercise).build());
+        ExercisePersonalRecordEntity entity = exercisePersonalRecordRepository.findByUserIdAndExerciseIdAndClientId(user.getId(), exerciseId, clientId)
+            .orElseGet(() -> {
+                ExercisePersonalRecordEntity created = ExercisePersonalRecordEntity.builder().user(user).exercise(exercise).build();
+                created.setClient(user.getClient());
+                return created;
+            });
 
-        exercisePersonalRecordEntryRepository.save(
-            ExercisePersonalRecordEntryEntity.builder()
-                .user(user)
-                .exercise(exercise)
-                .weight(request.getMaxWeight())
-                .recordedAt(request.getRecordedAt())
-                .build()
-        );
+        ExercisePersonalRecordEntryEntity entry = ExercisePersonalRecordEntryEntity.builder()
+            .user(user)
+            .exercise(exercise)
+            .weight(request.getMaxWeight())
+            .recordedAt(request.getRecordedAt())
+            .build();
+        entry.setClient(user.getClient());
+        exercisePersonalRecordEntryRepository.save(entry);
 
         if (entity.getId() == null || entity.getMaxWeight() == null || request.getMaxWeight() >= entity.getMaxWeight()) {
             entity.setMaxWeight(request.getMaxWeight());
@@ -229,11 +237,12 @@ public class MobileAppServiceImpl implements MobileAppService {
         UserEntity user = authenticatedUserService.getCurrentUser();
         LocalDate targetDate = normalizeTargetDate(date);
         WeekDay targetWeekDay = toWeekDay(targetDate);
-        Set<Long> subscribedIds = gymClassSubscriptionRepository.findByUserIdAndTargetDate(user.getId(), targetDate).stream()
+        Long clientId = user.getClient().getId();
+        Set<Long> subscribedIds = gymClassSubscriptionRepository.findByUserIdAndClientIdAndTargetDate(user.getId(), clientId, targetDate).stream()
             .map(item -> item.getGymClass().getId())
             .collect(java.util.stream.Collectors.toSet());
 
-        return gymClassRepository.findByWeekDay(targetWeekDay).stream()
+        return gymClassRepository.findByWeekDayAndClientId(targetWeekDay, clientId).stream()
             .map(item -> toMobileClassDto(item, user, targetDate, subscribedIds.contains(item.getId())))
             .sorted(
                 Comparator.comparing((MobileGymClassResponseDto item) -> !Boolean.TRUE.equals(item.getAllDay()))
@@ -248,7 +257,8 @@ public class MobileAppServiceImpl implements MobileAppService {
     public MobileGymClassResponseDto subscribeToClass(Long classId, LocalDate date) {
         UserEntity user = authenticatedUserService.getCurrentUser();
         LocalDate targetDate = normalizeTargetDate(date);
-        GymClassEntity gymClass = gymClassRepository.findById(classId)
+        Long clientId = user.getClient().getId();
+        GymClassEntity gymClass = gymClassRepository.findByIdAndClientId(classId, clientId)
             .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada: " + classId));
         WeekDay targetWeekDay = toWeekDay(targetDate);
         boolean ownClass = gymClass.getTeacher() != null && gymClass.getTeacher().getId().equals(user.getId());
@@ -260,7 +270,7 @@ public class MobileAppServiceImpl implements MobileAppService {
         if (!gymClass.getWeekDays().contains(targetWeekDay)) {
             throw new BusinessValidationException("La clase no se dicta el dia seleccionado.");
         }
-        if (gymClassSubscriptionRepository.existsByGymClassIdAndUserIdAndTargetDate(classId, user.getId(), targetDate)) {
+        if (gymClassSubscriptionRepository.existsByGymClassIdAndUserIdAndClientIdAndTargetDate(classId, user.getId(), clientId, targetDate)) {
             throw new BusinessValidationException("Ya estas suscripto a esta clase.");
         }
 
@@ -274,19 +284,19 @@ public class MobileAppServiceImpl implements MobileAppService {
 
         validatePlanRestrictions(user, targetDate);
 
-        long enrolledCount = gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(classId, targetDate);
+        long enrolledCount = gymClassSubscriptionRepository.countByGymClassIdAndClientIdAndTargetDate(classId, clientId, targetDate);
         if (gymClass.getMaxCapacity() != null && gymClass.getMaxCapacity() > 0 && enrolledCount >= gymClass.getMaxCapacity()) {
             throw new BusinessValidationException("La clase ya no tiene cupos disponibles.");
         }
 
-        gymClassSubscriptionRepository.save(
-            GymClassSubscriptionEntity.builder()
-                .gymClass(gymClass)
-                .user(user)
-                .targetDate(targetDate)
-                .subscribedAt(LocalDateTime.now())
-                .build()
-        );
+        GymClassSubscriptionEntity subscription = GymClassSubscriptionEntity.builder()
+            .gymClass(gymClass)
+            .user(user)
+            .targetDate(targetDate)
+            .subscribedAt(LocalDateTime.now())
+            .build();
+        subscription.setClient(user.getClient());
+        gymClassSubscriptionRepository.save(subscription);
 
         return toMobileClassDto(gymClass, user, targetDate, true);
     }
@@ -346,8 +356,8 @@ public class MobileAppServiceImpl implements MobileAppService {
         return 2;
     }
 
-    private void ensureExerciseWorkedByUser(Long userId, Long exerciseId) {
-        boolean exists = routineAssignmentRepository.findByUserIdOrderByStartDateDescIdDesc(userId).stream()
+    private void ensureExerciseWorkedByUser(Long userId, Long clientId, Long exerciseId) {
+        boolean exists = routineAssignmentRepository.findByUserIdAndClientIdOrderByStartDateDescIdDesc(userId, clientId).stream()
             .flatMap(item -> item.getExercisePlans().stream())
             .anyMatch(item -> item.getExercise().getId().equals(exerciseId));
 
@@ -408,14 +418,14 @@ public class MobileAppServiceImpl implements MobileAppService {
             return null;
         }
 
-        List<GymClassSubscriptionEntity> sameDaySubscriptions = gymClassSubscriptionRepository.findByUserIdAndTargetDate(user.getId(), targetDate);
+        List<GymClassSubscriptionEntity> sameDaySubscriptions = gymClassSubscriptionRepository.findByUserIdAndClientIdAndTargetDate(user.getId(), user.getClient().getId(), targetDate);
         if (!sameDaySubscriptions.isEmpty()) {
             return "Tu plan permite una sola actividad por dia.";
         }
 
         LocalDate weekStart = targetDate.minusDays(targetDate.getDayOfWeek().getValue() - 1L);
         LocalDate weekEnd = weekStart.plusDays(6);
-        long weeklySubscriptions = gymClassSubscriptionRepository.findByUserIdAndTargetDateBetween(user.getId(), weekStart, weekEnd).size();
+        long weeklySubscriptions = gymClassSubscriptionRepository.findByUserIdAndClientIdAndTargetDateBetween(user.getId(), user.getClient().getId(), weekStart, weekEnd).size();
         if (user.getPlan().getMaxDaysPerWeek() != null && weeklySubscriptions >= user.getPlan().getMaxDaysPerWeek()) {
             return "Ya alcanzaste el limite semanal de tu plan.";
         }
@@ -460,7 +470,7 @@ public class MobileAppServiceImpl implements MobileAppService {
     }
 
     private MobileGymClassResponseDto toMobileClassDto(GymClassEntity item, UserEntity user, LocalDate targetDate, boolean subscribed) {
-        int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassIdAndTargetDate(item.getId(), targetDate));
+        int enrolled = Math.toIntExact(gymClassSubscriptionRepository.countByGymClassIdAndClientIdAndTargetDate(item.getId(), user.getClient().getId(), targetDate));
         Integer availableSpots = item.getMaxCapacity() == null ? null : Math.max(item.getMaxCapacity() - enrolled, 0);
         boolean ownClass = item.getTeacher() != null && item.getTeacher().getId().equals(user.getId());
         boolean activityAllowed = isActivityAllowed(user, item);

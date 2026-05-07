@@ -31,6 +31,8 @@ public class JwtService {
         return Jwts.builder()
             .subject(userDetails.getUsername())
             .claim("uid", userDetails.getId())
+            .claim("cid", userDetails.getClientId())
+            .claim("cslug", userDetails.getClientSlug())
             .claim("utype", userDetails.getUserType())
             .issuedAt(now)
             .expiration(expiration)
@@ -45,6 +47,17 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         String username = extractUsername(token);
         return username.equalsIgnoreCase(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public Long extractClientId(String token) {
+        Object rawValue = extractAllClaims(token).get("cid");
+        if (rawValue instanceof Number number) {
+            return number.longValue();
+        }
+        if (rawValue instanceof String value && !value.isBlank()) {
+            return Long.parseLong(value);
+        }
+        return null;
     }
 
     public long getExpirationSeconds() {

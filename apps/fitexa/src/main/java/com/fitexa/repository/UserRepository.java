@@ -16,53 +16,61 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
 
-    Optional<UserEntity> findByDni(String dni);
+    Optional<UserEntity> findByDniAndClientId(String dni, Long clientId);
     Optional<UserEntity> findByEmailIgnoreCase(String email);
-    long countByRoleId(Long roleId);
+    Optional<UserEntity> findByEmailIgnoreCaseAndClientId(String email, Long clientId);
+    Optional<UserEntity> findByIdAndClientId(Long id, Long clientId);
+    boolean existsByIdAndClientId(Long id, Long clientId);
+    long countByRoleIdAndClientId(Long roleId, Long clientId);
 
-    long countByUserType(UserType userType);
+    long countByUserTypeAndClientId(UserType userType, Long clientId);
 
-    long countByUserTypeAndRegistrationDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
+    long countByUserTypeAndClientIdAndRegistrationDateBetween(UserType userType, Long clientId, LocalDate fromDate, LocalDate toDate);
 
-    long countByUserTypeAndRenewalDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
+    long countByUserTypeAndClientIdAndRenewalDateBetween(UserType userType, Long clientId, LocalDate fromDate, LocalDate toDate);
 
     @Query("""
         select count(u.id)
         from UserEntity u
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.renewalDate >= :fromDate
           and u.renewalDate <= :toDate
           and u.renewalDate < :referenceDate
         """)
     long countByUserTypeAndExpiredRenewalDateInRange(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate,
         @Param("referenceDate") LocalDate referenceDate
     );
 
-    long countByUserTypeAndPlanIsNull(UserType userType);
+    long countByUserTypeAndClientIdAndPlanIsNull(UserType userType, Long clientId);
 
-    long countByUserTypeAndPlanIsNullAndRegistrationDateBetween(UserType userType, LocalDate fromDate, LocalDate toDate);
+    long countByUserTypeAndClientIdAndPlanIsNullAndRegistrationDateBetween(UserType userType, Long clientId, LocalDate fromDate, LocalDate toDate);
 
     @Query("""
         select coalesce(sum(p.price), 0)
         from UserEntity u
         join u.plan p
         where u.userType = :userType
+          and u.client.id = :clientId
         """)
-    BigDecimal sumEstimatedRevenueByUserType(@Param("userType") UserType userType);
+    BigDecimal sumEstimatedRevenueByUserType(@Param("userType") UserType userType, @Param("clientId") Long clientId);
 
     @Query("""
         select coalesce(sum(p.price), 0)
         from UserEntity u
         join u.plan p
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.registrationDate >= :fromDate
           and u.registrationDate <= :toDate
         """)
     BigDecimal sumEstimatedRevenueByUserTypeAndRegistrationDateBetween(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -72,16 +80,18 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         from UserEntity u
         left join u.plan p
         where u.userType = :userType
+          and u.client.id = :clientId
         group by p.id, p.name
         order by count(u.id) desc
         """)
-    List<Object[]> countUsersByPlan(@Param("userType") UserType userType);
+    List<Object[]> countUsersByPlan(@Param("userType") UserType userType, @Param("clientId") Long clientId);
 
     @Query("""
         select p.id, coalesce(p.name, 'Sin plan'), count(u.id)
         from UserEntity u
         left join u.plan p
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.registrationDate >= :fromDate
           and u.registrationDate <= :toDate
         group by p.id, p.name
@@ -89,6 +99,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         """)
     List<Object[]> countUsersByPlanInRegistrationRange(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -98,6 +109,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         from UserEntity u
         join u.plan p
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.renewalDate >= :referenceDate
           and u.registrationDate <= :referenceDate
         group by p.id, p.name
@@ -105,6 +117,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         """)
     List<Object[]> countActiveUsersByPlan(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("referenceDate") LocalDate referenceDate
     );
 
@@ -112,10 +125,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
+          and u.client.id = :clientId
         group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
     List<Object[]> countUsersByPaymentStatus(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("referenceDate") LocalDate referenceDate
     );
 
@@ -123,12 +138,14 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.registrationDate >= :fromDate
           and u.registrationDate <= :toDate
         group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
     List<Object[]> countUsersByPaymentStatusInRegistrationRange(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate,
         @Param("referenceDate") LocalDate referenceDate
@@ -138,11 +155,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         select case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end, count(u.id)
         from UserEntity u
         where u.userType = :userType
+          and u.client.id = :clientId
           and u.registrationDate <= :referenceDate
         group by case when u.renewalDate >= :referenceDate then 'AL_DIA' else 'ADEUDA' end
         """)
     List<Object[]> countUsersByPaymentStatusUpToDate(
         @Param("userType") UserType userType,
+        @Param("clientId") Long clientId,
         @Param("referenceDate") LocalDate referenceDate
     );
 
@@ -151,6 +170,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
             select date_format(u.registration_date, '%Y-%m') as period, count(u.id) as total
             from users u
             where u.user_type = 'ALUMNO'
+              and u.client_id = :clientId
               and u.registration_date >= :fromDate
               and u.registration_date <= :toDate
             group by date_format(u.registration_date, '%Y-%m')
@@ -159,6 +179,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         nativeQuery = true
     )
     List<Object[]> countStudentRegistrationsByMonth(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -168,6 +189,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
             select cast(year(u.registration_date) as char) as period, count(u.id) as total
             from users u
             where u.user_type = 'ALUMNO'
+              and u.client_id = :clientId
               and u.registration_date >= :fromDate
               and u.registration_date <= :toDate
             group by cast(year(u.registration_date) as char)
@@ -176,6 +198,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         nativeQuery = true
     )
     List<Object[]> countStudentRegistrationsByYear(
+        @Param("clientId") Long clientId,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -183,7 +206,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
     @Query("""
         select u
         from UserEntity u
-        where (:userType is null or u.userType = :userType)
+        where u.client.id = :clientId
+          and (:userType is null or u.userType = :userType)
           and (:roleId is null or (u.role is not null and u.role.id = :roleId))
           and (
             :name is null
@@ -202,6 +226,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
           and (:renewalTo is null or u.renewalDate <= :renewalTo)
         """)
     Page<UserEntity> findForTable(
+        @Param("clientId") Long clientId,
         @Param("userType") UserType userType,
         @Param("roleId") Long roleId,
         @Param("name") String name,
@@ -215,4 +240,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
         @Param("renewalTo") LocalDate renewalTo,
         Pageable pageable
     );
+
+    List<UserEntity> findAllByClientId(Long clientId);
+    List<UserEntity> findAllByClientIdAndUserType(Long clientId, UserType userType);
 }

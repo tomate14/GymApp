@@ -6,6 +6,6 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExercisePersonalRecordRepository extends JpaRepository<ExercisePersonalRecordEntity, Long> {
-    List<ExercisePersonalRecordEntity> findByUserId(Long userId);
-    Optional<ExercisePersonalRecordEntity> findByUserIdAndExerciseId(Long userId, Long exerciseId);
+    List<ExercisePersonalRecordEntity> findByUserIdAndClientId(Long userId, Long clientId);
+    Optional<ExercisePersonalRecordEntity> findByUserIdAndExerciseIdAndClientId(Long userId, Long exerciseId, Long clientId);
 }

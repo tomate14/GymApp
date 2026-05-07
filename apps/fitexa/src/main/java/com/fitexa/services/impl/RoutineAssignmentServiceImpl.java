@@ -19,6 +19,7 @@ import com.fitexa.repository.ExerciseRepository;
 import com.fitexa.repository.RoutineAssignmentRepository;
 import com.fitexa.repository.RoutineTemplateRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.RoutineAssignmentService;
 import com.fitexa.services.RoutinePlanValidationStrategy;
 import java.time.LocalDate;
@@ -46,11 +47,12 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
     private final UserRepository userRepository;
     private final ExerciseRepository exerciseRepository;
     private final RoutinePlanValidationStrategy routinePlanValidationStrategy;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<RoutineAssignmentResponseDto> findAll() {
-        return routineAssignmentRepository.findAll().stream().map(this::toDto).toList();
+        return routineAssignmentRepository.findByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -63,6 +65,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
         int size
     ) {
         Page<RoutineAssignmentResponseDto> result = routineAssignmentRepository.findForTable(
+            currentClientId(),
             clean(student),
             templateId,
             currentOnly,
@@ -112,7 +115,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
             throw new BusinessValidationException("La asignacion debe tener ejercicios.");
         }
 
-        UserEntity student = userRepository.findById(request.getUserId())
+        UserEntity student = userRepository.findByIdAndClientId(request.getUserId(), currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Alumno no encontrado: " + request.getUserId()));
         if (student.getUserType() != UserType.ALUMNO) {
             throw new BusinessValidationException("La asignacion de rutinas solo aplica para alumnos.");
@@ -122,6 +125,8 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
         boolean customAssignment = request.getRoutineTemplateId() == null;
         if (!customAssignment) {
             routineTemplate = routineTemplateRepository.findById(request.getRoutineTemplateId())
+                .filter(item -> item.getClient().getId().equals(currentClientId()))
+                .or(() -> routineTemplateRepository.findByIdAndClientId(request.getRoutineTemplateId(), currentClientId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Rutina no encontrada: " + request.getRoutineTemplateId()));
         }
 
@@ -129,6 +134,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
         validateExercisePlanUniqueness(request.getExercisePlans());
 
         RoutineAssignmentEntity entity = id == null ? new RoutineAssignmentEntity() : findEntity(id);
+        entity.setClient(student.getClient());
         entity.setUser(student);
         entity.setRoutineTemplate(routineTemplate);
         entity.setCustomName(customName);
@@ -142,7 +148,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
 
         RoutineAssignmentEntity saved = routineAssignmentRepository.save(entity);
         List<RoutineAssignmentEntity> overlaps = routineAssignmentRepository.findOverlappingAssignments(
-            student.getId(), saved.getStartDate(), saved.getEndDate(), saved.getId()
+            student.getId(), currentClientId(), saved.getStartDate(), saved.getEndDate(), saved.getId()
         );
         String warning = routinePlanValidationStrategy.validate(student, saved, overlaps).orElse(null);
 
@@ -167,7 +173,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
                 throw new BusinessValidationException("El ejercicio " + item.getExerciseId() + " no pertenece a la rutina seleccionada.");
             }
 
-            ExerciseEntity exercise = exerciseRepository.findById(item.getExerciseId())
+            ExerciseEntity exercise = exerciseRepository.findByIdAndClientId(item.getExerciseId(), currentClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado: " + item.getExerciseId()));
 
             RoutineAssignmentExerciseEntity detail = RoutineAssignmentExerciseEntity.builder()
@@ -183,6 +189,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
                 .minWeight(item.getMinWeight())
                 .maxWeight(item.getMaxWeight())
                 .build();
+            detail.setClient(assignment.getClient());
 
             normalizeByMode(detail);
             mapped.add(detail);
@@ -215,7 +222,7 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
     }
 
     private RoutineAssignmentEntity findEntity(Long id) {
-        return routineAssignmentRepository.findById(id)
+        return routineAssignmentRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Asignacion no encontrada: " + id));
     }
 
@@ -295,5 +302,9 @@ public class RoutineAssignmentServiceImpl implements RoutineAssignmentService {
             return 8;
         }
         return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 }

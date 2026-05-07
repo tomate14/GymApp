@@ -24,7 +24,7 @@ public class DashboardStudentsByTeacherChartStrategy implements DashboardChartSt
     @Override
     public DashboardChartDto build(DashboardChartContext context) {
         LocalDate referenceDate = LocalDate.now();
-        List<DashboardChartPointDto> points = gymClassSubscriptionRepository.countActiveStudentsByTeacher(referenceDate)
+        List<DashboardChartPointDto> points = gymClassSubscriptionRepository.countActiveStudentsByTeacher(context.getClientId(), referenceDate)
             .stream()
             .map(item -> DashboardChartPointDto.builder()
                 .label(item.getTeacherName())

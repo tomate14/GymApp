@@ -3,7 +3,7 @@ services:
     image: mysql:8.4
     container_name: fitexa-mysql
     restart: unless-stopped
-    command: ["mysqld", "--init-file=/docker-entrypoint-initdb.d/00-bootstrap.sql"]
+    command: ["/bin/sh", "/fitexa-bootstrap/bootstrap.sh"]
     environment:
       MYSQL_DATABASE: fitexa
       MYSQL_ROOT_PASSWORD: root
@@ -11,7 +11,7 @@ services:
       - "3306:3306"
     volumes:
       - fitexa_mysql_data:/var/lib/mysql
-      - ./apps/fitexa/docker/mysql/bootstrap.sql:/docker-entrypoint-initdb.d/00-bootstrap.sql:ro
+      - ./apps/fitexa/docker/mysql:/fitexa-bootstrap:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
       interval: 10s

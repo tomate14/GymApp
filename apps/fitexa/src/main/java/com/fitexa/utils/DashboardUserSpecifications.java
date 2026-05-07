@@ -10,18 +10,24 @@ public final class DashboardUserSpecifications {
     private DashboardUserSpecifications() {}
 
     public static Specification<UserEntity> buildRenewalsFilter(
+        Long clientId,
         String search,
         Long planId,
         PaymentStatus paymentStatus,
         LocalDate renewalFrom,
         LocalDate renewalTo
     ) {
-        return Specification.where(studentsOnly())
+        return Specification.where(byClient(clientId))
+            .and(studentsOnly())
             .and(bySearch(search))
             .and(byPlan(planId))
             .and(byPaymentStatus(paymentStatus))
             .and(byRenewalFrom(renewalFrom))
             .and(byRenewalTo(renewalTo));
+    }
+
+    private static Specification<UserEntity> byClient(Long clientId) {
+        return (root, query, cb) -> cb.equal(root.get("client").get("id"), clientId);
     }
 
     private static Specification<UserEntity> studentsOnly() {

@@ -6,6 +6,7 @@ import com.fitexa.dtos.DashboardPageResponseDto;
 import com.fitexa.entities.ActivityEntity;
 import com.fitexa.exeptions.ResourceNotFoundException;
 import com.fitexa.repository.ActivityRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.ActivityService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,17 +23,19 @@ public class ActivityServiceImpl implements ActivityService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ActivityRepository activityRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<ActivityResponseDto> findAll() {
-        return activityRepository.findAll().stream().map(this::toDto).toList();
+        return activityRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public DashboardPageResponseDto<ActivityResponseDto> findPage(String name, String description, int page, int size) {
         Page<ActivityResponseDto> result = activityRepository.findForTable(
+            currentClientId(),
             clean(name),
             clean(description),
             PageRequest.of(sanitizePage(page), sanitizeSize(size), Sort.by(Sort.Direction.ASC, "name"))
@@ -54,6 +57,7 @@ public class ActivityServiceImpl implements ActivityService {
             .name(request.getName())
             .description(request.getDescription())
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
         return toDto(activityRepository.save(entity));
     }
 
@@ -73,8 +77,12 @@ public class ActivityServiceImpl implements ActivityService {
     }
 
     private ActivityEntity findEntity(Long id) {
-        return activityRepository.findById(id)
+        return activityRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Actividad no encontrada: " + id));
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 
     private ActivityResponseDto toDto(ActivityEntity entity) {

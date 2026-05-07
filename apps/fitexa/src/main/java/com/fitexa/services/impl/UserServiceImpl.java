@@ -16,6 +16,7 @@ import com.fitexa.repository.ActivityRepository;
 import com.fitexa.repository.PlanRepository;
 import com.fitexa.repository.RoleRepository;
 import com.fitexa.repository.UserRepository;
+import com.fitexa.services.AuthenticatedUserService;
 import com.fitexa.services.UserPaymentMovementService;
 import com.fitexa.services.UserService;
 import com.fitexa.utils.DateUtils;
@@ -44,11 +45,12 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserPaymentMovementService userPaymentMovementService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     @Transactional(readOnly = true)
     public List<UserResponseDto> findAll() {
-        return userRepository.findAll().stream().map(this::toDto).toList();
+        return userRepository.findAllByClientId(currentClientId()).stream().map(this::toDto).toList();
     }
 
     @Override
@@ -68,6 +70,7 @@ public class UserServiceImpl implements UserService {
     ) {
         PaymentStatus parsedPaymentStatus = parsePaymentStatus(paymentStatus);
         Page<UserResponseDto> result = userRepository.findForTable(
+            currentClientId(),
             parseUserType(type),
             roleId,
             clean(name),
@@ -92,8 +95,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponseDto> findStudents() {
-        return userRepository.findAll().stream()
-            .filter(user -> user.getUserType() == UserType.ALUMNO)
+        return userRepository.findAllByClientIdAndUserType(currentClientId(), UserType.ALUMNO).stream()
             .map(this::toDto)
             .toList();
     }
@@ -101,8 +103,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponseDto> findTeachers() {
-        return userRepository.findAll().stream()
-            .filter(user -> user.getUserType() == UserType.PROFESOR)
+        return userRepository.findAllByClientIdAndUserType(currentClientId(), UserType.PROFESOR).stream()
             .map(this::toDto)
             .toList();
     }
@@ -140,6 +141,7 @@ public class UserServiceImpl implements UserService {
             .registrationDate(registrationDate)
             .renewalDate(DateUtils.plusOneMonth(registrationDate))
             .build();
+        entity.setClient(authenticatedUserService.getCurrentClient());
 
         return toDto(userRepository.save(entity));
     }
@@ -219,7 +221,7 @@ public class UserServiceImpl implements UserService {
         if (planId == null) {
             throw new BusinessValidationException("Un alumno debe tener un plan asignado.");
         }
-        return planRepository.findById(planId)
+        return planRepository.findByIdAndClientId(planId, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado: " + planId));
     }
 
@@ -237,7 +239,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessValidationException("Un alumno debe tener al menos una actividad habilitada.");
         }
 
-        List<ActivityEntity> activities = activityRepository.findAllById(ids);
+        List<ActivityEntity> activities = activityRepository.findAllByClientIdAndIdIn(currentClientId(), ids);
         if (activities.size() != ids.size()) {
             throw new BusinessValidationException("Una o mas actividades seleccionadas no existen.");
         }
@@ -246,7 +248,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserEntity findEntity(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdAndClientId(id, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + id));
     }
 
@@ -254,7 +256,7 @@ public class UserServiceImpl implements UserService {
         if (roleId == null) {
             throw new BusinessValidationException("El rol es obligatorio.");
         }
-        return roleRepository.findById(roleId)
+        return roleRepository.findByIdAndClientId(roleId, currentClientId())
             .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + roleId));
     }
 
@@ -342,5 +344,9 @@ public class UserServiceImpl implements UserService {
     private String normalizeEmail(String value) {
         String cleanValue = clean(value);
         return cleanValue == null ? null : cleanValue.toLowerCase();
+    }
+
+    private Long currentClientId() {
+        return authenticatedUserService.getCurrentClientId();
     }
 }
