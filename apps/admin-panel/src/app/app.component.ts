@@ -48,6 +48,9 @@ export class AppComponent implements OnInit {
   }
 
   get sectionTitle(): string {
+    if (this.router.url.includes('/facturacion')) {
+      return 'Facturacion';
+    }
     const current = this.visibleMenuItems.find((item) => this.router.url.includes(`/${item.path}`));
     return current?.label ?? 'Dashboard';
   }

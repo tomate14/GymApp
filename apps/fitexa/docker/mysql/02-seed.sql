@@ -9,6 +9,51 @@ INSERT INTO clients (name, slug, active, created_at) VALUES
 SET @client_fitexa = (SELECT id FROM clients WHERE slug = 'fitexa-central');
 SET @client_powerhouse = (SELECT id FROM clients WHERE slug = 'powerhouse-norte');
 
+INSERT INTO billing_plans (code, name, description, price, currency_id, frequency, frequency_type, active, created_at, updated_at) VALUES
+    ('basic-monthly', 'Fitexa Basico', 'Gestion esencial para gimnasios chicos.', 29900.00, 'ARS', 1, 'MONTHS', 1, NOW(), NOW()),
+    ('pro-monthly', 'Fitexa Pro', 'Gestion completa con panel, mobile y reportes.', 49900.00, 'ARS', 1, 'MONTHS', 1, NOW(), NOW());
+
+SET @billing_plan_pro = (SELECT id FROM billing_plans WHERE code = 'pro-monthly');
+
+INSERT INTO mercado_pago_accounts (
+    name,
+    encrypted_access_token,
+    encrypted_public_key,
+    encrypted_webhook_secret,
+    public_base_url,
+    app_base_url,
+    sandbox_mode,
+    active,
+    created_at,
+    updated_at
+) VALUES (
+    'default',
+    NULL,
+    NULL,
+    NULL,
+    'http://localhost:8080',
+    'http://localhost:4200',
+    1,
+    1,
+    NOW(),
+    NOW()
+);
+
+INSERT INTO client_subscriptions (
+    client_id,
+    billing_plan_id,
+    status,
+    payer_email,
+    next_payment_at,
+    current_period_start,
+    current_period_end,
+    activated_at,
+    created_at,
+    updated_at
+) VALUES
+    (@client_fitexa, @billing_plan_pro, 'ACTIVE', 'admin@fitexa.com', DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW(), NOW(), NOW()),
+    (@client_powerhouse, @billing_plan_pro, 'ACTIVE', 'admin@powerhouse.com', DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW(), NOW(), NOW());
+
 INSERT INTO plans (client_id, name, price, max_days_per_week, active) VALUES
     (@client_fitexa, '2 veces por semana', 22000.00, 2, 1),
     (@client_fitexa, '3 veces por semana', 28000.00, 3, 1),

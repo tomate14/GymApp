@@ -28,6 +28,7 @@ public class SecurityConfig {
 
     private final FitexaUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final BillingAccessFilter billingAccessFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean
@@ -40,12 +41,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/billing/webhooks/mercado-pago").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/machines/images/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(billingAccessFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

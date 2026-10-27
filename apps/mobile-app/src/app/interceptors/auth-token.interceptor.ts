@@ -21,6 +21,9 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(request).pipe(
     catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 402 && error.error?.detail === 'TENANT_SUBSCRIPTION_REQUIRED') {
+        window.alert('La suscripcion del gimnasio esta pendiente de pago. Contacta al administrador.');
+      }
       if (error instanceof HttpErrorResponse && error.status === 401 && !isLoginRequest) {
         authService.clearSession();
         void router.navigate(['/login']);

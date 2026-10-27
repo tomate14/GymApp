@@ -9,6 +9,91 @@ CREATE TABLE clients (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE billing_plans (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(120) NOT NULL UNIQUE,
+    name VARCHAR(160) NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    price DECIMAL(12, 2) NOT NULL,
+    currency_id VARCHAR(3) NOT NULL DEFAULT 'ARS',
+    frequency INT NOT NULL,
+    frequency_type VARCHAR(20) NOT NULL,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    mercado_pago_plan_id VARCHAR(120) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE mercado_pago_accounts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(120) NOT NULL UNIQUE,
+    encrypted_access_token TEXT NULL,
+    encrypted_public_key TEXT NULL,
+    encrypted_webhook_secret TEXT NULL,
+    public_base_url VARCHAR(500) NOT NULL,
+    app_base_url VARCHAR(500) NOT NULL,
+    sandbox_mode TINYINT(1) NOT NULL DEFAULT 1,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE client_subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    client_id BIGINT NOT NULL,
+    billing_plan_id BIGINT NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    mercado_pago_preapproval_id VARCHAR(120) NULL,
+    mercado_pago_plan_id VARCHAR(120) NULL,
+    payer_email VARCHAR(220) NULL,
+    checkout_url VARCHAR(1000) NULL,
+    next_payment_at DATETIME NULL,
+    current_period_start DATETIME NULL,
+    current_period_end DATETIME NULL,
+    activated_at DATETIME NULL,
+    cancelled_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_client_subscriptions_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    CONSTRAINT fk_client_subscriptions_plan FOREIGN KEY (billing_plan_id) REFERENCES billing_plans(id),
+    CONSTRAINT uq_client_subscriptions_client UNIQUE (client_id),
+    CONSTRAINT uq_client_subscriptions_mp_preapproval UNIQUE (mercado_pago_preapproval_id)
+);
+
+CREATE TABLE client_subscription_payments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    client_subscription_id BIGINT NOT NULL,
+    client_id BIGINT NOT NULL,
+    mercado_pago_authorized_payment_id VARCHAR(120) NULL,
+    mercado_pago_payment_id VARCHAR(120) NULL,
+    status VARCHAR(60) NOT NULL,
+    status_detail VARCHAR(60) NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    currency_id VARCHAR(3) NOT NULL,
+    paid_at DATETIME NULL,
+    period_start DATETIME NULL,
+    period_end DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_client_subscription_payments_subscription FOREIGN KEY (client_subscription_id) REFERENCES client_subscriptions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_client_subscription_payments_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    CONSTRAINT uq_csp_mp_authorized_payment UNIQUE (mercado_pago_authorized_payment_id),
+    CONSTRAINT uq_csp_mp_payment UNIQUE (mercado_pago_payment_id)
+);
+
+CREATE TABLE billing_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_key VARCHAR(220) NOT NULL UNIQUE,
+    provider VARCHAR(80) NULL,
+    event_type VARCHAR(80) NULL,
+    provider_resource_id VARCHAR(120) NULL,
+    client_id BIGINT NULL,
+    resulting_status VARCHAR(40) NULL,
+    payload TEXT NOT NULL,
+    received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_billing_events_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+);
+
 CREATE TABLE plans (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     client_id BIGINT NOT NULL,
@@ -235,6 +320,8 @@ CREATE TABLE routine_assignment_exercises (
 CREATE INDEX idx_users_client_type ON users(client_id, user_type);
 CREATE INDEX idx_users_client_registration ON users(client_id, registration_date);
 CREATE INDEX idx_users_client_renewal ON users(client_id, renewal_date);
+CREATE INDEX idx_client_subscriptions_status ON client_subscriptions(client_id, status);
+CREATE INDEX idx_client_subscription_payments_period ON client_subscription_payments(client_id, period_end);
 CREATE INDEX idx_gym_classes_client_date ON gym_classes(client_id, date);
 CREATE INDEX idx_gym_class_subscriptions_client_date ON gym_class_subscriptions(client_id, target_date);
 CREATE INDEX idx_payment_movements_client_paid_at ON user_payment_movements(client_id, paid_at);

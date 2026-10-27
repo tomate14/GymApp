@@ -4,6 +4,7 @@ import com.fitexa.dtos.ErrorResponseDto;
 import com.fitexa.exeptions.BusinessValidationException;
 import com.fitexa.exeptions.InvalidCredentialsException;
 import com.fitexa.exeptions.ResourceNotFoundException;
+import com.fitexa.exeptions.TenantSubscriptionRequiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,6 +30,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleInvalidCredentials(InvalidCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(ErrorResponseDto.builder().message(ex.getMessage()).detail("INVALID_CREDENTIALS").build());
+    }
+
+    @ExceptionHandler(TenantSubscriptionRequiredException.class)
+    public ResponseEntity<ErrorResponseDto> handleTenantSubscriptionRequired(TenantSubscriptionRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+            .body(ErrorResponseDto.builder().message(ex.getMessage()).detail("TENANT_SUBSCRIPTION_REQUIRED").build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

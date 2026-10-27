@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ActivitiesComponent } from './components/activities/activities.component';
+import { BillingComponent } from './components/billing/billing.component';
 import { ChangePasswordComponent } from './components/change-password/change-password.component';
 import { ClassScheduleComponent } from './components/class-schedule/class-schedule.component';
 import { ClassesComponent } from './components/classes/classes.component';
@@ -24,6 +25,7 @@ export const APP_ROUTES: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'facturacion', component: BillingComponent },
       { path: 'dashboard', component: DashboardComponent, canActivate: [menuPermissionGuard], data: { moduleKey: 'dashboard' } },
       { path: 'agenda-clases', component: ClassScheduleComponent, canActivate: [menuPermissionGuard], data: { moduleKey: 'agenda' } },
       { path: 'usuarios', component: UsersComponent, canActivate: [menuPermissionGuard], data: { moduleKey: 'users' } },

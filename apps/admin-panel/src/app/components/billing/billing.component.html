@@ -1,0 +1,56 @@
+<section class="billing-page">
+  <header class="billing-header">
+    <div>
+      <p class="eyebrow">Facturacion Fitexa</p>
+      <h1>Suscripcion del tenant</h1>
+    </div>
+    <span class="status-pill" [class.active]="isActive">{{ statusLabel }}</span>
+  </header>
+
+  <div class="billing-state" *ngIf="subscription as current">
+    <div>
+      <span>Cliente</span>
+      <strong>{{ current.clientName }}</strong>
+    </div>
+    <div>
+      <span>Plan actual</span>
+      <strong>{{ current.billingPlanName ?? 'Sin plan activo' }}</strong>
+    </div>
+    <div>
+      <span>Acceso vigente hasta</span>
+      <strong>{{ current.currentPeriodEnd ? (current.currentPeriodEnd | date: 'dd/MM/yyyy HH:mm') : 'Pendiente de pago' }}</strong>
+    </div>
+    <div>
+      <span>Proximo intento</span>
+      <strong>{{ current.nextPaymentAt ? (current.nextPaymentAt | date: 'dd/MM/yyyy HH:mm') : 'Sin fecha' }}</strong>
+    </div>
+  </div>
+
+  <p class="alert alert-danger" *ngIf="apiError">{{ apiError }}</p>
+  <p class="loading" *ngIf="isLoading">Cargando facturacion...</p>
+
+  <div class="plans-grid" *ngIf="!isLoading">
+    <button
+      type="button"
+      class="plan-card"
+      *ngFor="let plan of plans"
+      [class.selected]="selectedPlanId === plan.id"
+      (click)="selectPlan(plan.id)"
+    >
+      <span class="plan-name">{{ plan.name }}</span>
+      <span class="plan-description">{{ plan.description }}</span>
+      <strong>{{ plan.price | currency: plan.currencyId : 'symbol-narrow' : '1.0-0' }}</strong>
+      <small>{{ formatFrequency(plan) }}</small>
+    </button>
+  </div>
+
+  <footer class="billing-actions" *ngIf="!isLoading">
+    <label class="payer-field">
+      <span>Email comprador Mercado Pago</span>
+      <input type="email" [(ngModel)]="payerEmail" placeholder="Opcional para pruebas" />
+    </label>
+    <button type="button" class="btn btn-primary" [disabled]="selectedPlanId === null || isStartingCheckout" (click)="startCheckout()">
+      {{ isStartingCheckout ? 'Abriendo Mercado Pago...' : 'Regularizar con Mercado Pago' }}
+    </button>
+  </footer>
+</section>
